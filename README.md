@@ -1,59 +1,211 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CreditZona
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel базиран уебсайт и CRM система за CreditZona.
 
-## About Laravel
+Repository:
+https://github.com/Cash-Broker/creditzona
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+--------------------------------------------------
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+ПРОЕКТНА ИДЕЯ
 
-## Learning Laravel
+Сайтът НЕ е само информационен.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Основната идея е:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Lead generation сайт + вътрешен CRM за кредитни консултанти.
 
-## Laravel Sponsors
+Flow на системата:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Клиент → попълва форма на сайта → заявката влиза в CRM → агент обработва заявката.
 
-### Premium Partners
+Целта е сайтът да събира заявки за кредити, а админ панелът да позволява управление на тези заявки.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+В бъдеще системата може частично или изцяло да замести сегашния софтуер, който се използва (LegalTech).
 
-## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+--------------------------------------------------
 
-## Code of Conduct
+STACK
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Laravel 12  
+PHP 8.2+  
+TailwindCSS  
+Vite  
+Filament Admin Panel  
 
-## Security Vulnerabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+--------------------------------------------------
 
-## License
+GIT СТРУКТУРА
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Проектът използва два основни branch-а.
+
+main  
+→ стабилен production branch
+
+develop  
+→ активна разработка
+
+Работата се прави чрез feature branch-ове.
+
+Пример:
+
+git checkout develop  
+git checkout -b feature/homepage-slider
+
+
+--------------------------------------------------
+
+LOCAL SETUP
+
+1. Клониране на проекта
+
+git clone https://github.com/Cash-Broker/creditzona.git
+
+
+2. Влизане в проекта
+
+cd creditzona
+
+
+3. Инсталиране на зависимостите
+
+composer install
+
+npm install
+
+
+4. Създаване на .env
+
+copy .env.example .env
+
+
+5. Генериране на app key
+
+php artisan key:generate
+
+
+6. Миграции
+
+php artisan migrate
+
+
+7. Стартиране на dev сървър
+
+npm run dev
+
+php artisan serve
+
+
+Админ панел:
+
+/admin
+
+
+--------------------------------------------------
+
+КАКВО Е НАПРАВЕНО ДО МОМЕНТА
+
+- Създаден е Laravel проект
+- Инсталиран е Filament admin panel
+- Създаден е базов frontend layout с Tailwind
+- Направена е начална страница
+- Добавена е quick lead форма
+- Добавени са основни страници:
+  - Home
+  - Services
+  - FAQ
+  - Contact
+- Създаден е Lead модел
+- Добавена е логика за запис на заявки от формите
+- Git проектът е качен в GitHub организацията Cash-Broker
+- Създаден е develop branch за разработка
+
+
+--------------------------------------------------
+
+ФУНКЦИОНАЛНОСТИ НА САЙТА
+
+
+Frontend
+
+- лек и бърз дизайн
+- форма за кредит на началната страница
+- slider за сума
+- минимална сума: 5000 евро
+- GDPR декларация
+- cookies банер
+
+
+Admin panel
+
+Filament базиран CRM.
+
+Основни функции:
+
+- обработка на заявки
+- вътрешна комуникация между агенти
+- търсене на клиенти по:
+  - ЕГН
+  - телефон
+
+
+--------------------------------------------------
+
+ЛОГИКА НА ЗАЯВКИТЕ
+
+ЕГН и мобилен номер се използват като идентификатор.
+
+Системата трябва:
+
+- да проверява за съществуващи заявки
+- да не допуска дублирани заявки
+
+Проверка:
+
+по ЕГН
+
+
+--------------------------------------------------
+
+АДМИН ФУНКЦИИ
+
+- обработка на заявки
+- assigned agent
+- статуси на заявки
+- вътрешни бележки
+- управление на клиенти
+
+
+--------------------------------------------------
+
+ПЛАНИРАНИ ПОДОБРЕНИЯ
+
+
+Frontend
+
+- slider за сума
+- подобряване на дизайна
+- cookie банер
+- GDPR страница
+
+
+Admin
+
+- стабилизиране на Lead resource
+- статуси на заявки
+- assigned agent
+- notes
+- документи
+
+
+--------------------------------------------------
+
+ВАЖНО
+
+Sensitive данни като ЕГН трябва:
+
+- да се съхраняват криптирано
+- да са достъпни само за съответния агент или администратор
