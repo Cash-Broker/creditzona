@@ -1,10 +1,10 @@
 <template>
     <div class="pt-4">
         <div
-            class="inline-flex items-center gap-2 rounded-full bg-yellow-50 px-4 py-2 text-sm text-yellow-900 border border-yellow-200"
+            class="inline-flex items-center gap-2 rounded-full bg-accent-soft px-4 py-2 text-sm text-accent-ink border border-accent-soft-border"
         >
             <span class="font-semibold">Кредитни консултанти</span>
-            <span class="text-yellow-700">•</span>
+            <span class="text-accent-darkened">•</span>
             <span>Пловдив и онлайн</span>
         </div>
 
@@ -12,11 +12,11 @@
             По-бързо към правилната кредитна оферта
         </h1>
 
-        <p class="mt-4 text-lg text-gray-600">
-            Насочваме ви към подходяща опция според профила ви и помагаме с
+        <p class="mt-4 text-lg text-text-muted">
+            Насочваме ви към правилната опция с подходящ профил ви и помощта ни с
             документацията.
-            <span class="font-medium text-gray-800">
-                Не отпускaме кредити директно.
+            <span class="font-medium text-secondary">
+                Не отпускаме кредити директно.
             </span>
         </p>
 
@@ -24,9 +24,9 @@
             <div
                 v-for="stat in stats"
                 :key="stat.label"
-                class="bg-white rounded-xl border p-4"
+                class="bg-surface rounded-xl border p-4"
             >
-                <div class="text-sm text-gray-500">{{ stat.label }}</div>
+                <div class="text-sm text-text-subtle">{{ stat.label }}</div>
                 <div class="text-xl font-bold">{{ stat.value }}</div>
             </div>
         </div>
@@ -42,8 +42,8 @@
             </a>
         </div>
 
-        <p class="mt-3 text-xs text-gray-500">
-            * Текстът е примерен — смени го с реалното им SLA, за да не ги
+        <p class="mt-3 text-xs text-text-subtle">
+             * Текстът е примерен — смени го с реалното им SLA, за да не ги
             вкараш в обещания.
         </p>
     </div>
@@ -53,26 +53,27 @@
 const routes = window.laravelRoutes || {};
 
 const stats = [
-    { label: "Отговор", value: "в рамките на деня*" },
+    { label: "Оглед", value: "в рамките на дните*" },
     { label: "Процес", value: "ясни стъпки" },
-    { label: "Контакт", value: "телефон + форма" },
+    { label: "Контакти", value: "телефон + форма" },
 ];
 
 const actions = [
     {
         label: "Потребителски кредит",
         url: routes.consumer || "/service/consumer",
-        class: "inline-flex items-center justify-center rounded-xl bg-yellow-500 px-5 py-3 font-semibold text-black hover:bg-yellow-400 transition",
+        class: "inline-flex items-center justify-center rounded-xl bg-accent px-5 py-3 font-semibold text-primary hover:bg-accent-hover transition",
     },
     {
         label: "Ипотечен кредит",
         url: routes.mortgage || "/service/mortgage",
-        class: "inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 font-semibold text-gray-900 border hover:bg-gray-50 transition",
+        class: "inline-flex items-center justify-center rounded-xl bg-surface px-5 py-3 font-semibold text-text border hover:bg-background transition",
     },
     {
         label: "Контакти",
         url: routes.contact || "/contact",
-        class: "inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 font-semibold text-gray-900 border hover:bg-gray-50 transition",
+        class: "inline-flex items-center justify-center rounded-xl bg-surface px-5 py-3 font-semibold text-text border hover:bg-background transition",
     },
 ];
 </script>
+

@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen flex flex-col bg-gray-50">
+    <div class="min-h-screen flex flex-col bg-background">
         <Navbar />
 
         <main class="flex-1">
@@ -14,3 +14,4 @@
 import Navbar from "./components/layout/Navbar.vue";
 import Footer from "./components/layout/Footer.vue";
 </script>
+
