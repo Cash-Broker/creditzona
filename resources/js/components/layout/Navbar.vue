@@ -107,10 +107,10 @@ const navItems = [
     { label: "Ипотечен", url: "/ipotechen-kredit" },
     { label: "Рефинансиране", url: "/refinansirane" },
     { label: "Изкупуване", url: "/izkupuvane-na-zadalzheniya" },
-    { label: "За нас", url: "/za-nas" },
-    { label: "FAQ", url: "/chesto-zadavani-vaprosi" },
+    { label: "За нас", url: "/about" },
+    { label: "FAQ", url: "/faq" },
     { label: "Блог", url: "/blog" },
-    { label: "Контакти", url: "/kontakti" },
+    { label: "Контакти", url: "/contacts" },
 ];
 
 function isActive(url) {
@@ -135,4 +135,3 @@ watch(
     },
 );
 </script>
-

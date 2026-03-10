@@ -18,6 +18,10 @@ class DatabaseSeeder extends Seeder
         \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'boss']);
         \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'agent']);
 
-        $this->call(DemoUsersSeeder::class);
+        $this->call([
+            DemoUsersSeeder::class,
+            FaqSeeder::class,
+            BlogSeeder::class,
+        ]);
     }
 }

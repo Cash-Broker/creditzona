@@ -1,39 +1,90 @@
-<template>
-    <div class="max-w-4xl mx-auto px-4 py-10">
-        <h1
-            class="text-3xl md:text-4xl font-extrabold tracking-tight text-text"
-        >
-            Често задавани въпроси
-        </h1>
-
-        <div class="mt-8 space-y-6">
-            <div
-                v-for="item in faqItems"
-                :key="item.question"
-                class="bg-surface border rounded-2xl p-6 shadow-sm"
+﻿<template>
+    <div class="mx-auto max-w-5xl px-4 py-10 md:py-12">
+        <section class="max-w-3xl">
+            <span
+                class="inline-flex items-center rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
             >
-                <h2 class="text-xl font-bold text-text">
-                    {{ item.question }}
-                </h2>
+                Полезна информация
+            </span>
 
-                <p class="mt-2 text-text-muted leading-7">
-                    {{ item.answer }}
-                </p>
+            <h1
+                class="mt-4 text-3xl font-extrabold tracking-tight text-text md:text-4xl"
+            >
+                Често задавани въпроси
+            </h1>
+
+            <p class="mt-4 text-sm leading-7 text-text-muted sm:text-base">
+                Събрахме най-честите въпроси за кредити, рефинансиране и
+                финансова консултация. Ако не намирате вашия въпрос, свържете
+                се с нас за персонална насока.
+            </p>
+        </section>
+
+        <section class="mt-8 md:mt-10">
+            <div v-if="loading" class="space-y-3">
+                <div
+                    v-for="n in 4"
+                    :key="n"
+                    class="animate-pulse rounded-2xl border border-border bg-surface p-6"
+                >
+                    <div class="h-4 w-2/3 rounded bg-background"></div>
+                    <div class="mt-3 h-3 w-full rounded bg-background"></div>
+                    <div class="mt-2 h-3 w-5/6 rounded bg-background"></div>
+                </div>
             </div>
-        </div>
+
+            <div
+                v-else-if="error"
+                class="rounded-2xl border border-border bg-surface p-5 text-sm text-text-muted"
+            >
+                {{ error }}
+            </div>
+
+            <FaqAccordion v-else-if="faqs.length" :faqs="faqs" />
+
+            <div
+                v-else
+                class="rounded-2xl border border-border bg-surface p-5 text-sm text-text-muted"
+            >
+                В момента няма публикувани въпроси.
+            </div>
+        </section>
     </div>
 </template>
 
 <script setup>
-const faqItems = [
-    {
-        question: "Отпускате ли кредити?",
-        answer: "Не. Ние консултираме и посредничим.",
-    },
-    {
-        question: "Защо избирате ЕГН?",
-        answer: "За предварителна оценка и коректно настроено съотношение.",
-    },
-];
-</script>
+import { onMounted, ref } from "vue";
+import FaqAccordion from "@/components/faq/FaqAccordion.vue";
 
+const faqs = ref([]);
+const loading = ref(true);
+const error = ref("");
+
+async function loadFaqs() {
+    loading.value = true;
+    error.value = "";
+
+    try {
+        const response = await fetch("/api/faqs", {
+            headers: {
+                Accept: "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error("Неуспешно зареждане на често задаваните въпроси.");
+        }
+
+        const payload = await response.json();
+        faqs.value = Array.isArray(payload) ? payload : [];
+    } catch (e) {
+        console.error(e);
+        error.value =
+            "Възникна проблем при зареждането. Моля, опитайте отново след малко.";
+    } finally {
+        loading.value = false;
+    }
+}
+
+onMounted(loadFaqs);
+</script>

@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
+import BlogPage from "@/pages/BlogPage.vue";
+import BlogDetailsPage from "@/pages/BlogDetailsPage.vue";
 
 const routes = [
     {
@@ -6,20 +8,25 @@ const routes = [
         component: () => import("@/pages/HomePage.vue"),
     },
     {
-        path: "/za-nas",
+        path: "/about",
         component: () => import("@/pages/AboutPage.vue"),
     },
     {
-        path: "/kontakti",
+        path: "/contacts",
         component: () => import("@/pages/ContactPage.vue"),
     },
     {
-        path: "/chesto-zadavani-vaprosi",
+        path: "/faq",
+        alias: ["/chesto-zadavani-vaprosi"],
         component: () => import("@/pages/FaqPage.vue"),
     },
     {
         path: "/blog",
-        component: () => import("@/pages/BlogPage.vue"),
+        component: BlogPage,
+    },
+    {
+        path: "/blog/:slug",
+        component: BlogDetailsPage,
     },
     {
         path: "/potrebitelski-kredit",
