@@ -70,23 +70,45 @@
             </header>
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <div class="grid gap-1.5">
-                    <label class="input-label">Сума</label>
+                <div class="grid gap-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <label class="input-label" for="loan-amount"
+                            >Сума</label
+                        >
+                        <span class="amount-value">
+                            {{ formattedAmount }}
+                        </span>
+                    </div>
+
                     <input
-                        v-model="form.amount"
-                        type="number"
-                        placeholder="15000"
-                        class="input"
+                        id="loan-amount"
+                        v-model.number="form.amount"
+                        type="range"
+                        :min="amountMin"
+                        :max="amountMax"
+                        :step="amountStep"
+                        class="credit-range"
+                        :style="creditRangeStyle"
+                        aria-describedby="loan-amount-hint"
                     />
+
+                    <div class="range-labels">
+                        <span>{{ formattedMinAmount }}</span>
+                        <span>{{ formattedMaxAmount }}</span>
+                    </div>
+
+                    <p id="loan-amount-hint" class="text-xs text-text-subtle">
+                        Изберете желаната сума за кредит.
+                    </p>
                 </div>
 
-                <div class="grid gap-1.5">
+                <div class="grid gap-1.5 term-field">
                     <label class="input-label">Срок (месеци)</label>
                     <input
                         v-model="form.term_months"
                         type="number"
                         placeholder="36"
-                        class="input"
+                        class="input input-compact"
                     />
                 </div>
 
@@ -149,8 +171,8 @@
                         class="mt-0.5 text-accent-darkened"
                     />
                     <span>
-                        Използва се само за предварителна оценка и не се
-                        споделя извън процеса по консултация.
+                        Използва се само за предварителна оценка и не се споделя
+                        извън процеса по консултация.
                     </span>
                 </div>
             </div>
@@ -201,17 +223,20 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
+import { reactive, ref, computed } from "vue";
 
 const loading = ref(false);
 const success = ref(false);
+const amountMin = 5000;
+const amountMax = 50000;
+const amountStep = 500;
 
 const form = reactive({
     full_name: "",
     phone: "",
     email: "",
     city: "",
-    amount: "",
+    amount: amountMin,
     term_months: "",
     egn: "",
     monthly_income: "",
@@ -219,6 +244,24 @@ const form = reactive({
     monthly_debt: "",
     consent: false,
 });
+
+const formattedAmount = computed(() => {
+    return `${Number(form.amount).toLocaleString("bg-BG")} €`;
+});
+const formattedMinAmount = computed(() => {
+    return `${amountMin.toLocaleString("bg-BG")} €`;
+});
+const formattedMaxAmount = computed(() => {
+    return `${amountMax.toLocaleString("bg-BG")} €`;
+});
+const amountProgress = computed(() => {
+    const value = Number(form.amount) || amountMin;
+    const clamped = Math.min(amountMax, Math.max(amountMin, value));
+    return ((clamped - amountMin) / (amountMax - amountMin)) * 100;
+});
+const creditRangeStyle = computed(() => ({
+    "--range-progress": `${amountProgress.value}%`,
+}));
 
 async function submitForm() {
     loading.value = true;
@@ -248,7 +291,7 @@ async function submitForm() {
         form.phone = "";
         form.email = "";
         form.city = "";
-        form.amount = "";
+        form.amount = amountMin;
         form.term_months = "";
         form.egn = "";
         form.monthly_income = "";
@@ -262,3 +305,101 @@ async function submitForm() {
     }
 }
 </script>
+
+<style scoped>
+.amount-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #b7791f;
+}
+
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #7c8798;
+    margin-top: 0.2rem;
+}
+
+.credit-range {
+    --range-progress: 0%;
+    --range-active: #d6a11b;
+    --range-track: #e7eaf0;
+
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 9999px;
+    outline: none;
+    cursor: pointer;
+    background: linear-gradient(
+        to right,
+        var(--range-active) 0%,
+        var(--range-active) var(--range-progress),
+        var(--range-track) var(--range-progress),
+        var(--range-track) 100%
+    );
+    transition: background 0.2s ease;
+}
+
+.credit-range:focus-visible {
+    box-shadow: 0 0 0 3px rgba(214, 161, 27, 0.18);
+}
+
+.credit-range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: transparent;
+}
+
+.credit-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 2px solid #d6a11b;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    cursor: pointer;
+    margin-top: -6px;
+    transition: transform 0.15s ease;
+}
+
+.credit-range::-webkit-slider-thumb:hover {
+    transform: scale(1.05);
+}
+
+.credit-range::-moz-range-track {
+    height: 6px;
+    border: none;
+    border-radius: 9999px;
+    background: #e7eaf0;
+}
+
+.credit-range::-moz-range-progress {
+    height: 6px;
+    border: none;
+    border-radius: 9999px;
+    background: #d6a11b;
+}
+
+.credit-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #d6a11b;
+    border-radius: 9999px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    cursor: pointer;
+}
+
+.term-field {
+    align-self: start;
+}
+
+.input-compact {
+    max-width: 270px;
+}
+</style>
