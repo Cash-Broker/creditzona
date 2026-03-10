@@ -29,6 +29,8 @@
     --color-accent-ink: #713f12;
     --color-border-strong: #d1d5db;
     --color-text-subtle: #6b7280;
+
+    --color-footer: #f3f4f6;
 }
 
 @layer base {
@@ -42,5 +44,133 @@
     ::after,
     ::backdrop {
         border-color: var(--color-border);
+    }
+}
+
+@layer components {
+    .form-card {
+        @apply rounded-3xl border border-border bg-surface p-5 sm:p-6;
+        box-shadow: 0 10px 28px -24px rgb(17 24 39 / 0.45);
+    }
+
+    .form-section-head {
+        @apply mb-5;
+    }
+
+    .form-section-marker {
+        @apply mb-3 h-1.5 w-9 rounded-full bg-accent;
+    }
+
+    .form-section-title {
+        @apply text-base font-semibold tracking-tight text-text;
+    }
+
+    .form-section-text {
+        @apply mt-1 text-sm leading-6 text-text-subtle;
+    }
+
+    .input-label {
+        @apply text-sm font-medium text-secondary;
+        letter-spacing: 0.01em;
+    }
+
+    .input {
+        @apply w-full rounded-xl border border-border bg-surface px-4 py-3 text-text outline-none transition-all duration-200;
+        box-shadow: 0 1px 2px rgb(17 24 39 / 0.06);
+    }
+
+    .input::placeholder {
+        color: var(--color-text-subtle);
+    }
+
+    .input:hover {
+        border-color: var(--color-border-strong);
+    }
+
+    .input:focus {
+        border-color: var(--color-accent);
+        background-color: color-mix(
+            in oklab,
+            var(--color-surface) 92%,
+            var(--color-accent-soft) 8%
+        );
+        box-shadow: 0 0 0 4px var(--color-accent-soft), 0 1px 2px rgb(17 24 39 / 0.06);
+    }
+
+    .form-note {
+        @apply mt-2 flex items-start gap-3 rounded-xl border border-accent-soft-border bg-accent-soft px-4 py-3 text-xs leading-5 text-accent-ink;
+    }
+
+    .form-consent {
+        @apply rounded-xl border border-border bg-background p-4;
+    }
+
+    .form-checkbox {
+        @apply mt-0.5 h-5 w-5 rounded-md border-border-strong text-accent focus:ring-4 focus:ring-accent-soft;
+    }
+
+    .primary-button {
+        @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-4 font-semibold text-primary transition-all duration-200;
+        box-shadow: 0 10px 20px -16px rgb(17 24 39 / 0.6);
+    }
+
+    .primary-button:hover:not(:disabled) {
+        @apply bg-accent-hover;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px -18px rgb(17 24 39 / 0.65);
+    }
+
+    .primary-button:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    .primary-button:disabled {
+        @apply cursor-not-allowed opacity-60;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .form-success {
+        @apply mt-4 flex items-start gap-2 rounded-xl border p-3 text-sm leading-6;
+        border-color: color-mix(in oklab, var(--color-success) 30%, white);
+        background-color: color-mix(in oklab, var(--color-success) 12%, white);
+        color: color-mix(in oklab, var(--color-success) 80%, black);
+    }
+
+    .service-card {
+        @apply flex h-full flex-col rounded-3xl border border-border bg-surface p-6 transition-all duration-200;
+        box-shadow: 0 8px 24px -22px rgb(17 24 39 / 0.42);
+    }
+
+    .service-card:hover {
+        border-color: var(--color-border-strong);
+        transform: translateY(-2px);
+        box-shadow: 0 18px 30px -24px rgb(17 24 39 / 0.5);
+    }
+
+    .service-card-title {
+        @apply text-lg font-semibold leading-7 text-text;
+    }
+
+    .service-card-text {
+        @apply mt-3 text-sm leading-6 text-text-muted;
+    }
+
+    .service-card-cta {
+        @apply mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-darkened transition-transform duration-200;
+    }
+
+    .service-card:hover .service-card-cta {
+        transform: translateX(2px);
+    }
+
+    .content-section {
+        @apply rounded-3xl border border-border bg-surface p-6 sm:p-7;
+        box-shadow: 0 8px 24px -22px rgb(17 24 39 / 0.42);
+    }
+
+    .highlighted-info-block {
+        @apply rounded-3xl border border-accent-soft-border bg-accent-soft p-6 sm:p-7;
+        box-shadow: 0 8px 24px -22px rgb(17 24 39 / 0.2);
     }
 }

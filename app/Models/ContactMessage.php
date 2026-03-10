@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ContactMessage extends Model
+{
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'full_name',
+        'phone',
+        'email',
+        'subject',
+        'message',
+    ];
+}

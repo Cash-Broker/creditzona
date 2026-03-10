@@ -1,201 +1,264 @@
 <template>
-    <form class="mt-5 grid gap-4">
-        <input type="hidden" name="service_type" value="" />
-        <input type="hidden" name="source" value="" />
-        <input type="hidden" name="utm_source" value="" />
-        <input type="hidden" name="utm_campaign" value="" />
-        <input type="hidden" name="utm_medium" value="" />
-        <input type="hidden" name="gclid" value="" />
+    <form @submit.prevent="submitForm" class="mt-6 space-y-7">
+        <section class="form-card">
+            <header class="form-section-head">
+                <div class="form-section-marker"></div>
+                <h3 class="form-section-title">Основни данни</h3>
+                <p class="form-section-text">
+                    Попълнете най-важната информация, за да започнем
+                    консултацията.
+                </p>
+            </header>
 
-        <div class="grid gap-1.5">
-            <label for="full_name" class="text-sm font-medium text-secondary">
-                Име и фамилия
-            </label>
-            <input
-                id="full_name"
-                name="full_name"
-                type="text"
-                placeholder="Иван Иванов"
-                class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-                required
-            />
-        </div>
+            <div class="grid gap-4">
+                <div class="grid gap-1.5">
+                    <label class="input-label">Име и фамилия</label>
+                    <input
+                        v-model="form.full_name"
+                        type="text"
+                        placeholder="Иван Иванов"
+                        class="input"
+                        autocomplete="name"
+                        required
+                    />
+                </div>
 
-        <div class="grid gap-1.5">
-            <label for="phone" class="text-sm font-medium text-secondary">
-                Телефон
-            </label>
-            <input
-                id="phone"
-                name="phone"
-                type="text"
-                placeholder="08XXXXXXXX"
-                class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-                required
-            />
-        </div>
+                <div class="grid gap-1.5">
+                    <label class="input-label">Телефон</label>
+                    <input
+                        v-model="form.phone"
+                        type="text"
+                        placeholder="08XXXXXXXX"
+                        class="input"
+                        inputmode="tel"
+                        autocomplete="tel"
+                        required
+                    />
+                </div>
 
-        <div class="grid gap-1.5">
-            <label for="email" class="text-sm font-medium text-secondary">
-                Имейл (по желание)
-            </label>
-            <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="example@email.com"
-                class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-            />
-        </div>
+                <div class="grid gap-1.5">
+                    <label class="input-label">Имейл (по желание)</label>
+                    <input
+                        v-model="form.email"
+                        type="email"
+                        placeholder="example@email.com"
+                        class="input"
+                        autocomplete="email"
+                    />
+                </div>
 
-        <div class="grid gap-1.5">
-            <label for="city" class="text-sm font-medium text-secondary">
-                Град (по желание)
-            </label>
-            <input
-                id="city"
-                name="city"
-                type="text"
-                placeholder="Пловдив"
-                class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-            />
-        </div>
-
-        <div class="grid sm:grid-cols-2 gap-4">
-            <div class="grid gap-1.5">
-                <label for="amount" class="text-sm font-medium text-secondary">
-                    Сума (по желание)
-                </label>
-                <input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    min="0"
-                    placeholder="15000"
-                    class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-                />
+                <div class="grid gap-1.5">
+                    <label class="input-label">Град (по желание)</label>
+                    <input
+                        v-model="form.city"
+                        type="text"
+                        placeholder="Пловдив"
+                        class="input"
+                        autocomplete="address-level2"
+                    />
+                </div>
             </div>
+        </section>
 
-            <div class="grid gap-1.5">
-                <label
-                    for="term_months"
-                    class="text-sm font-medium text-secondary"
-                >
-                    Срок в месеци (по желание)
-                </label>
-                <input
-                    id="term_months"
-                    name="term_months"
-                    type="number"
-                    min="1"
-                    placeholder="36"
-                    class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-                />
+        <section class="form-card">
+            <header class="form-section-head">
+                <div class="form-section-marker"></div>
+                <h3 class="form-section-title">Параметри</h3>
+                <p class="form-section-text">
+                    Не е задължително, но помага за по-точна ориентация.
+                </p>
+            </header>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid gap-1.5">
+                    <label class="input-label">Сума</label>
+                    <input
+                        v-model="form.amount"
+                        type="number"
+                        placeholder="15000"
+                        class="input"
+                    />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <label class="input-label">Срок (месеци)</label>
+                    <input
+                        v-model="form.term_months"
+                        type="number"
+                        placeholder="36"
+                        class="input"
+                    />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <label class="input-label">Месечен доход</label>
+                    <input
+                        v-model="form.monthly_income"
+                        type="number"
+                        placeholder="2500"
+                        class="input"
+                    />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <label class="input-label">Заетост</label>
+                    <select v-model="form.employment_type" class="input">
+                        <option value="">-- Изберете --</option>
+                        <option value="contract">Трудов договор</option>
+                        <option value="self_employed">Самоосигуряващ</option>
+                        <option value="pensioner">Пенсионер</option>
+                        <option value="unemployed">Безработен</option>
+                    </select>
+                </div>
+
+                <div class="grid gap-1.5 sm:col-span-2">
+                    <label class="input-label">Месечни задължения</label>
+                    <input
+                        v-model="form.monthly_debt"
+                        type="number"
+                        placeholder="300"
+                        class="input"
+                    />
+                </div>
             </div>
-        </div>
+        </section>
 
-        <div class="border-t pt-4">
+        <section class="form-card">
+            <header class="form-section-head">
+                <div class="form-section-marker"></div>
+                <h3 class="form-section-title">Идентификация</h3>
+                <p class="form-section-text">
+                    Нужна е за предварителна оценка и по-точно насочване.
+                </p>
+            </header>
+
             <div class="grid gap-1.5">
-                <label for="egn" class="text-sm font-medium text-secondary">
-                    ЕГН (задължително)
-                </label>
+                <label class="input-label">ЕГН</label>
                 <input
-                    id="egn"
-                    name="egn"
+                    v-model="form.egn"
                     type="text"
                     maxlength="10"
                     placeholder="XXXXXXXXXX"
-                    class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                    class="input"
                     required
                 />
-                <small class="text-xs text-text-subtle">
-                    Използва се за предварителна оценка и подготовка на оферта.
-                </small>
-            </div>
-        </div>
 
-        <div class="grid sm:grid-cols-2 gap-4">
-            <div class="grid gap-1.5">
-                <label
-                    for="monthly_income"
-                    class="text-sm font-medium text-secondary"
-                >
-                    Месечен доход (по желание)
+                <div class="form-note">
+                    <font-awesome-icon
+                        icon="fa-solid fa-building-columns"
+                        class="mt-0.5 text-accent-darkened"
+                    />
+                    <span>
+                        Използва се само за предварителна оценка и не се
+                        споделя извън процеса по консултация.
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-card">
+            <div class="form-consent">
+                <label class="flex items-start gap-3 text-sm text-secondary">
+                    <input
+                        v-model="form.consent"
+                        type="checkbox"
+                        class="form-checkbox"
+                        required
+                    />
+                    <span class="leading-6">
+                        Съгласен/а съм данните ми да бъдат използвани за целите
+                        на консултацията.
+                    </span>
                 </label>
-                <input
-                    id="monthly_income"
-                    name="monthly_income"
-                    type="number"
-                    min="0"
-                    placeholder="2500"
-                    class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-                />
             </div>
 
-            <div class="grid gap-1.5">
-                <label
-                    for="employment_type"
-                    class="text-sm font-medium text-secondary"
-                >
-                    Заетост (по желание)
-                </label>
-                <select
-                    id="employment_type"
-                    name="employment_type"
-                    class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft bg-surface"
-                >
-                    <option value="">-- Изберете --</option>
-                    <option value="contract">
-                        Трудов договор
-                    </option>
-                    <option value="self_employed">
-                        Самоосигуряващ
-                    </option>
-                    <option value="pensioner">Пенсионер</option>
-                    <option value="unemployed">Безработен</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="grid gap-1.5">
-            <label
-                for="monthly_debt"
-                class="text-sm font-medium text-secondary"
+            <button
+                type="submit"
+                :disabled="loading"
+                :aria-busy="loading ? 'true' : 'false'"
+                class="primary-button mt-5 cursor-pointer"
             >
-                Месечни задължения (по желание)
-            </label>
-            <input
-                id="monthly_debt"
-                name="monthly_debt"
-                type="number"
-                min="0"
-                placeholder="300"
-                class="w-full rounded-xl border border-border-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft"
-            />
-        </div>
+                <font-awesome-icon icon="fa-solid fa-paper-plane" />
+                <span v-if="!loading">Изпрати запитване</span>
+                <span v-else>Изпращане...</span>
+            </button>
 
-        <label class="flex items-start gap-3 text-sm text-secondary">
-            <input
-                type="checkbox"
-                name="consent"
-                value="1"
-                class="mt-1 h-4 w-4 rounded border-border-strong text-accent focus:ring-accent-hover"
-                required
-            />
-            <span>
-                Съгласен/а съм, че данните ми да
-                бъдат обработени за целите на
-                консултацията.
-            </span>
-        </label>
+            <p class="mt-3 text-center text-xs text-text-subtle">
+                Ще се свържем с вас възможно най-скоро.
+            </p>
 
-        <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-xl bg-accent px-5 py-3 font-semibold text-primary transition hover:bg-accent-hover"
-        >
-            Изпрати
-        </button>
+            <div v-if="success" class="form-success">
+                <font-awesome-icon
+                    icon="fa-solid fa-circle-check"
+                    class="mt-0.5"
+                />
+                <span>
+                    Запитването е изпратено успешно. Ще се свържем с вас скоро.
+                </span>
+            </div>
+        </section>
     </form>
 </template>
 
-<script setup></script>
+<script setup>
+import { reactive, ref } from "vue";
+
+const loading = ref(false);
+const success = ref(false);
+
+const form = reactive({
+    full_name: "",
+    phone: "",
+    email: "",
+    city: "",
+    amount: "",
+    term_months: "",
+    egn: "",
+    monthly_income: "",
+    employment_type: "",
+    monthly_debt: "",
+    consent: false,
+});
+
+async function submitForm() {
+    loading.value = true;
+    success.value = false;
+
+    try {
+        const response = await fetch("/leads", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN":
+                    document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content") || "",
+                Accept: "application/json",
+            },
+            body: JSON.stringify(form),
+        });
+
+        if (!response.ok) {
+            throw new Error("Грешка при изпращане на формата.");
+        }
+
+        success.value = true;
+
+        form.full_name = "";
+        form.phone = "";
+        form.email = "";
+        form.city = "";
+        form.amount = "";
+        form.term_months = "";
+        form.egn = "";
+        form.monthly_income = "";
+        form.employment_type = "";
+        form.monthly_debt = "";
+        form.consent = false;
+    } catch (e) {
+        console.error(e);
+    } finally {
+        loading.value = false;
+    }
+}
+</script>

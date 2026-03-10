@@ -11,7 +11,15 @@
 </template>
 
 <script setup>
+import { onMounted } from "vue";
 import Navbar from "./components/layout/Navbar.vue";
 import Footer from "./components/layout/Footer.vue";
-</script>
+import { getBlogs } from "@/composables/useBlogStore";
 
+onMounted(() => {
+    // Warm the blog cache in the background to reduce first navigation latency.
+    getBlogs().catch(() => {
+        // Ignore prefetch errors to keep app boot non-blocking.
+    });
+});
+</script>
