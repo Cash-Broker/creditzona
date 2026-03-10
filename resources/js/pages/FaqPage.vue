@@ -1,7 +1,7 @@
 <template>
     <div class="max-w-4xl mx-auto px-4 py-10">
         <h1
-            class="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900"
+            class="text-3xl md:text-4xl font-extrabold tracking-tight text-text"
         >
             Често задавани въпроси
         </h1>
@@ -10,13 +10,13 @@
             <div
                 v-for="item in faqItems"
                 :key="item.question"
-                class="bg-white border rounded-2xl p-6 shadow-sm"
+                class="bg-surface border rounded-2xl p-6 shadow-sm"
             >
-                <h2 class="text-xl font-bold text-gray-900">
+                <h2 class="text-xl font-bold text-text">
                     {{ item.question }}
                 </h2>
 
-                <p class="mt-2 text-gray-600 leading-7">
+                <p class="mt-2 text-text-muted leading-7">
                     {{ item.answer }}
                 </p>
             </div>
@@ -31,8 +31,9 @@ const faqItems = [
         answer: "Не. Ние консултираме и посредничим.",
     },
     {
-        question: "Защо искате ЕГН?",
-        answer: "За предварителна оценка и коректно насочване.",
+        question: "Защо избирате ЕГН?",
+        answer: "За предварителна оценка и коректно настроено съотношение.",
     },
 ];
 </script>
+
