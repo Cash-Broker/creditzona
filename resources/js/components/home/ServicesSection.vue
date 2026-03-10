@@ -7,11 +7,11 @@
                 v-for="service in services"
                 :key="service.title"
                 :href="service.url"
-                class="bg-white border rounded-2xl p-6 hover:shadow-sm transition"
+                class="bg-surface border rounded-2xl p-6 hover:shadow-sm transition"
             >
                 <h3 class="text-lg font-semibold">{{ service.title }}</h3>
-                <p class="text-gray-600 mt-2">{{ service.description }}</p>
-                <div class="mt-4 text-yellow-700 font-semibold">
+                <p class="text-text-muted mt-2">{{ service.description }}</p>
+                <div class="mt-4 text-accent-darkened font-semibold">
                     Виж повече →
                 </div>
             </a>
@@ -25,12 +25,12 @@ const routes = window.laravelRoutes || {};
 const services = [
     {
         title: "Потребителски кредит",
-        description: "Бърза консултация и насочване.",
+        description: "Бърза консултация и настройване.",
         url: routes.consumer || "/service/consumer",
     },
     {
         title: "Ипотечен кредит",
-        description: "Път през документите и процеса.",
+        description: "Път към вашето идеално жилище.",
         url: routes.mortgage || "/service/mortgage",
     },
     {
@@ -40,3 +40,4 @@ const services = [
     },
 ];
 </script>
+

@@ -1,9 +1,9 @@
 <template>
-    <header class="bg-white shadow sticky top-0 z-50">
+    <header class="bg-surface shadow sticky top-0 z-50">
         <div
             class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between"
         >
-            <RouterLink to="/" class="text-xl font-bold text-yellow-600">
+            <RouterLink to="/" class="text-xl font-bold text-accent-darkened">
                 КредитЗона
             </RouterLink>
 
@@ -22,7 +22,7 @@
             <!-- Mobile burger button -->
             <button
                 type="button"
-                class="lg:hidden inline-flex items-center justify-center rounded-xl border border-gray-300 p-2 text-gray-700 hover:bg-gray-50 transition"
+                class="lg:hidden inline-flex items-center justify-center rounded-xl border border-border-strong p-2 text-secondary hover:bg-background transition"
                 @click="isMobileMenuOpen = !isMobileMenuOpen"
                 :aria-expanded="isMobileMenuOpen ? 'true' : 'false'"
                 aria-label="Отвори менюто"
@@ -72,7 +72,7 @@
         >
             <div
                 v-if="isMobileMenuOpen"
-                class="lg:hidden border-t border-gray-200 bg-white"
+                class="lg:hidden border-t border-border bg-surface"
             >
                 <nav class="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-2">
                     <RouterLink
@@ -82,8 +82,8 @@
                         :class="[
                             'rounded-xl px-4 py-3 text-sm transition',
                             isActive(item.url)
-                                ? 'bg-yellow-50 text-yellow-700 font-semibold'
-                                : 'text-gray-700 hover:bg-gray-50',
+                                ? 'bg-accent-soft text-accent-darkened font-semibold'
+                                : 'text-secondary hover:bg-background',
                         ]"
                         @click="closeMobileMenu"
                     >
@@ -119,8 +119,8 @@ function isActive(url) {
 
 function getLinkClasses(url) {
     return [
-        "transition-colors hover:text-yellow-600",
-        isActive(url) ? "text-yellow-600 font-semibold" : "text-gray-700",
+        "transition-colors hover:text-accent-darkened",
+        isActive(url) ? "text-accent-darkened font-semibold" : "text-secondary",
     ];
 }
 
@@ -135,3 +135,4 @@ watch(
     },
 );
 </script>
+
