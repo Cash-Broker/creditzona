@@ -146,7 +146,10 @@
         </section>
 
         <section class="mt-16">
-            <QuickConsultationCard />
+            <QuickConsultationCard
+                initial-credit-type="mortgage"
+                :lock-credit-type="true"
+            />
         </section>
     </div>
 </template>
