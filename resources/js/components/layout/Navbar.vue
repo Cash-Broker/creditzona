@@ -106,7 +106,7 @@ const navItems = [
     { label: "Потребителски", url: "/potrebitelski-kredit" },
     { label: "Ипотечен", url: "/ipotechen-kredit" },
     { label: "Рефинансиране", url: "/refinansirane" },
-    { label: "Изкупуване", url: "/izkupuvane-na-zadalzheniya" },
+    // { label: "Изкупуване", url: "/izkupuvane-na-zadalzheniya" },
     { label: "За нас", url: "/about" },
     { label: "FAQ", url: "/faq" },
     { label: "Блог", url: "/blog" },
