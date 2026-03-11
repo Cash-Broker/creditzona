@@ -133,7 +133,7 @@ const actions = [
         label: "Потребителски кредит",
         url: "/potrebitelski-kredit",
         primary: true,
-        class: "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-primary shadow-sm transition hover:bg-accent-hover hover:shadow-md",
+        class: "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-surface shadow-sm transition hover:bg-accent-hover hover:shadow-md",
     },
     {
         label: "Ипотечен кредит",
@@ -149,3 +149,5 @@ const actions = [
     },
 ];
 </script>
+
+

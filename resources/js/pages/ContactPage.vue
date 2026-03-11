@@ -4,19 +4,19 @@
             <span
                 class="inline-flex items-center rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
             >
-                Ð’Ñ€ÑŠÐ·ÐºÐ° Ñ Ð½Ð°Ñ
+                Връзка с нас
             </span>
 
             <h1
                 class="mt-4 text-3xl font-extrabold tracking-tight text-text md:text-4xl"
             >
-                ÐšÐ¾Ð½Ñ‚Ð°ÐºÑ‚Ð¸
+                Контакти
             </h1>
 
             <p class="mt-4 text-sm leading-7 text-text-muted sm:text-base">
-                ÐÐºÐ¾ Ð¸Ð¼Ð°Ñ‚Ðµ Ð²ÑŠÐ¿Ñ€Ð¾ÑÐ¸ Ð¸Ð»Ð¸ Ð½ÑƒÐ¶Ð´Ð° Ð¾Ñ‚ ÐºÐ¾Ð½ÑÑƒÐ»Ñ‚Ð°Ñ†Ð¸Ñ, Ð¸Ð·Ð¿Ñ€Ð°Ñ‚ÐµÑ‚Ðµ ÑÑŠÐ¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ
-                Ñ‡Ñ€ÐµÐ· Ñ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð°. Ð©Ðµ ÑÐµ ÑÐ²ÑŠÑ€Ð¶ÐµÐ¼ Ñ Ð²Ð°Ñ Ñ Ð½Ð°ÑÐ¾ÐºÐ° ÑÐ¿Ñ€ÑÐ¼Ð¾ ÐºÐ¾Ð½ÐºÑ€ÐµÑ‚Ð½Ð¸Ñ
-                ÑÐ»ÑƒÑ‡Ð°Ð¹.
+                Ако имате въпроси или нужда от консултация, изпратете съобщение
+                чрез формата. Ще се свържем с вас с насока спрямо конкретния
+                случай.
             </p>
         </section>
 
@@ -24,12 +24,12 @@
             <aside class="space-y-4">
                 <div class="content-section">
                     <h2 class="text-xl font-semibold text-text">
-                        Ð˜Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ Ð·Ð° ÐºÐ¾Ð½Ñ‚Ð°ÐºÑ‚
+                        Информация за контакт
                     </h2>
 
                     <p class="mt-3 text-sm leading-7 text-text-muted">
-                        Ð¡Ð²ÑŠÑ€Ð¶ÐµÑ‚Ðµ ÑÐµ Ñ Ð½Ð°Ñ Ð´Ð¸Ñ€ÐµÐºÑ‚Ð½Ð¾ Ð¿Ð¾ Ñ‚ÐµÐ»ÐµÑ„Ð¾Ð½ Ð¸Ð»Ð¸ Ð¸Ð¼ÐµÐ¹Ð», Ð¸Ð»Ð¸
-                        Ð¸Ð·Ð¿Ð¾Ð»Ð·Ð²Ð°Ð¹Ñ‚Ðµ Ñ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð° Ð·Ð° Ð¾Ð±Ñ‰Ð¾ Ð·Ð°Ð¿Ð¸Ñ‚Ð²Ð°Ð½Ðµ.
+                        Свържете се с нас директно по телефон или имейл, или
+                        използвайте формата за общо запитване.
                     </p>
                 </div>
 
@@ -43,7 +43,7 @@
                     </div>
 
                     <h3 class="mt-3 text-base font-semibold text-text">
-                        ÐÐ´Ñ€ÐµÑ
+                        Адрес
                     </h3>
 
                     <p class="mt-2 text-sm text-text-muted">{{ city }}</p>
@@ -55,7 +55,7 @@
                         rel="noopener noreferrer"
                         class="mt-4 inline-flex items-center gap-2 rounded-lg border border-accent-soft-border bg-accent-soft px-3 py-2 text-sm font-medium text-accent-darkened transition-colors hover:text-accent-ink"
                     >
-                        Ð’Ð¸Ð¶ Ð² Google Maps
+                        Виж в Google Maps
                     </a>
                 </div>
 
@@ -69,7 +69,7 @@
                     </div>
 
                     <h3 class="mt-3 text-base font-semibold text-text">
-                        Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½
+                        Телефон
                     </h3>
 
                     <div class="mt-2 space-y-1.5">
@@ -94,7 +94,7 @@
                     </div>
 
                     <h3 class="mt-3 text-base font-semibold text-text">
-                        Ð˜Ð¼ÐµÐ¹Ð»
+                        Имейл
                     </h3>
 
                     <a
@@ -115,7 +115,7 @@
                     </div>
 
                     <h3 class="mt-3 text-base font-semibold text-text">
-                        Ð Ð°Ð±Ð¾Ñ‚Ð½Ð¾ Ð²Ñ€ÐµÐ¼Ðµ
+                        Работно време
                     </h3>
 
                     <p class="mt-2 text-sm text-text-muted">
@@ -134,13 +134,13 @@
             >
                 <div class="grid gap-4">
                     <div class="grid gap-1.5">
-                        <label class="input-label">Ð˜Ð¼Ðµ Ð¸ Ñ„Ð°Ð¼Ð¸Ð»Ð¸Ñ</label>
+                        <label class="input-label">Име и фамилия</label>
 
                         <input
                             v-model="form.full_name"
                             type="text"
                             class="input"
-                            placeholder="Ð˜Ð²Ð°Ð½ Ð˜Ð²Ð°Ð½Ð¾Ð²"
+                            placeholder="Иван Иванов"
                             required
                         />
 
@@ -154,7 +154,7 @@
 
                     <div class="grid gap-1.5 sm:grid-cols-2 sm:gap-4">
                         <div class="grid gap-1.5">
-                            <label class="input-label">Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½</label>
+                            <label class="input-label">Телефон</label>
 
                             <input
                                 v-model="form.phone"
@@ -173,7 +173,7 @@
                         </div>
 
                         <div class="grid gap-1.5">
-                            <label class="input-label">Ð˜Ð¼ÐµÐ¹Ð»</label>
+                            <label class="input-label">Имейл</label>
 
                             <input
                                 v-model="form.email"
@@ -193,12 +193,12 @@
                     </div>
 
                     <div class="grid gap-1.5">
-                        <label class="input-label">Ð¡ÑŠÐ¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ</label>
+                        <label class="input-label">Съобщение</label>
 
                         <textarea
                             v-model="form.message"
                             class="input min-h-36 resize-y"
-                            placeholder="ÐžÐ¿Ð¸ÑˆÐµÑ‚Ðµ Ð½Ð°ÐºÑ€Ð°Ñ‚ÐºÐ¾ Ð²Ð°ÑˆÐ°Ñ‚Ð° ÑÐ¸Ñ‚ÑƒÐ°Ñ†Ð¸Ñ Ð¸ ÐºÐ°ÐºÐ²Ð° Ð½Ð°ÑÐ¾ÐºÐ° Ñ‚ÑŠÑ€ÑÐ¸Ñ‚Ðµ."
+                            placeholder="Опишете накратко вашата ситуация и каква насока търсите."
                             required
                         ></textarea>
 
@@ -219,7 +219,7 @@
                 </p>
 
                 <div v-if="success" class="form-success">
-                    Ð¡ÑŠÐ¾Ð±Ñ‰ÐµÐ½Ð¸ÐµÑ‚Ð¾ Ð±ÐµÑˆÐµ Ð¸Ð·Ð¿Ñ€Ð°Ñ‚ÐµÐ½Ð¾ ÑƒÑÐ¿ÐµÑˆÐ½Ð¾.
+                    Съобщението беше изпратено успешно.
                 </div>
 
                 <button
@@ -227,8 +227,8 @@
                     class="primary-button cursor-pointer"
                     :disabled="loading"
                 >
-                    <span v-if="loading">Ð˜Ð·Ð¿Ñ€Ð°Ñ‰Ð°Ð½Ðµ...</span>
-                    <span v-else>Ð˜Ð·Ð¿Ñ€Ð°Ñ‚Ð¸ ÑÑŠÐ¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ</span>
+                    <span v-if="loading">Изпращане...</span>
+                    <span v-else>Изпрати съобщение</span>
                 </button>
             </form>
         </section>
