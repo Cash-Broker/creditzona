@@ -55,6 +55,7 @@
                         class="input"
                         autocomplete="off"
                         required
+                        :disabled="lockCreditType"
                     >
                         <option value="" disabled>Изберете</option>
                         <option value="consumer">Потребителски кредит</option>
@@ -129,6 +130,43 @@
                 </div>
             </div>
 
+            <transition name="fade-slide">
+                <div
+                    v-if="isMortgage"
+                    class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2"
+                >
+                    <div class="field">
+                        <label class="field-label" for="property-type">
+                            Вид имот
+                        </label>
+                        <select
+                            id="property-type"
+                            v-model="form.property_type"
+                            class="input"
+                            :required="isMortgage"
+                        >
+                            <option value="" disabled>Изберете</option>
+                            <option value="house">Къща</option>
+                            <option value="apartment">Апартамент</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="property-location">
+                            Местонахождение на имота
+                        </label>
+                        <input
+                            id="property-location"
+                            v-model="form.property_location"
+                            type="text"
+                            placeholder="Например: Пловдив"
+                            class="input"
+                            :required="isMortgage"
+                        />
+                    </div>
+                </div>
+            </transition>
+
             <div class="mt-5">
                 <button
                     type="submit"
@@ -163,10 +201,23 @@
 <script setup>
 import { useLeadForm } from "../../composables/useLeadForm";
 
+const props = defineProps({
+    initialCreditType: {
+        type: String,
+        default: "",
+    },
+    lockCreditType: {
+        type: Boolean,
+        default: false,
+    },
+});
+
 const {
     form,
     loading,
     success,
+    isMortgage,
+    lockCreditType,
     amountMin,
     amountMax,
     amountStep,
@@ -175,7 +226,10 @@ const {
     formattedMaxAmount,
     creditRangeStyle,
     submitForm,
-} = useLeadForm();
+} = useLeadForm({
+    initialCreditType: props.initialCreditType,
+    lockCreditType: props.lockCreditType,
+});
 </script>
 
 <style scoped>
@@ -198,7 +252,11 @@ const {
 .credit-range {
     --range-progress: 0%;
     --range-active: var(--color-accent);
-    --range-track: color-mix(in oklab, var(--color-accent-soft) 65%, var(--color-surface) 35%);
+    --range-track: color-mix(
+        in oklab,
+        var(--color-accent-soft) 65%,
+        var(--color-surface) 35%
+    );
 
     -webkit-appearance: none;
     appearance: none;
@@ -241,7 +299,12 @@ const {
     background: linear-gradient(
         180deg,
         var(--color-surface) 0%,
-        color-mix(in oklab, var(--color-background) 72%, var(--color-surface) 28%) 100%
+        color-mix(
+                in oklab,
+                var(--color-background) 72%,
+                var(--color-surface) 28%
+            )
+            100%
     );
     border: 4px solid var(--color-accent);
     box-shadow:
@@ -283,7 +346,12 @@ const {
     background: linear-gradient(
         180deg,
         var(--color-surface) 0%,
-        color-mix(in oklab, var(--color-background) 72%, var(--color-surface) 28%) 100%
+        color-mix(
+                in oklab,
+                var(--color-background) 72%,
+                var(--color-surface) 28%
+            )
+            100%
     );
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
     cursor: pointer;
@@ -310,7 +378,12 @@ const {
     background: linear-gradient(
         180deg,
         var(--color-surface) 0%,
-        color-mix(in oklab, var(--color-background) 60%, var(--color-surface) 40%) 100%
+        color-mix(
+                in oklab,
+                var(--color-background) 60%,
+                var(--color-surface) 40%
+            )
+            100%
     );
     padding: 0 14px;
     font-size: 0.95rem;
@@ -337,6 +410,16 @@ const {
         0 0 0 4px color-mix(in oklab, var(--color-accent) 15%, white),
         0 4px 14px rgba(15, 23, 42, 0.05);
     transform: translateY(-1px);
+}
+
+.input:disabled {
+    opacity: 0.72;
+    cursor: not-allowed;
+    background: color-mix(
+        in oklab,
+        var(--color-background) 75%,
+        var(--color-surface) 25%
+    );
 }
 
 .cta-button {
