@@ -5,6 +5,7 @@ import router from "./router";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 import {
     faPhone,
     faFileLines,
@@ -17,6 +18,8 @@ import {
     faLocationDot,
     faEnvelope,
     faClock,
+    faCheck,
+    faRoute,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -31,6 +34,8 @@ library.add(
     faLocationDot,
     faEnvelope,
     faClock,
+    faCheck,
+    faRoute,
 );
 
 const app = createApp(App);

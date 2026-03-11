@@ -1,10 +1,11 @@
 <template>
     <div class="max-w-6xl mx-auto px-4 py-10">
-        <HeroSection />
+        <!-- <HeroSection /> -->
 
-        <div class="mt-12 grid items-start gap-8 lg:grid-cols-[1fr_1fr]">
+        <QuickConsultationCard class="mt-5 relative z-20" />
+
+        <div class="mt-12">
             <LeadInfo />
-            <QuickConsultationCard />
         </div>
 
         <ServicesSection class="mt-20" />
