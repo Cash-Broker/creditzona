@@ -14,6 +14,8 @@ class Lead extends Model
         'email',
         'city',
         'amount',
+        'property_type',
+        'property_location',
         'status',
         'source',
         'utm_source',

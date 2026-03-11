@@ -36,7 +36,11 @@
             <div
                 class="rounded-[28px] border border-white/70 bg-white/95 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur"
             >
-                <LeadFormCompact horizontal />
+                <LeadFormCompact
+                    horizontal
+                    :initial-credit-type="initialCreditType"
+                    :lock-credit-type="lockCreditType"
+                />
             </div>
         </div>
     </section>
@@ -44,5 +48,15 @@
 
 <script setup>
 import LeadFormCompact from "./LeadFormCompact.vue";
-</script>
 
+const props = defineProps({
+    initialCreditType: {
+        type: String,
+        default: "",
+    },
+    lockCreditType: {
+        type: Boolean,
+        default: false,
+    },
+});
+</script>

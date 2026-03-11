@@ -18,6 +18,10 @@ return new class extends Migration {
             $table->string('city');
             $table->unsignedInteger('amount');
 
+            // Mortgage only
+            $table->string('property_type')->nullable(); // house|apartment
+            $table->string('property_location')->nullable();
+
             $table->string('source')->nullable();
             $table->string('utm_source')->nullable();
             $table->string('utm_campaign')->nullable();
