@@ -1,28 +1,49 @@
 <template>
-    <header class="bg-surface shadow sticky top-0 z-50">
+    <header
+        class="sticky top-0 z-50 border-b border-border/80 bg-surface/90 backdrop-blur-md"
+    >
         <div
-            class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between"
+            class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 lg:py-5"
         >
-            <RouterLink to="/" class="text-xl font-bold text-accent-darkened">
-                КредитЗона
+            <!-- Logo -->
+            <RouterLink
+                to="/"
+                class="flex shrink-0 items-center transition-opacity hover:opacity-90"
+            >
+                <img
+                    :src="logo"
+                    alt="Кредит Зона"
+                    class="h-14 w-auto lg:h-16"
+                />
             </RouterLink>
 
             <!-- Desktop navigation -->
-            <nav class="hidden lg:flex items-center gap-6 text-sm">
-                <RouterLink
-                    v-for="item in navItems"
-                    :key="item.label"
-                    :to="item.url"
-                    :class="getLinkClasses(item.url)"
+            <div class="hidden items-center gap-3 lg:flex">
+                <nav
+                    class="flex items-center gap-1 rounded-full border border-border bg-background/80 p-1.5"
                 >
-                    {{ item.label }}
-                </RouterLink>
-            </nav>
+                    <RouterLink
+                        v-for="item in navItems"
+                        :key="item.label"
+                        :to="item.url"
+                        :class="getDesktopLinkClasses(item.url)"
+                    >
+                        {{ item.label }}
+                    </RouterLink>
+                </nav>
 
-            <!-- Mobile burger button -->
+                <RouterLink
+                    to="/contacts"
+                    class="inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-surface shadow-[0_10px_20px_-14px_rgba(17,24,39,0.6)] transition-all duration-200 hover:bg-accent-hover hover:-translate-y-[1px]"
+                >
+                    Безплатна консултация
+                </RouterLink>
+            </div>
+
+            <!-- Mobile burger -->
             <button
                 type="button"
-                class="lg:hidden inline-flex items-center justify-center rounded-xl border border-border-strong p-2 text-secondary hover:bg-background transition"
+                class="inline-flex items-center justify-center rounded-2xl border border-border-strong bg-surface p-2.5 text-secondary transition hover:border-accent-soft-border hover:bg-accent-soft hover:text-accent-darkened lg:hidden"
                 @click="isMobileMenuOpen = !isMobileMenuOpen"
                 :aria-expanded="isMobileMenuOpen ? 'true' : 'false'"
                 aria-label="Отвори менюто"
@@ -72,24 +93,33 @@
         >
             <div
                 v-if="isMobileMenuOpen"
-                class="lg:hidden border-t border-border bg-surface"
+                class="border-t border-border bg-surface/95 backdrop-blur lg:hidden"
             >
-                <nav class="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-2">
-                    <RouterLink
-                        v-for="item in navItems"
-                        :key="`mobile-${item.label}`"
-                        :to="item.url"
-                        :class="[
-                            'rounded-xl px-4 py-3 text-sm transition',
-                            isActive(item.url)
-                                ? 'bg-accent-soft text-accent-darkened font-semibold'
-                                : 'text-secondary hover:bg-background',
-                        ]"
-                        @click="closeMobileMenu"
+                <div class="mx-auto max-w-6xl px-4 py-4">
+                    <nav
+                        class="rounded-[28px] border border-border bg-background p-3 shadow-[0_12px_30px_-20px_rgba(17,24,39,0.35)]"
                     >
-                        {{ item.label }}
-                    </RouterLink>
-                </nav>
+                        <div class="flex flex-col gap-2">
+                            <RouterLink
+                                v-for="item in navItems"
+                                :key="`mobile-${item.label}`"
+                                :to="item.url"
+                                :class="getMobileLinkClasses(item.url)"
+                                @click="closeMobileMenu"
+                            >
+                                {{ item.label }}
+                            </RouterLink>
+                        </div>
+
+                        <RouterLink
+                            to="/contacts"
+                            class="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-accent px-5 py-3.5 text-sm font-semibold text-surface transition-all duration-200 hover:bg-accent-hover"
+                            @click="closeMobileMenu"
+                        >
+                            Безплатна консултация
+                        </RouterLink>
+                    </nav>
+                </div>
             </div>
         </transition>
     </header>
@@ -99,6 +129,8 @@
 import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+const logo = "/images/logo/logo.png";
+
 const route = useRoute();
 const isMobileMenuOpen = ref(false);
 
@@ -106,9 +138,8 @@ const navItems = [
     { label: "Потребителски", url: "/potrebitelski-kredit" },
     { label: "Ипотечен", url: "/ipotechen-kredit" },
     { label: "Рефинансиране", url: "/refinansirane" },
-    // { label: "Изкупуване", url: "/izkupuvane-na-zadalzheniya" },
     { label: "За нас", url: "/about" },
-    { label: "FAQ", url: "/faq" },
+    { label: "ЧЗВ", url: "/faq" },
     { label: "Блог", url: "/blog" },
     { label: "Контакти", url: "/contacts" },
 ];
@@ -117,10 +148,21 @@ function isActive(url) {
     return route.path === url;
 }
 
-function getLinkClasses(url) {
+function getDesktopLinkClasses(url) {
     return [
-        "transition-colors hover:text-accent-darkened",
-        isActive(url) ? "text-accent-darkened font-semibold" : "text-secondary",
+        "rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200",
+        isActive(url)
+            ? "bg-accent-soft text-accent-darkened shadow-sm"
+            : "text-secondary hover:bg-surface hover:text-accent-darkened",
+    ];
+}
+
+function getMobileLinkClasses(url) {
+    return [
+        "rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
+        isActive(url)
+            ? "bg-accent-soft text-accent-darkened"
+            : "text-secondary hover:bg-surface hover:text-accent-darkened",
     ];
 }
 
