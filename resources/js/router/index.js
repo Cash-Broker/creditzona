@@ -40,10 +40,10 @@ const routes = [
         path: "/refinansirane",
         component: () => import("@/pages/RefinancePage.vue"),
     },
-    {
-        path: "/izkupuvane-na-zadalzheniya",
-        component: () => import("@/pages/DebtBuyoutPage.vue"),
-    },
+    // {
+    //     path: "/izkupuvane-na-zadalzheniya",
+    //     component: () => import("@/pages/DebtBuyoutPage.vue"),
+    // },
 ];
 
 const router = createRouter({
