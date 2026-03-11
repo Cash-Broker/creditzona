@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bg">
 
 <head>
@@ -84,19 +84,6 @@
                                     </tr>
                                 @endif
 
-                                @if ($contactMessage->subject)
-                                    <tr>
-                                        <td style="padding: 0 0 16px;">
-                                            <div
-                                                style="font-size: 13px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;">
-                                                Тема
-                                            </div>
-                                            <div style="font-size: 16px; line-height: 1.6; color: #111827;">
-                                                {{ $contactMessage->subject }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endif
                             </table>
 
                             <div style="margin-top: 8px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
@@ -135,3 +122,4 @@
 </body>
 
 </html>
+

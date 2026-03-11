@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 
 class StoreContactMessageRequest extends FormRequest
 {
@@ -24,7 +23,6 @@ class StoreContactMessageRequest extends FormRequest
             'full_name' => $this->normalizeString($this->input('full_name')),
             'phone' => $this->normalizeString($this->input('phone')),
             'email' => $this->normalizeString($this->input('email')),
-            'subject' => $this->normalizeString($this->input('subject')),
             'message' => $this->normalizeString($this->input('message')),
         ]);
     }
@@ -38,29 +36,10 @@ class StoreContactMessageRequest extends FormRequest
     {
         return [
             'full_name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'subject' => ['nullable', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:50'],
+            'email' => ['required', 'email', 'max:255'],
             'message' => ['required', 'string', 'min:10'],
         ];
-    }
-
-    /**
-     * Configure the validator instance.
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator): void {
-            $phone = $this->input('phone');
-            $email = $this->input('email');
-
-            if ($this->isBlank($phone) && $this->isBlank($email)) {
-                $message = 'Моля, посочете телефон или имейл за обратна връзка.';
-
-                $validator->errors()->add('phone', $message);
-                $validator->errors()->add('email', $message);
-            }
-        });
     }
 
     /**
@@ -71,10 +50,11 @@ class StoreContactMessageRequest extends FormRequest
         return [
             'full_name.required' => 'Полето за име и фамилия е задължително.',
             'full_name.max' => 'Името е твърде дълго.',
+            'phone.required' => 'Полето за телефон е задължително.',
             'phone.max' => 'Телефонът е твърде дълъг.',
+            'email.required' => 'Полето за имейл е задължително.',
             'email.email' => 'Моля, въведете валиден имейл адрес.',
             'email.max' => 'Имейл адресът е твърде дълъг.',
-            'subject.max' => 'Темата е твърде дълга.',
             'message.required' => 'Полето за съобщение е задължително.',
             'message.min' => 'Съобщението трябва да е поне 10 символа.',
         ];
@@ -89,10 +69,5 @@ class StoreContactMessageRequest extends FormRequest
         $trimmed = trim($value);
 
         return $trimmed === '' ? null : $trimmed;
-    }
-
-    private function isBlank(mixed $value): bool
-    {
-        return !is_string($value) || trim($value) === '';
     }
 }

@@ -5,7 +5,6 @@ function createInitialForm() {
         full_name: "",
         phone: "",
         email: "",
-        subject: "",
         message: "",
     };
 }
