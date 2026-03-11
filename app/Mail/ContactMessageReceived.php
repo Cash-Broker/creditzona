@@ -29,12 +29,8 @@ class ContactMessageReceived extends Mailable
             );
         }
 
-        $subject = $this->contactMessage->subject
-            ? 'Ново запитване: ' . $this->contactMessage->subject
-            : 'Ново съобщение от контактната форма';
-
         return new Envelope(
-            subject: $subject,
+            subject: 'Ново съобщение от контактната форма',
             replyTo: $replyTo
         );
     }
