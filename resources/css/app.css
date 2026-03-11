@@ -12,7 +12,7 @@
     /* Core color tokens */
     --color-primary: #111827;
     --color-secondary: #374151;
-    --color-accent: #eab308;
+    --color-accent: #0f6b7a;
     --color-background: #f9fafb;
     --color-surface: #ffffff;
     --color-text: #111827;
@@ -22,11 +22,11 @@
     --color-error: #dc2626;
 
     /* Extended tokens for interaction and hierarchy */
-    --color-accent-hover: #facc15;
-    --color-accent-soft: #fefce8;
-    --color-accent-soft-border: #fef08a;
-    --color-accent-darkened: #a16207;
-    --color-accent-ink: #713f12;
+    --color-accent-hover: #0d5d6a;
+    --color-accent-soft: #e8f4f7;
+    --color-accent-soft-border: #b7dbe3;
+    --color-accent-darkened: #0b4f5b;
+    --color-accent-ink: #083943;
     --color-border-strong: #d1d5db;
     --color-text-subtle: #6b7280;
 
@@ -108,7 +108,7 @@
     }
 
     .primary-button {
-        @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-4 font-semibold text-primary transition-all duration-200;
+        @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-4 font-semibold text-surface transition-all duration-200;
         box-shadow: 0 10px 20px -16px rgb(17 24 39 / 0.6);
     }
 

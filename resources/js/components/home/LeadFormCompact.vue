@@ -5,7 +5,7 @@
         >
             <div class="text-center">
                 <div
-                    class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500"
+                    class="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-subtle"
                 >
                     Желана сума
                 </div>
@@ -35,7 +35,7 @@
 
             <p
                 id="loan-amount-hint"
-                class="mt-3 text-center text-xs text-slate-500"
+                class="mt-3 text-center text-xs text-text-subtle"
             >
                 Плъзнете скалата, за да изберете подходяща сума.
             </p>
@@ -184,7 +184,7 @@ const {
     line-height: 1;
     font-weight: 900;
     letter-spacing: -0.04em;
-    color: #b7791f;
+    color: var(--color-accent-darkened);
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
@@ -192,13 +192,13 @@ const {
     flex-shrink: 0;
     font-size: 0.78rem;
     font-weight: 700;
-    color: #64748b;
+    color: var(--color-text-subtle);
 }
 
 .credit-range {
     --range-progress: 0%;
-    --range-active: #d6a11b;
-    --range-track: #e8edf3;
+    --range-active: var(--color-accent);
+    --range-track: color-mix(in oklab, var(--color-accent-soft) 65%, var(--color-surface) 35%);
 
     -webkit-appearance: none;
     appearance: none;
@@ -223,7 +223,7 @@ const {
 .credit-range:focus-visible {
     box-shadow:
         inset 0 1px 2px rgba(15, 23, 42, 0.08),
-        0 0 0 4px rgba(214, 161, 27, 0.16);
+        0 0 0 4px color-mix(in oklab, var(--color-accent) 20%, white);
 }
 
 .credit-range::-webkit-slider-runnable-track {
@@ -238,8 +238,12 @@ const {
     width: 28px;
     height: 28px;
     border-radius: 9999px;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    border: 4px solid #d6a11b;
+    background: linear-gradient(
+        180deg,
+        var(--color-surface) 0%,
+        color-mix(in oklab, var(--color-background) 72%, var(--color-surface) 28%) 100%
+    );
+    border: 4px solid var(--color-accent);
     box-shadow:
         0 8px 20px rgba(15, 23, 42, 0.18),
         0 1px 0 rgba(255, 255, 255, 0.8) inset;
@@ -261,22 +265,26 @@ const {
     height: 12px;
     border: none;
     border-radius: 9999px;
-    background: #e8edf3;
+    background: var(--range-track);
 }
 
 .credit-range::-moz-range-progress {
     height: 12px;
     border: none;
     border-radius: 9999px;
-    background: #d6a11b;
+    background: var(--range-active);
 }
 
 .credit-range::-moz-range-thumb {
     width: 28px;
     height: 28px;
-    border: 4px solid #d6a11b;
+    border: 4px solid var(--color-accent);
     border-radius: 9999px;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(
+        180deg,
+        var(--color-surface) 0%,
+        color-mix(in oklab, var(--color-background) 72%, var(--color-surface) 28%) 100%
+    );
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
     cursor: pointer;
 }
@@ -290,7 +298,7 @@ const {
 .field-label {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #475569;
+    color: var(--color-text-muted);
     padding-left: 0.1rem;
 }
 
@@ -298,12 +306,16 @@ const {
     width: 100%;
     height: 50px;
     border-radius: 14px;
-    border: 1px solid #dbe3ec;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    border: 1px solid var(--color-border-strong);
+    background: linear-gradient(
+        180deg,
+        var(--color-surface) 0%,
+        color-mix(in oklab, var(--color-background) 60%, var(--color-surface) 40%) 100%
+    );
     padding: 0 14px;
     font-size: 0.95rem;
     font-weight: 500;
-    color: #0f172a;
+    color: var(--color-text);
     outline: none;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
     transition:
@@ -314,15 +326,15 @@ const {
 }
 
 .input::placeholder {
-    color: #94a3b8;
+    color: var(--color-text-subtle);
     font-weight: 400;
 }
 
 .input:focus {
-    border-color: #d6a11b;
-    background: #ffffff;
+    border-color: var(--color-accent);
+    background: var(--color-surface);
     box-shadow:
-        0 0 0 4px rgba(214, 161, 27, 0.12),
+        0 0 0 4px color-mix(in oklab, var(--color-accent) 15%, white),
         0 4px 14px rgba(15, 23, 42, 0.05);
     transform: translateY(-1px);
 }
@@ -340,11 +352,15 @@ const {
     font-size: 1rem;
     font-weight: 900;
     letter-spacing: 0.01em;
-    color: #ffffff;
+    color: var(--color-surface);
     cursor: pointer;
-    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--color-accent) 88%, white) 0%,
+        var(--color-accent-darkened) 100%
+    );
     box-shadow:
-        0 14px 30px rgba(220, 38, 38, 0.28),
+        0 14px 30px rgba(15, 23, 42, 0.28),
         inset 0 1px 0 rgba(255, 255, 255, 0.24);
     transition:
         transform 0.18s ease,
@@ -354,8 +370,13 @@ const {
 
 .cta-button:hover:not(:disabled) {
     transform: translateY(-1px);
+    background: linear-gradient(
+        180deg,
+        var(--color-accent) 0%,
+        var(--color-accent-darkened) 100%
+    );
     box-shadow:
-        0 18px 34px rgba(220, 38, 38, 0.32),
+        0 18px 34px rgba(15, 23, 42, 0.32),
         inset 0 1px 0 rgba(255, 255, 255, 0.24);
     filter: saturate(1.04);
 }
@@ -375,7 +396,7 @@ const {
     text-align: center;
     font-size: 0.92rem;
     font-weight: 700;
-    color: #475569;
+    color: var(--color-text-muted);
 }
 
 .fade-slide-enter-active,
