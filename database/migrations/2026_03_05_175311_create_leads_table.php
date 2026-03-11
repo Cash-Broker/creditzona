@@ -10,39 +10,21 @@ return new class extends Migration {
         Schema::create('leads', function (Blueprint $table) {
             $table->id();
 
-            // Basic
-            $table->string('full_name');
+            $table->string('credit_type')->index(); // consumer|mortgage
+            $table->string('first_name');
+            $table->string('last_name');
             $table->string('phone')->index();
-            $table->string('email')->nullable();
-            $table->string('city')->nullable();
+            $table->string('email');
+            $table->string('city');
+            $table->unsignedInteger('amount');
 
-            // Service
-            $table->string('service_type')->index(); // consumer|mortgage|refinance|debt_buyout
-            $table->unsignedInteger('amount')->nullable();
-            $table->unsignedInteger('term_months')->nullable();
-
-            // Sensitive (encrypted via casts)
-            $table->text('egn')->nullable();
-            $table->unsignedInteger('monthly_income')->nullable();
-            $table->string('employment_type')->nullable(); // contract|self_employed|pensioner|unemployed
-            $table->unsignedInteger('monthly_debt')->nullable();
-
-            // Tracking
-            $table->string('source')->nullable(); // organic|fb|google|referral
+            $table->string('source')->nullable();
             $table->string('utm_source')->nullable();
             $table->string('utm_campaign')->nullable();
             $table->string('utm_medium')->nullable();
             $table->string('gclid')->nullable();
 
-            // Workflow
-            $table->string('status')->default('new')->index(); // new|contacted|waiting_docs|submitted|approved|rejected|done|lost
-            $table->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->unsignedTinyInteger('priority')->default(2); // 1 high, 2 normal, 3 low
-
-            // GDPR
-            $table->timestamp('consent_at')->nullable();
-            $table->string('consent_ip')->nullable();
-            $table->string('consent_user_agent')->nullable();
+            $table->string('status')->default('new')->index();
 
             $table->timestamps();
         });

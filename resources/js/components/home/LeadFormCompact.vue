@@ -1,33 +1,99 @@
 <template>
-    <form @submit.prevent="submitForm" class="mt-6 space-y-7">
-        <section class="form-card">
-            <header class="form-section-head">
-                <div class="form-section-marker"></div>
-                <h3 class="form-section-title">Основни данни</h3>
-                <p class="form-section-text">
-                    Попълнете най-важната информация, за да започнем
-                    консултацията.
-                </p>
-            </header>
+    <form @submit.prevent="submitForm" class="space-y-4">
+        <section
+            class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
+        >
+            <div class="text-center">
+                <div
+                    class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500"
+                >
+                    Желана сума
+                </div>
 
-            <div class="grid gap-4">
-                <div class="grid gap-1.5">
-                    <label class="input-label">Име и фамилия</label>
-                    <input
-                        v-model="form.full_name"
-                        type="text"
-                        placeholder="Иван Иванов"
+                <div class="mt-2 amount-value">
+                    {{ formattedAmount }}
+                </div>
+            </div>
+
+            <div class="mt-5 flex items-center gap-3 sm:gap-4">
+                <span class="range-edge">{{ formattedMinAmount }}</span>
+
+                <input
+                    id="loan-amount"
+                    v-model.number="form.amount"
+                    type="range"
+                    :min="amountMin"
+                    :max="amountMax"
+                    :step="amountStep"
+                    class="credit-range"
+                    :style="creditRangeStyle"
+                    aria-describedby="loan-amount-hint"
+                />
+
+                <span class="range-edge">{{ formattedMaxAmount }}</span>
+            </div>
+
+            <p
+                id="loan-amount-hint"
+                class="mt-3 text-center text-xs text-slate-500"
+            >
+                Плъзнете скалата, за да изберете подходяща сума.
+            </p>
+        </section>
+
+        <section
+            class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
+        >
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <div class="field">
+                    <label class="field-label" for="credit-type"
+                        >Тип кредит</label
+                    >
+                    <select
+                        id="credit-type"
+                        v-model="form.credit_type"
                         class="input"
-                        autocomplete="name"
+                        autocomplete="off"
+                        required
+                    >
+                        <option value="" disabled>Изберете</option>
+                        <option value="consumer">Потребителски кредит</option>
+                        <option value="mortgage">Ипотечен кредит</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="first-name">Име</label>
+                    <input
+                        id="first-name"
+                        v-model="form.first_name"
+                        type="text"
+                        placeholder="Иван"
+                        class="input"
+                        autocomplete="given-name"
                         required
                     />
                 </div>
 
-                <div class="grid gap-1.5">
-                    <label class="input-label">Телефон</label>
+                <div class="field">
+                    <label class="field-label" for="last-name">Фамилия</label>
                     <input
-                        v-model="form.phone"
+                        id="last-name"
+                        v-model="form.last_name"
                         type="text"
+                        placeholder="Иванов"
+                        class="input"
+                        autocomplete="family-name"
+                        required
+                    />
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="phone">Телефон</label>
+                    <input
+                        id="phone"
+                        v-model="form.phone"
+                        type="tel"
                         placeholder="08XXXXXXXX"
                         class="input"
                         inputmode="tel"
@@ -36,300 +102,108 @@
                     />
                 </div>
 
-                <div class="grid gap-1.5">
-                    <label class="input-label">Имейл (по желание)</label>
+                <div class="field">
+                    <label class="field-label" for="email">Имейл</label>
                     <input
+                        id="email"
                         v-model="form.email"
                         type="email"
                         placeholder="example@email.com"
                         class="input"
                         autocomplete="email"
+                        required
                     />
                 </div>
 
-                <div class="grid gap-1.5">
-                    <label class="input-label">Град (по желание)</label>
+                <div class="field">
+                    <label class="field-label" for="city">Град</label>
                     <input
+                        id="city"
                         v-model="form.city"
                         type="text"
                         placeholder="Пловдив"
                         class="input"
                         autocomplete="address-level2"
-                    />
-                </div>
-            </div>
-        </section>
-
-        <section class="form-card">
-            <header class="form-section-head">
-                <div class="form-section-marker"></div>
-                <h3 class="form-section-title">Параметри</h3>
-                <p class="form-section-text">
-                    Не е задължително, но помага за по-точна ориентация.
-                </p>
-            </header>
-
-            <div class="grid gap-4 sm:grid-cols-2">
-                <div class="grid gap-2">
-                    <div class="flex items-center justify-between gap-3">
-                        <label class="input-label" for="loan-amount"
-                            >Сума</label
-                        >
-                        <span class="amount-value">
-                            {{ formattedAmount }}
-                        </span>
-                    </div>
-
-                    <input
-                        id="loan-amount"
-                        v-model.number="form.amount"
-                        type="range"
-                        :min="amountMin"
-                        :max="amountMax"
-                        :step="amountStep"
-                        class="credit-range"
-                        :style="creditRangeStyle"
-                        aria-describedby="loan-amount-hint"
-                    />
-
-                    <div class="range-labels">
-                        <span>{{ formattedMinAmount }}</span>
-                        <span>{{ formattedMaxAmount }}</span>
-                    </div>
-
-                    <p id="loan-amount-hint" class="text-xs text-text-subtle">
-                        Изберете желаната сума за кредит.
-                    </p>
-                </div>
-
-                <div class="grid gap-1.5 term-field">
-                    <label class="input-label">Срок (месеци)</label>
-                    <input
-                        v-model="form.term_months"
-                        type="number"
-                        placeholder="36"
-                        class="input input-compact"
-                    />
-                </div>
-
-                <div class="grid gap-1.5">
-                    <label class="input-label">Месечен доход</label>
-                    <input
-                        v-model="form.monthly_income"
-                        type="number"
-                        placeholder="2500"
-                        class="input"
-                    />
-                </div>
-
-                <div class="grid gap-1.5">
-                    <label class="input-label">Заетост</label>
-                    <select v-model="form.employment_type" class="input">
-                        <option value="">-- Изберете --</option>
-                        <option value="contract">Трудов договор</option>
-                        <option value="self_employed">Самоосигуряващ</option>
-                        <option value="pensioner">Пенсионер</option>
-                        <option value="unemployed">Безработен</option>
-                    </select>
-                </div>
-
-                <div class="grid gap-1.5 sm:col-span-2">
-                    <label class="input-label">Месечни задължения</label>
-                    <input
-                        v-model="form.monthly_debt"
-                        type="number"
-                        placeholder="300"
-                        class="input"
-                    />
-                </div>
-            </div>
-        </section>
-
-        <section class="form-card">
-            <header class="form-section-head">
-                <div class="form-section-marker"></div>
-                <h3 class="form-section-title">Идентификация</h3>
-                <p class="form-section-text">
-                    Нужна е за предварителна оценка и по-точно насочване.
-                </p>
-            </header>
-
-            <div class="grid gap-1.5">
-                <label class="input-label">ЕГН</label>
-                <input
-                    v-model="form.egn"
-                    type="text"
-                    maxlength="10"
-                    placeholder="XXXXXXXXXX"
-                    class="input"
-                    required
-                />
-
-                <div class="form-note">
-                    <font-awesome-icon
-                        icon="fa-solid fa-building-columns"
-                        class="mt-0.5 text-accent-darkened"
-                    />
-                    <span>
-                        Използва се само за предварителна оценка и не се споделя
-                        извън процеса по консултация.
-                    </span>
-                </div>
-            </div>
-        </section>
-
-        <section class="form-card">
-            <div class="form-consent">
-                <label class="flex items-start gap-3 text-sm text-secondary">
-                    <input
-                        v-model="form.consent"
-                        type="checkbox"
-                        class="form-checkbox"
                         required
                     />
-                    <span class="leading-6">
-                        Съгласен/а съм данните ми да бъдат използвани за целите
-                        на консултацията.
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <button
+                    type="submit"
+                    :disabled="loading"
+                    :aria-busy="loading ? 'true' : 'false'"
+                    class="cta-button"
+                >
+                    <font-awesome-icon icon="fa-solid fa-paper-plane" />
+                    <span v-if="!loading">Направи безплатна проверка</span>
+                    <span v-else>Изпращане...</span>
+                </button>
+
+                <p class="cta-note">Ще се свържем с вас до 48ч</p>
+            </div>
+
+            <transition name="fade-slide">
+                <div v-if="success" class="form-success mt-4">
+                    <font-awesome-icon
+                        icon="fa-solid fa-circle-check"
+                        class="mt-0.5"
+                    />
+                    <span>
+                        Запитването е изпратено успешно. Ще се свържем с вас до
+                        48ч.
                     </span>
-                </label>
-            </div>
-
-            <button
-                type="submit"
-                :disabled="loading"
-                :aria-busy="loading ? 'true' : 'false'"
-                class="primary-button mt-5 cursor-pointer"
-            >
-                <font-awesome-icon icon="fa-solid fa-paper-plane" />
-                <span v-if="!loading">Изпрати запитване</span>
-                <span v-else>Изпращане...</span>
-            </button>
-
-            <p class="mt-3 text-center text-xs text-text-subtle">
-                Ще се свържем с вас възможно най-скоро.
-            </p>
-
-            <div v-if="success" class="form-success">
-                <font-awesome-icon
-                    icon="fa-solid fa-circle-check"
-                    class="mt-0.5"
-                />
-                <span>
-                    Запитването е изпратено успешно. Ще се свържем с вас скоро.
-                </span>
-            </div>
+                </div>
+            </transition>
         </section>
     </form>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from "vue";
+import { useLeadForm } from "../../composables/useLeadForm";
 
-const loading = ref(false);
-const success = ref(false);
-const amountMin = 5000;
-const amountMax = 50000;
-const amountStep = 500;
-
-const form = reactive({
-    full_name: "",
-    phone: "",
-    email: "",
-    city: "",
-    amount: amountMin,
-    term_months: "",
-    egn: "",
-    monthly_income: "",
-    employment_type: "",
-    monthly_debt: "",
-    consent: false,
-});
-
-const formattedAmount = computed(() => {
-    return `${Number(form.amount).toLocaleString("bg-BG")} €`;
-});
-const formattedMinAmount = computed(() => {
-    return `${amountMin.toLocaleString("bg-BG")} €`;
-});
-const formattedMaxAmount = computed(() => {
-    return `${amountMax.toLocaleString("bg-BG")} €`;
-});
-const amountProgress = computed(() => {
-    const value = Number(form.amount) || amountMin;
-    const clamped = Math.min(amountMax, Math.max(amountMin, value));
-    return ((clamped - amountMin) / (amountMax - amountMin)) * 100;
-});
-const creditRangeStyle = computed(() => ({
-    "--range-progress": `${amountProgress.value}%`,
-}));
-
-async function submitForm() {
-    loading.value = true;
-    success.value = false;
-
-    try {
-        const response = await fetch("/leads", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN":
-                    document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute("content") || "",
-                Accept: "application/json",
-            },
-            body: JSON.stringify(form),
-        });
-
-        if (!response.ok) {
-            throw new Error("Грешка при изпращане на формата.");
-        }
-
-        success.value = true;
-
-        form.full_name = "";
-        form.phone = "";
-        form.email = "";
-        form.city = "";
-        form.amount = amountMin;
-        form.term_months = "";
-        form.egn = "";
-        form.monthly_income = "";
-        form.employment_type = "";
-        form.monthly_debt = "";
-        form.consent = false;
-    } catch (e) {
-        console.error(e);
-    } finally {
-        loading.value = false;
-    }
-}
+const {
+    form,
+    loading,
+    success,
+    amountMin,
+    amountMax,
+    amountStep,
+    formattedAmount,
+    formattedMinAmount,
+    formattedMaxAmount,
+    creditRangeStyle,
+    submitForm,
+} = useLeadForm();
 </script>
 
 <style scoped>
 .amount-value {
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: clamp(2rem, 4.6vw, 3.35rem);
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -0.04em;
     color: #b7791f;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-.range-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    color: #7c8798;
-    margin-top: 0.2rem;
+.range-edge {
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
 }
 
 .credit-range {
     --range-progress: 0%;
     --range-active: #d6a11b;
-    --range-track: #e7eaf0;
+    --range-track: #e8edf3;
 
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 6px;
+    height: 12px;
     border-radius: 9999px;
     outline: none;
     cursor: pointer;
@@ -340,15 +214,20 @@ async function submitForm() {
         var(--range-track) var(--range-progress),
         var(--range-track) 100%
     );
+    box-shadow:
+        inset 0 1px 2px rgba(15, 23, 42, 0.08),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.4);
     transition: background 0.2s ease;
 }
 
 .credit-range:focus-visible {
-    box-shadow: 0 0 0 3px rgba(214, 161, 27, 0.18);
+    box-shadow:
+        inset 0 1px 2px rgba(15, 23, 42, 0.08),
+        0 0 0 4px rgba(214, 161, 27, 0.16);
 }
 
 .credit-range::-webkit-slider-runnable-track {
-    height: 6px;
+    height: 12px;
     border-radius: 9999px;
     background: transparent;
 }
@@ -356,50 +235,157 @@ async function submitForm() {
 .credit-range::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 28px;
+    height: 28px;
     border-radius: 9999px;
-    background: #ffffff;
-    border: 2px solid #d6a11b;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 4px solid #d6a11b;
+    box-shadow:
+        0 8px 20px rgba(15, 23, 42, 0.18),
+        0 1px 0 rgba(255, 255, 255, 0.8) inset;
     cursor: pointer;
-    margin-top: -6px;
-    transition: transform 0.15s ease;
+    margin-top: -8px;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease;
 }
 
 .credit-range::-webkit-slider-thumb:hover {
-    transform: scale(1.05);
+    transform: scale(1.06);
+    box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.2),
+        0 1px 0 rgba(255, 255, 255, 0.85) inset;
 }
 
 .credit-range::-moz-range-track {
-    height: 6px;
+    height: 12px;
     border: none;
     border-radius: 9999px;
-    background: #e7eaf0;
+    background: #e8edf3;
 }
 
 .credit-range::-moz-range-progress {
-    height: 6px;
+    height: 12px;
     border: none;
     border-radius: 9999px;
     background: #d6a11b;
 }
 
 .credit-range::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #d6a11b;
+    width: 28px;
+    height: 28px;
+    border: 4px solid #d6a11b;
     border-radius: 9999px;
-    background: #ffffff;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
     cursor: pointer;
 }
 
-.term-field {
-    align-self: start;
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
 }
 
-.input-compact {
-    max-width: 270px;
+.field-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+    padding-left: 0.1rem;
+}
+
+.input {
+    width: 100%;
+    height: 50px;
+    border-radius: 14px;
+    border: 1px solid #dbe3ec;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    padding: 0 14px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #0f172a;
+    outline: none;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.18s ease,
+        background 0.18s ease;
+}
+
+.input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.input:focus {
+    border-color: #d6a11b;
+    background: #ffffff;
+    box-shadow:
+        0 0 0 4px rgba(214, 161, 27, 0.12),
+        0 4px 14px rgba(15, 23, 42, 0.05);
+    transform: translateY(-1px);
+}
+
+.cta-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    width: 100%;
+    min-height: 60px;
+    border: 0;
+    border-radius: 18px;
+    padding: 0 1.6rem;
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    color: #ffffff;
+    cursor: pointer;
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    box-shadow:
+        0 14px 30px rgba(220, 38, 38, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        filter 0.18s ease;
+}
+
+.cta-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+        0 18px 34px rgba(220, 38, 38, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    filter: saturate(1.04);
+}
+
+.cta-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.cta-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+    box-shadow: none;
+}
+
+.cta-note {
+    margin-top: 0.85rem;
+    text-align: center;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.22s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateY(6px);
 }
 </style>

@@ -89,11 +89,9 @@
 
     .input:focus {
         border-color: var(--color-accent);
-        background-color: color-mix(
-            in oklab,
-            var(--color-surface) 92%,
-            var(--color-accent-soft) 8%
-        );
+        background-color: color-mix(in oklab,
+                var(--color-surface) 92%,
+                var(--color-accent-soft) 8%);
         box-shadow: 0 0 0 4px var(--color-accent-soft), 0 1px 2px rgb(17 24 39 / 0.06);
     }
 
@@ -172,5 +170,36 @@
     .highlighted-info-block {
         @apply rounded-3xl border border-accent-soft-border bg-accent-soft p-6 sm:p-7;
         box-shadow: 0 8px 24px -22px rgb(17 24 39 / 0.2);
+    }
+
+    .problem-item {
+        @apply flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-medium text-secondary transition-all duration-200;
+    }
+
+    .problem-item:hover {
+        border-color: var(--color-border-strong);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px -20px rgb(17 24 39 / 0.35);
+    }
+
+    .problem-item-icon {
+        @apply inline-flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-xs text-accent-darkened;
+    }
+
+    .process-step {
+        @apply flex items-start gap-4;
+    }
+
+    .process-step-index {
+        @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent-soft-border bg-surface text-sm font-bold text-accent-darkened;
+        box-shadow: 0 6px 16px -14px rgb(17 24 39 / 0.3);
+    }
+
+    .process-step-content {
+        @apply relative flex-1 rounded-2xl border border-accent-soft-border/70 bg-surface/70 px-4 py-3;
+    }
+
+    .process-step-title {
+        @apply text-sm font-medium leading-6 text-accent-ink;
     }
 }
