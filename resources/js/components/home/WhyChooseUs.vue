@@ -25,7 +25,7 @@
             <h2
                 class="mt-4 text-3xl font-bold tracking-tight text-text md:text-4xl"
             >
-                Защо да изберете Кредит Зона
+                Как ще ти помогнем
             </h2>
 
             <p class="mt-5 text-[15px] leading-7 text-text-muted">
@@ -88,13 +88,6 @@
                         {{ item }}
                     </li>
                 </ul>
-            </div>
-
-            <!-- Highlight -->
-            <div
-                class="mt-8 rounded-2xl border border-accent-soft-border bg-accent-soft px-5 py-4 text-sm font-semibold text-accent-ink"
-            >
-                Без предварителни такси и комисионни.
             </div>
         </div>
     </section>
