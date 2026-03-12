@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Lead extends Model
 {
@@ -17,10 +18,16 @@ class Lead extends Model
         'property_type',
         'property_location',
         'status',
+        'assigned_user_id',
         'source',
         'utm_source',
         'utm_campaign',
         'utm_medium',
         'gclid',
     ];
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
 }
