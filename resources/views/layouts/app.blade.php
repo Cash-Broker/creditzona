@@ -20,9 +20,6 @@
     <script>
         window.laravelRoutes = {
             home: "{{ route('home') }}",
-            consumer: "{{ route('service.consumer') }}",
-            mortgage: "{{ route('service.mortgage') }}",
-            refinance: "{{ route('service.refinance') }}",
             faq: "{{ route('faq') }}",
             contact: "{{ route('contact') }}",
         };

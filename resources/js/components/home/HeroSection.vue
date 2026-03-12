@@ -41,20 +41,11 @@
 
         <!-- cta buttons -->
         <div class="mt-8 flex flex-wrap gap-3">
-            <RouterLink
-                v-for="action in actions"
-                :key="action.label"
-                :to="action.url"
-                :class="action.class"
-            >
-                <span>{{ action.label }}</span>
-
-                <font-awesome-icon
-                    v-if="action.primary"
-                    icon="fa-solid fa-arrow-right"
-                    class="text-sm"
-                />
-            </RouterLink>
+            <article
+                v-for="service in services"
+                :key="service.title"
+                class="group rounded-[28px] border border-border bg-surface p-6 shadow-[0_10px_30px_-18px_rgba(17,24,39,0.35)] transition-all duration-300 hover:-translate-y-1 hover:border-border-strong hover:shadow-[0_18px_40px_-20px_rgba(17,24,39,0.45)]"
+            ></article>
         </div>
 
         <!-- trust line -->
@@ -129,18 +120,18 @@ const stats = [
 ];
 
 const actions = [
-    {
-        label: "Потребителски кредит",
-        url: "/potrebitelski-kredit",
-        primary: true,
-        class: "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-surface shadow-sm transition hover:bg-accent-hover hover:shadow-md",
-    },
-    {
-        label: "Ипотечен кредит",
-        url: "/ipotechen-kredit",
-        primary: false,
-        class: "inline-flex items-center justify-center gap-2 rounded-xl border bg-surface px-6 py-3 font-semibold text-text transition hover:bg-background hover:shadow-sm",
-    },
+    // {
+    //     label: "Потребителски кредит",
+    //     url: "/potrebitelski-kredit",
+    //     primary: true,
+    //     class: "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-surface shadow-sm transition hover:bg-accent-hover hover:shadow-md",
+    // },
+    // {
+    //     label: "Ипотечен кредит",
+    //     url: "/ipotechen-kredit",
+    //     primary: false,
+    //     class: "inline-flex items-center justify-center gap-2 rounded-xl border bg-surface px-6 py-3 font-semibold text-text transition hover:bg-background hover:shadow-sm",
+    // },
     {
         label: "Контакти",
         url: "/contacts",
@@ -149,5 +140,3 @@ const actions = [
     },
 ];
 </script>
-
-

@@ -131,8 +131,8 @@ const logo = "/images/logo/logo.png";
 
 const navigationLinks = [
     { label: "Начало", to: "/" },
-    { label: "Ипотечен кредит", to: "/ipotechen-kredit" },
-    { label: "Рефинансиране", to: "/refinansirane" },
+    // { label: "Ипотечен кредит", to: "/ipotechen-kredit" },
+    // { label: "Рефинансиране", to: "/refinansirane" },
     { label: "Контакти", to: "/contacts" },
 ];
 
