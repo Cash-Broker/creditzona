@@ -2,7 +2,6 @@
     <footer class="mt-20 border-t border-border bg-footer">
         <div class="mx-auto max-w-6xl px-4 py-12">
             <div class="grid gap-8 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
-                <!-- Brand card -->
                 <div
                     class="rounded-[28px] border border-border bg-surface p-6 shadow-[0_10px_30px_-22px_rgba(17,24,39,0.35)]"
                 >
@@ -48,7 +47,6 @@
                     </div>
                 </div>
 
-                <!-- Navigation -->
                 <nav
                     aria-label="Навигация във footer"
                     class="rounded-[28px] border border-border bg-surface p-6 shadow-[0_10px_30px_-22px_rgba(17,24,39,0.35)]"
@@ -74,7 +72,6 @@
                     </ul>
                 </nav>
 
-                <!-- Trust -->
                 <div
                     class="rounded-[28px] border border-border bg-surface p-6 shadow-[0_10px_30px_-22px_rgba(17,24,39,0.35)]"
                 >
@@ -113,13 +110,21 @@
                     aria-label="Правни връзки"
                 >
                     <RouterLink
-                        v-for="link in legalLinks"
-                        :key="link.label"
+                        v-for="link in footerLegalLinks"
+                        :key="link.to"
                         :to="link.to"
-                        class="text-xs text-text-subtle transition-colors duration-200 hover:text-accent-darkened"
+                        class="text-xs text-text-subtle transition-colors duration-200 hover:text-accent-darkened focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-soft focus-visible:ring-offset-2 focus-visible:ring-offset-footer"
                     >
                         {{ link.label }}
                     </RouterLink>
+
+                    <button
+                        type="button"
+                        class="cursor-pointer text-xs font-medium text-accent-darkened transition-colors duration-200 hover:text-accent-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-soft focus-visible:ring-offset-2 focus-visible:ring-offset-footer"
+                        @click="openSettings"
+                    >
+                        Настройки на бисквитки
+                    </button>
                 </nav>
             </div>
         </div>
@@ -127,12 +132,15 @@
 </template>
 
 <script setup>
+import { legalLinks } from "@/constants/legalLinks";
+import { useCookieConsent } from "@/composables/useCookieConsent";
+
+const { openSettings } = useCookieConsent();
+
 const logo = "/images/logo/logo.png";
 
 const navigationLinks = [
     { label: "Начало", to: "/" },
-    // { label: "Ипотечен кредит", to: "/ipotechen-kredit" },
-    // { label: "Рефинансиране", to: "/refinansirane" },
     { label: "Контакти", to: "/contacts" },
 ];
 
@@ -142,9 +150,9 @@ const trustItems = [
     "Отговор до 24 часа",
 ];
 
-const legalLinks = [
-    { label: "Политика за поверителност", to: "/contacts#poveritelnost" },
-    { label: "Условия", to: "/contacts#usloviya" },
-    { label: "Контакти", to: "/contacts" },
+const footerLegalLinks = [
+    legalLinks.privacy,
+    legalLinks.cookies,
+    legalLinks.terms,
 ];
 </script>

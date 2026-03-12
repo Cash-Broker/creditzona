@@ -2,6 +2,7 @@ import "./bootstrap";
 import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
+import { initializeCookieConsent } from "@/composables/useCookieConsent";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -37,6 +38,8 @@ library.add(
     faCheck,
     faRoute,
 );
+
+initializeCookieConsent();
 
 const app = createApp(App);
 

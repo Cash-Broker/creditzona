@@ -7,6 +7,7 @@
         </main>
 
         <Footer />
+        <CookieConsentManager />
     </div>
 </template>
 
@@ -14,6 +15,7 @@
 import { onMounted } from "vue";
 import Navbar from "./components/layout/Navbar.vue";
 import Footer from "./components/layout/Footer.vue";
+import CookieConsentManager from "./components/layout/CookieConsentManager.vue";
 import { getBlogs } from "@/composables/useBlogStore";
 
 onMounted(() => {
