@@ -27,7 +27,9 @@ class LeadInfolist
                             ->colors([
                                 'warning' => 'new',
                                 'primary' => 'in_progress',
-                                'success' => 'processed',
+                                'gray' => 'processed',
+                                'success' => 'approved',
+                                'danger' => 'rejected',
                             ])
                             ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state)),
                         TextEntry::make('first_name')
