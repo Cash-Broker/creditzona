@@ -69,6 +69,8 @@ class LeadResource extends Resource
             'new' => 'Нова',
             'in_progress' => 'В обработка',
             'processed' => 'Обработена',
+            'approved' => 'Одобрена',
+            'rejected' => 'Отказана',
         ];
     }
 
