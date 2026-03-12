@@ -91,6 +91,10 @@ export function useLeadForm(options = {}) {
         Object.keys(errors).forEach((key) => delete errors[key]);
     }
 
+    function getFieldError(field) {
+        return typeof errors[field] === "string" ? errors[field] : "";
+    }
+
     function touchField(field) {
         touched[field] = true;
     }
@@ -405,6 +409,7 @@ export function useLeadForm(options = {}) {
         success,
         submitError,
         errors,
+        getFieldError,
         isMortgage,
         lockCreditType,
         amountMin,

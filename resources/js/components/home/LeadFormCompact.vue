@@ -1,5 +1,5 @@
 <template>
-    <form @submit.prevent="submitForm" class="space-y-4">
+    <form @submit.prevent="submitForm" class="space-y-4" novalidate>
         <section
             class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
         >
@@ -26,8 +26,11 @@
                     :max="amountMax"
                     :step="amountStep"
                     class="credit-range"
+                    :class="{ 'input-error': getFieldError('amount') }"
                     :style="creditRangeStyle"
                     aria-describedby="loan-amount-hint"
+                    @input="handleInput('amount')"
+                    @blur="handleBlur('amount')"
                 />
 
                 <span class="range-edge">{{ formattedMaxAmount }}</span>
@@ -38,6 +41,10 @@
                 class="mt-3 text-center text-xs text-text-subtle"
             >
                 Плъзнете скалата, за да изберете подходяща сума.
+            </p>
+
+            <p v-if="getFieldError('amount')" class="field-error mt-3 text-center">
+                {{ getFieldError("amount") }}
             </p>
         </section>
 
@@ -53,14 +60,21 @@
                         id="credit-type"
                         v-model="form.credit_type"
                         class="input"
+                        :class="{ 'input-error': getFieldError('credit_type') }"
                         autocomplete="off"
                         required
                         :disabled="lockCreditType"
+                        @change="handleInput('credit_type')"
+                        @blur="handleBlur('credit_type')"
                     >
                         <option value="" disabled>Изберете</option>
                         <option value="consumer">Потребителски кредит</option>
                         <option value="mortgage">Ипотечен кредит</option>
                     </select>
+
+                    <p v-if="getFieldError('credit_type')" class="field-error">
+                        {{ getFieldError("credit_type") }}
+                    </p>
                 </div>
 
                 <div class="field">
@@ -71,9 +85,16 @@
                         type="text"
                         placeholder="Иван"
                         class="input"
+                        :class="{ 'input-error': getFieldError('first_name') }"
                         autocomplete="given-name"
                         required
+                        @input="handleInput('first_name')"
+                        @blur="handleBlur('first_name')"
                     />
+
+                    <p v-if="getFieldError('first_name')" class="field-error">
+                        {{ getFieldError("first_name") }}
+                    </p>
                 </div>
 
                 <div class="field">
@@ -84,9 +105,16 @@
                         type="text"
                         placeholder="Иванов"
                         class="input"
+                        :class="{ 'input-error': getFieldError('last_name') }"
                         autocomplete="family-name"
                         required
+                        @input="handleInput('last_name')"
+                        @blur="handleBlur('last_name')"
                     />
+
+                    <p v-if="getFieldError('last_name')" class="field-error">
+                        {{ getFieldError("last_name") }}
+                    </p>
                 </div>
 
                 <div class="field">
@@ -97,10 +125,27 @@
                         type="tel"
                         placeholder="08XXXXXXXX"
                         class="input"
+                        :class="{
+                            'input-error':
+                                getFieldError('phone') &&
+                                getFieldError('phone') !== submitError,
+                        }"
                         inputmode="tel"
                         autocomplete="tel"
                         required
+                        @input="handleInput('phone')"
+                        @blur="handleBlur('phone')"
                     />
+
+                    <p
+                        v-if="
+                            getFieldError('phone') &&
+                            getFieldError('phone') !== submitError
+                        "
+                        class="field-error"
+                    >
+                        {{ getFieldError("phone") }}
+                    </p>
                 </div>
 
                 <div class="field">
@@ -111,9 +156,16 @@
                         type="email"
                         placeholder="example@email.com"
                         class="input"
+                        :class="{ 'input-error': getFieldError('email') }"
                         autocomplete="email"
                         required
+                        @input="handleInput('email')"
+                        @blur="handleBlur('email')"
                     />
+
+                    <p v-if="getFieldError('email')" class="field-error">
+                        {{ getFieldError("email") }}
+                    </p>
                 </div>
 
                 <div class="field">
@@ -124,9 +176,16 @@
                         type="text"
                         placeholder="Пловдив"
                         class="input"
+                        :class="{ 'input-error': getFieldError('city') }"
                         autocomplete="address-level2"
                         required
+                        @input="handleInput('city')"
+                        @blur="handleBlur('city')"
                     />
+
+                    <p v-if="getFieldError('city')" class="field-error">
+                        {{ getFieldError("city") }}
+                    </p>
                 </div>
             </div>
 
@@ -143,12 +202,19 @@
                             id="property-type"
                             v-model="form.property_type"
                             class="input"
+                            :class="{ 'input-error': getFieldError('property_type') }"
                             :required="isMortgage"
+                            @change="handleInput('property_type')"
+                            @blur="handleBlur('property_type')"
                         >
                             <option value="" disabled>Изберете</option>
                             <option value="house">Къща</option>
                             <option value="apartment">Апартамент</option>
                         </select>
+
+                        <p v-if="getFieldError('property_type')" class="field-error">
+                            {{ getFieldError("property_type") }}
+                        </p>
                     </div>
 
                     <div class="field">
@@ -161,8 +227,18 @@
                             type="text"
                             placeholder="Например: Пловдив"
                             class="input"
+                            :class="{ 'input-error': getFieldError('property_location') }"
                             :required="isMortgage"
+                            @input="handleInput('property_location')"
+                            @blur="handleBlur('property_location')"
                         />
+
+                        <p
+                            v-if="getFieldError('property_location')"
+                            class="field-error"
+                        >
+                            {{ getFieldError("property_location") }}
+                        </p>
                     </div>
                 </div>
             </transition>
@@ -181,6 +257,13 @@
 
                 <p class="cta-note">Ще се свържем с вас до 48ч</p>
             </div>
+
+            <p
+                v-if="submitError"
+                class="rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
+            >
+                {{ submitError }}
+            </p>
 
             <transition name="fade-slide">
                 <div v-if="success" class="form-success mt-4">
@@ -216,6 +299,8 @@ const {
     form,
     loading,
     success,
+    submitError,
+    getFieldError,
     isMortgage,
     lockCreditType,
     amountMin,
@@ -225,6 +310,8 @@ const {
     formattedMinAmount,
     formattedMaxAmount,
     creditRangeStyle,
+    handleBlur,
+    handleInput,
     submitForm,
 } = useLeadForm({
     initialCreditType: props.initialCreditType,
@@ -420,6 +507,18 @@ const {
         var(--color-background) 75%,
         var(--color-surface) 25%
     );
+}
+
+.input-error {
+    border-color: color-mix(in oklab, var(--color-error, #dc2626) 75%, white);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error, #dc2626) 10%, white);
+}
+
+.field-error {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-error, #dc2626);
+    padding-left: 0.1rem;
 }
 
 .cta-button {
