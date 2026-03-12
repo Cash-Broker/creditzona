@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Lead;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class LeadSubmissionTest extends TestCase
@@ -103,6 +105,68 @@ class LeadSubmissionTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['amount'])
             ->assertJsonPath('errors.amount.0', 'Сумата не може да бъде повече от 50000.');
+    }
+
+    public function test_recent_lead_with_same_phone_returns_validation_error(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+            'created_at' => now()->subDays(13),
+            'updated_at' => now()->subDays(13),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload());
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath(
+                'errors.phone.0',
+                'Вече има подадена заявка с този телефонен номер през последните 14 дни.',
+            );
+
+        $this->assertDatabaseCount('leads', 1);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_old_lead_with_same_phone_allows_new_submission(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+            'created_at' => now()->subDays(15),
+            'updated_at' => now()->subDays(15),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload());
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Благодарим! Ще се свържем с вас до 48ч.',
+            ]);
+
+        $this->assertDatabaseCount('leads', 2);
+
+        Carbon::setTestNow();
     }
 
     /**

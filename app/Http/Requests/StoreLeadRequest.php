@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Lead;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreLeadRequest extends FormRequest
@@ -12,7 +14,7 @@ class StoreLeadRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, Closure|string>>
      */
     public function rules(): array
     {
@@ -20,7 +22,26 @@ class StoreLeadRequest extends FormRequest
             'credit_type' => ['required', 'in:consumer,mortgage'],
             'first_name' => ['required', 'string', 'max:60'],
             'last_name' => ['required', 'string', 'max:60'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => [
+                'bail',
+                'required',
+                'string',
+                'max:30',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! is_string($value) || $value === '') {
+                        return;
+                    }
+
+                    $hasRecentLead = Lead::query()
+                        ->where('phone', $value)
+                        ->where('created_at', '>=', now()->subDays(14))
+                        ->exists();
+
+                    if ($hasRecentLead) {
+                        $fail('Вече има подадена заявка с този телефонен номер през последните 14 дни.');
+                    }
+                },
+            ],
             'email' => ['required', 'email', 'max:120'],
             'city' => ['required', 'string', 'max:120'],
             'amount' => ['required', 'integer', 'min:5000', 'max:50000'],
