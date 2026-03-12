@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lead;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -32,6 +33,7 @@ class LeadSubmissionTest extends TestCase
             'property_type' => null,
             'property_location' => null,
             'status' => 'new',
+            'assigned_user_id' => null,
             'source' => 'landing-page',
             'utm_source' => 'google',
             'utm_campaign' => 'spring-campaign',
@@ -128,6 +130,7 @@ class LeadSubmissionTest extends TestCase
 
         $response
             ->assertStatus(422)
+            ->assertJsonPath('message', 'Вече има подадена заявка с този телефонен номер през последните 14 дни.')
             ->assertJsonValidationErrors(['phone'])
             ->assertJsonPath(
                 'errors.phone.0',
@@ -167,6 +170,171 @@ class LeadSubmissionTest extends TestCase
         $this->assertDatabaseCount('leads', 2);
 
         Carbon::setTestNow();
+    }
+
+    public function test_old_lead_with_same_phone_reuses_historical_assigned_user(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        $historicalOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+            'assigned_user_id' => $historicalOperator->id,
+            'created_at' => now()->subDays(15),
+            'updated_at' => now()->subDays(15),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload());
+
+        $response->assertOk();
+
+        $newLead = Lead::query()->latest('id')->firstOrFail();
+
+        $this->assertSame($historicalOperator->id, $newLead->assigned_user_id);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_old_lead_without_assigned_user_uses_fallback_admin_or_operator(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        $fallbackAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+            'assigned_user_id' => null,
+            'created_at' => now()->subDays(15),
+            'updated_at' => now()->subDays(15),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload());
+
+        $response->assertOk();
+
+        $newLead = Lead::query()->latest('id')->firstOrFail();
+
+        $this->assertSame($fallbackAdmin->id, $newLead->assigned_user_id);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_new_lead_without_history_uses_fallback_admin_or_operator(): void
+    {
+        $fallbackAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'phone' => '0888999999',
+        ]));
+
+        $response->assertOk();
+
+        $newLead = Lead::query()->latest('id')->firstOrFail();
+
+        $this->assertSame($fallbackAdmin->id, $newLead->assigned_user_id);
+    }
+
+    public function test_fallback_assignment_uses_round_robin_between_eligible_users(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $operatorOne = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $operatorTwo = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $phones = [
+            '0888000001',
+            '0888000002',
+            '0888000003',
+            '0888000004',
+        ];
+
+        foreach ($phones as $phone) {
+            $this->postJson('/leads', $this->validPayload([
+                'phone' => $phone,
+            ]))->assertOk();
+        }
+
+        $assignedUserIds = Lead::query()
+            ->orderBy('id')
+            ->pluck('assigned_user_id')
+            ->all();
+
+        $this->assertSame([
+            $admin->id,
+            $operatorOne->id,
+            $operatorTwo->id,
+            $admin->id,
+        ], $assignedUserIds);
+    }
+
+    public function test_multiple_sequential_new_leads_are_distributed_evenly_with_round_robin(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $operatorOne = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $operatorTwo = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        foreach (range(1, 9) as $index) {
+            $this->postJson('/leads', $this->validPayload([
+                'phone' => sprintf('08880000%02d', $index),
+            ]))->assertOk();
+        }
+
+        $distribution = Lead::query()
+            ->selectRaw('assigned_user_id, COUNT(*) as aggregate')
+            ->groupBy('assigned_user_id')
+            ->pluck('aggregate', 'assigned_user_id');
+
+        $this->assertSame(3, $distribution[$admin->id]);
+        $this->assertSame(3, $distribution[$operatorOne->id]);
+        $this->assertSame(3, $distribution[$operatorTwo->id]);
     }
 
     /**

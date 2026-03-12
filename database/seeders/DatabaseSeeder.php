@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,9 +14,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'boss']);
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'agent']);
-
         $this->call([
             DemoUsersSeeder::class,
             FaqSeeder::class,

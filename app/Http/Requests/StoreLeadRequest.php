@@ -13,6 +13,20 @@ class StoreLeadRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'credit_type' => $this->normalizeString($this->input('credit_type')),
+            'first_name' => $this->normalizeString($this->input('first_name')),
+            'last_name' => $this->normalizeString($this->input('last_name')),
+            'phone' => $this->normalizeString($this->input('phone')),
+            'email' => $this->normalizeString($this->input('email')),
+            'city' => $this->normalizeString($this->input('city')),
+            'property_type' => $this->normalizeString($this->input('property_type')),
+            'property_location' => $this->normalizeString($this->input('property_location')),
+        ]);
+    }
+
     /**
      * @return array<string, array<int, Closure|string>>
      */
@@ -91,5 +105,16 @@ class StoreLeadRequest extends FormRequest
             'property_location.string' => 'Местонахождението на имота трябва да бъде текст.',
             'property_location.max' => 'Местонахождението на имота не може да бъде по-дълго от 120 символа.',
         ];
+    }
+
+    private function normalizeString(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 }
