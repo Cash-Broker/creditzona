@@ -175,6 +175,118 @@
             </div>
         </section>
 
+        <section class="mt-16">
+            <div class="max-w-3xl">
+                <span
+                    class="inline-flex items-center gap-2 rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
+                >
+                    <font-awesome-icon icon="fa-solid fa-user-group" />
+                    Екип
+                </span>
+
+                <h2 class="mt-4 text-2xl font-semibold text-text md:text-3xl">
+                    С кого ще комуникираш
+                </h2>
+
+                <p class="mt-4 text-sm leading-7 text-text-muted">
+                    Зад всяка консултация стои реален човек, който ще се
+                    запознае със случая ти и ще те насочи през следващите
+                    стъпки по ясен и практичен начин.
+                </p>
+            </div>
+
+            <div class="mt-8 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+                <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-1">
+                    <article
+                        v-for="member in teamMembers"
+                        :key="member.email"
+                        class="overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_8px_24px_-22px_rgba(17,24,39,0.42)]"
+                    >
+                        <div class="aspect-[16/10] overflow-hidden bg-accent-soft">
+                            <img
+                                :src="member.image"
+                                :alt="member.name"
+                                loading="lazy"
+                                class="h-full w-full object-cover"
+                            />
+                        </div>
+
+                        <div class="p-6">
+                            <h3
+                                class="text-2xl font-semibold tracking-tight text-text"
+                            >
+                                {{ member.name }}
+                            </h3>
+
+                            <p class="mt-2 text-sm font-medium text-text-subtle">
+                                {{ member.position }}
+                            </p>
+
+                            <div
+                                class="mt-5 h-1 w-12 rounded-full bg-accent-soft-border"
+                            ></div>
+
+                            <div class="mt-5 space-y-3 text-sm text-secondary">
+                                <a
+                                    :href="`tel:${member.phoneHref}`"
+                                    class="inline-flex items-center gap-3 transition-colors duration-200 hover:text-accent-darkened"
+                                >
+                                    <span
+                                        class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent-darkened"
+                                    >
+                                        <font-awesome-icon icon="fa-solid fa-phone" />
+                                    </span>
+                                    {{ member.phone }}
+                                </a>
+
+                                <a
+                                    :href="`mailto:${member.email}`"
+                                    class="flex items-center gap-3 break-all transition-colors duration-200 hover:text-accent-darkened"
+                                >
+                                    <span
+                                        class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent-darkened"
+                                    >
+                                        <font-awesome-icon
+                                            icon="fa-solid fa-envelope"
+                                        />
+                                    </span>
+                                    {{ member.email }}
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <article class="content-section">
+                    <h3 class="text-xl font-semibold text-text">
+                        Как протича комуникацията
+                    </h3>
+
+                    <div class="mt-6 space-y-4">
+                        <div
+                            v-for="(step, index) in teamContactSteps"
+                            :key="step.title"
+                            class="process-step"
+                        >
+                            <span class="process-step-index">
+                                {{ index + 1 }}
+                            </span>
+
+                            <div class="process-step-content">
+                                <h4 class="process-step-title">
+                                    {{ step.title }}
+                                </h4>
+
+                                <p class="mt-1 text-sm leading-6 text-text-muted">
+                                    {{ step.text }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
         <section class="mt-16 grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div class="content-section">
                 <h2 class="text-2xl font-semibold text-text">
@@ -268,6 +380,32 @@ const processSteps = [
     {
         title: "Получавате насока",
         text: "Изготвяме структурирана посока за следващите стъпки и стабилизиране.",
+    },
+];
+
+const teamMembers = [
+    {
+        name: "Име на консултант",
+        position: "Кредитен консултант",
+        phone: "+359 000 000 000",
+        phoneHref: "+359000000000",
+        email: "office@creditzona.bg",
+        image: "https://placehold.co/960x600/e8f4f7/0b4f5b?text=Credit+Zona",
+    },
+];
+
+const teamContactSteps = [
+    {
+        title: "Свързваш се с наш консултант",
+        text: "Оставяш запитване или звъниш директно, а ние поемаме комуникацията по случая.",
+    },
+    {
+        title: "Разглеждаме конкретната ситуация",
+        text: "Преглеждаме параметрите, задълженията и възможните следващи стъпки според профила.",
+    },
+    {
+        title: "Получаваш ясна насока",
+        text: "Даваме ти разбираема обратна връзка и структура за това как да продължиш.",
     },
 ];
 
