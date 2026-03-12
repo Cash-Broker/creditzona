@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Blog extends Model
 {
@@ -48,5 +49,27 @@ class Blog extends Model
         return $query
             ->orderByDesc('published_at')
             ->orderByDesc('id');
+    }
+
+    public static function getPublicImageUrl(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://', 'data:'])) {
+            return $path;
+        }
+
+        return url(Str::start($path, '/'));
+    }
+
+    public static function getStorageImagePath(?string $path): ?string
+    {
+        if (blank($path) || ! Str::startsWith($path, '/storage/')) {
+            return null;
+        }
+
+        return Str::after($path, '/storage/');
     }
 }

@@ -7,22 +7,53 @@ use App\Models\User;
 
 class LeadPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
+    public function create(User $user): bool
+    {
+        return false;
+    }
+
     public function view(User $user, Lead $lead): bool
     {
-        return true; // All authenticated can view lead record (basic)
+        return true;
     }
 
     public function update(User $user, Lead $lead): bool
     {
-        if ($user->hasRole('boss')) return true;
-
-        // Agents can update only assigned leads
-        return (int) $lead->assigned_user_id === (int) $user->id;
+        return true;
     }
 
-    public function viewSensitive(User $user, Lead $lead): bool
+    public function delete(User $user, Lead $lead): bool
     {
-        if ($user->hasRole('boss')) return true;
-        return (int) $lead->assigned_user_id === (int) $user->id;
+        return false;
+    }
+
+    public function deleteAny(User $user): bool
+    {
+        return false;
+    }
+
+    public function restore(User $user, Lead $lead): bool
+    {
+        return false;
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return false;
+    }
+
+    public function forceDelete(User $user, Lead $lead): bool
+    {
+        return false;
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return false;
     }
 }

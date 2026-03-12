@@ -26,7 +26,6 @@
             <RouterLink
                 v-for="service in services"
                 :key="service.title"
-                :to="service.url"
                 class="group rounded-[28px] border border-border bg-surface p-6 shadow-[0_10px_30px_-18px_rgba(17,24,39,0.35)] transition-all duration-300 hover:-translate-y-1 hover:border-border-strong hover:shadow-[0_18px_40px_-20px_rgba(17,24,39,0.45)]"
             >
                 <div class="flex items-start justify-between gap-4">
@@ -54,12 +53,12 @@
                 </p>
 
                 <div class="mt-6 flex items-center justify-between">
-                    <span
+                    <!-- <span
                         class="inline-flex items-center gap-2 text-sm font-semibold text-accent-darkened"
                     >
                         Виж повече
-                    </span>
-
+                    </span> -->
+<!--
                     <span
                         class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent-darkened transition-transform duration-300 group-hover:translate-x-1"
                     >
@@ -67,7 +66,7 @@
                             icon="fa-solid fa-arrow-right"
                             class="text-sm"
                         />
-                    </span>
+                    </span> -->
                 </div>
             </RouterLink>
         </div>
@@ -287,14 +286,14 @@ const services = [
         title: "Рефинансиране и обединяване на задължения",
         description:
             "Обединете текущите си задължения в една по-ясна и по-лека месечна вноска.",
-        url: normalizeRoutePath(routes.refinance, "/refinansirane"),
+        // url: normalizeRoutePath(routes.refinance, "/refinansirane"),
         icon: "fa-solid fa-file-lines",
     },
     {
         title: "Ипотечен кредит",
         description:
             "Финансиране срещу имот с индивидуален подход и ясно структурирани условия.",
-        url: normalizeRoutePath(routes.mortgage, "/ipotechen-kredit"),
+        // url: normalizeRoutePath(routes.mortgage, "/ipotechen-kredit"),
         icon: "fa-solid fa-house",
     },
 ];

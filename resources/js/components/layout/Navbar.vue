@@ -135,9 +135,9 @@ const route = useRoute();
 const isMobileMenuOpen = ref(false);
 
 const navItems = [
-    { label: "Потребителски", url: "/potrebitelski-kredit" },
-    { label: "Ипотечен", url: "/ipotechen-kredit" },
-    { label: "Рефинансиране", url: "/refinansirane" },
+    // { label: "Потребителски", url: "/potrebitelski-kredit" },
+    // { label: "Ипотечен", url: "/ipotechen-kredit" },
+    // { label: "Рефинансиране", url: "/refinansirane" },
     { label: "За нас", url: "/about" },
     { label: "ЧЗВ", url: "/faq" },
     { label: "Блог", url: "/blog" },

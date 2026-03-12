@@ -28,18 +28,18 @@ const routes = [
         path: "/blog/:slug",
         component: BlogDetailsPage,
     },
-    {
-        path: "/potrebitelski-kredit",
-        component: () => import("@/pages/ConsumerPage.vue"),
-    },
-    {
-        path: "/ipotechen-kredit",
-        component: () => import("@/pages/MortgagePage.vue"),
-    },
-    {
-        path: "/refinansirane",
-        component: () => import("@/pages/RefinancePage.vue"),
-    },
+    // {
+    //     path: "/potrebitelski-kredit",
+    //     component: () => import("@/pages/ConsumerPage.vue"),
+    // },
+    // {
+    //     path: "/ipotechen-kredit",
+    //     component: () => import("@/pages/MortgagePage.vue"),
+    // },
+    // {
+    //     path: "/refinansirane",
+    //     component: () => import("@/pages/RefinancePage.vue"),
+    // },
     // {
     //     path: "/izkupuvane-na-zadalzheniya",
     //     component: () => import("@/pages/DebtBuyoutPage.vue"),

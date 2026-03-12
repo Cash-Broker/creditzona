@@ -2,7 +2,11 @@
 
 namespace App\Filament\Resources\Leads\Tables;
 
-use Filament\Tables;
+use App\Filament\Resources\Leads\LeadResource;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class LeadsTable
@@ -11,48 +15,68 @@ class LeadsTable
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('created_at')->dateTime('d.m H:i')->sortable(),
-                Tables\Columns\TextColumn::make('full_name')->searchable(),
-                Tables\Columns\TextColumn::make('phone')->searchable(),
-                Tables\Columns\TextColumn::make('service_type')->badge(),
-                Tables\Columns\TextColumn::make('amount')->numeric(),
-                Tables\Columns\SelectColumn::make('status')->options([
-                    'new' => 'New',
-                    'contacted' => 'Contacted',
-                    'waiting_docs' => 'Waiting docs',
-                    'submitted' => 'Submitted',
-                    'approved' => 'Approved',
-                    'rejected' => 'Rejected',
-                    'done' => 'Done',
-                    'lost' => 'Lost',
-                ]),
-                Tables\Columns\TextColumn::make('assignedUser.name')->label('Agent'),
+                TextColumn::make('credit_type')
+                    ->label('Тип кредит')
+                    ->badge()
+                    ->color('primary')
+                    ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state))
+                    ->sortable(),
+                TextColumn::make('first_name')
+                    ->label('Име')
+                    ->searchable(),
+                TextColumn::make('last_name')
+                    ->label('Фамилия')
+                    ->searchable(),
+                TextColumn::make('phone')
+                    ->label('Телефон')
+                    ->searchable(),
+                TextColumn::make('email')
+                    ->label('Имейл')
+                    ->searchable(),
+                TextColumn::make('city')
+                    ->label('Град')
+                    ->searchable(),
+                TextColumn::make('amount')
+                    ->label('Сума')
+                    ->numeric(0, locale: 'bg')
+                    ->suffix(' лв.')
+                    ->sortable(),
+                TextColumn::make('status')
+                    ->label('Статус')
+                    ->badge()
+                    ->colors([
+                        'warning' => 'new',
+                        'primary' => 'in_progress',
+                        'success' => 'processed',
+                    ])
+                    ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state))
+                    ->searchable(),
+                TextColumn::make('created_at')
+                    ->label('Създадена на')
+                    ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('updated_at')
+                    ->label('Променена на')
+                    ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')->options([
-                    'new' => 'New',
-                    'contacted' => 'Contacted',
-                    'waiting_docs' => 'Waiting docs',
-                    'submitted' => 'Submitted',
-                    'approved' => 'Approved',
-                    'rejected' => 'Rejected',
-                    'done' => 'Done',
-                    'lost' => 'Lost',
-                ]),
-                Tables\Filters\SelectFilter::make('service_type')->options([
-                    'consumer' => 'Consumer',
-                    'mortgage' => 'Mortgage',
-                    'refinance' => 'Refinance',
-                    'debt_buyout' => 'Debt buyout',
-                ]),
+                SelectFilter::make('credit_type')
+                    ->label('Тип кредит')
+                    ->options(LeadResource::getCreditTypeOptions())
+                    ->native(false),
+                SelectFilter::make('status')
+                    ->label('Статус')
+                    ->options(LeadResource::getStatusOptions())
+                    ->native(false),
             ])
-            ->actions([
-                Tables\Actions\Action::make('call')
-                    ->label('Call')
-                    ->url(fn ($record) => 'tel:' . $record->phone)
-                    ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make(),
+            ->recordActions([
+                ViewAction::make(),
+                EditAction::make(),
             ])
-            ->defaultSort('id', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->toolbarActions([]);
     }
 }
