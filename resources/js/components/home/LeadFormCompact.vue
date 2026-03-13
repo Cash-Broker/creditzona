@@ -1,5 +1,10 @@
 <template>
-    <form @submit.prevent="submitForm" class="space-y-4" novalidate>
+    <form
+        id="lead-form-compact"
+        @submit.prevent="submitForm"
+        class="space-y-4"
+        novalidate
+    >
         <section
             class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
         >

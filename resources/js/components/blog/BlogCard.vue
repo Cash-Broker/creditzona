@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <article
         class="flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md"
         @mouseenter="prefetchDetails"
@@ -10,6 +10,7 @@
                 :alt="post.title"
                 class="h-52 w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
                 loading="lazy"
+                decoding="async"
             />
         </RouterLink>
 

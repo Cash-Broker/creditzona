@@ -16,14 +16,13 @@
             <p
                 class="mt-4 max-w-2xl text-sm leading-7 text-text-muted md:text-base"
             >
-                Консултираме и структурираме решения за хора и семейства в
-                период на финансово напрежение, с фокус върху яснота, контрол и
-                стабилност.
+                Консултираме и структурираме решения за хора и семейства с
+                фокус върху яснота, контрол и устойчивост при избора на кредит.
             </p>
         </div>
 
         <div class="grid gap-6 md:grid-cols-2">
-            <RouterLink
+            <article
                 v-for="service in services"
                 :key="service.title"
                 class="group rounded-[28px] border border-border bg-surface p-6 shadow-[0_10px_30px_-18px_rgba(17,24,39,0.35)] transition-all duration-300 hover:-translate-y-1 hover:border-border-strong hover:shadow-[0_18px_40px_-20px_rgba(17,24,39,0.45)]"
@@ -53,12 +52,12 @@
                 </p>
 
                 <div class="mt-6 flex items-center justify-between">
-                    <!-- <span
+                    <span
                         class="inline-flex items-center gap-2 text-sm font-semibold text-accent-darkened"
                     >
-                        Виж повече
-                    </span> -->
-<!--
+                        Подход при консултация
+                    </span>
+
                     <span
                         class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent-darkened transition-transform duration-300 group-hover:translate-x-1"
                     >
@@ -66,9 +65,9 @@
                             icon="fa-solid fa-arrow-right"
                             class="text-sm"
                         />
-                    </span> -->
+                    </span>
                 </div>
-            </RouterLink>
+            </article>
         </div>
 
         <div
@@ -88,220 +87,60 @@
                 <h3
                     class="mt-4 text-2xl font-bold tracking-tight text-text md:text-3xl"
                 >
-                    Когато другите виждат риск, ние търсим решение
+                    Когато другите виждат риск, ние търсим работещо решение
                 </h3>
 
                 <div
                     class="mt-5 space-y-4 text-sm leading-7 text-text-muted md:text-[15px]"
                 >
                     <p>
-                        Влошена кредитна история. Запори от ЧСИ. Нестандартни
-                        или труднодоказуеми доходи. Това са обстоятелства – не
-                        присъда.
+                        Влошена кредитна история, запори, множество активни
+                        кредити или трудно доказуем доход не означават, че
+                        няма възможност за адекватна посока.
                     </p>
 
                     <p>
-                        С правилна финансова структура и участието на надежден
-                        поръчител може да бъде изградено решение, което да
-                        намали месечното натоварване и да даде възможност за
-                        стабилизиране на бюджета.
+                        Нашата роля е да подредим ситуацията, да обясним
+                        параметрите спокойно и да очертаем следващите стъпки
+                        според конкретния казус.
                     </p>
 
                     <p>
-                        Поръчител може да бъде роднина или близък човек с чиста
-                        кредитна история и доказуем доход, включително пенсионер
-                        до 72 години.
+                        При нужда от по-добра структура на бюджета, търсим
+                        решение, което да намали месечното натоварване и да
+                        даде по-ясна предвидимост.
                     </p>
                 </div>
-            </div>
-        </div>
-
-        <div
-            class="rounded-[32px] border border-accent-soft-border bg-accent-soft p-6 shadow-[0_10px_30px_-18px_rgba(17,24,39,0.18)] sm:p-7"
-        >
-            <div
-                class="inline-flex items-center rounded-full border border-accent-soft-border bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
-            >
-                Примерен сценарий
-            </div>
-
-            <h3
-                class="mt-4 text-2xl font-bold tracking-tight text-accent-ink md:text-3xl"
-            >
-                Пример за преструктуриране
-            </h3>
-
-            <div class="mt-5 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                <div
-                    class="space-y-4 text-sm leading-7 text-accent-ink md:text-[15px]"
-                >
-                    <p>
-                        Ако в момента обслужваш задължения в размер на около 10
-                        000 евро, е възможно месечното ти натоварване да достига
-                        или надхвърля 1 000 евро, разпределени по няколко
-                        различни кредита.
-                    </p>
-
-                    <p>
-                        При консолидиране на задълженията със съдействие на
-                        поръчител, месечната вноска може да бъде приблизително
-                        125 евро* при договорени условия и ясно разписан план за
-                        погасяване.
-                    </p>
-                </div>
-
-                <div class="grid gap-3">
-                    <div
-                        class="rounded-2xl border border-white/70 bg-surface/80 p-4 shadow-sm"
-                    >
-                        <div
-                            class="text-xs font-semibold uppercase tracking-[0.12em] text-accent-ink/70"
-                        >
-                            Текущо натоварване
-                        </div>
-                        <div
-                            class="mt-2 text-3xl font-black tracking-tight text-accent-ink"
-                        >
-                            ~ 1 000 €
-                        </div>
-                    </div>
-
-                    <div
-                        class="rounded-2xl border border-accent-soft-border bg-surface p-4 shadow-sm"
-                    >
-                        <div
-                            class="text-xs font-semibold uppercase tracking-[0.12em] text-accent-darkened"
-                        >
-                            Примерна нова вноска
-                        </div>
-                        <div
-                            class="mt-2 text-3xl font-black tracking-tight text-accent-darkened"
-                        >
-                            ~ 125 €
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <ul class="mt-6 grid gap-3 sm:grid-cols-2">
-                <li
-                    v-for="benefit in benefits"
-                    :key="benefit"
-                    class="inline-flex items-center gap-3 rounded-2xl bg-surface/70 px-4 py-3 text-sm font-medium text-accent-ink"
-                >
-                    <span
-                        class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-surface text-xs text-accent-darkened"
-                    >
-                        <font-awesome-icon icon="fa-solid fa-check" />
-                    </span>
-                    {{ benefit }}
-                </li>
-            </ul>
-
-            <p class="mt-5 text-xs leading-6 text-accent-ink/80">
-                * Посочените стойности са примерни и зависят от конкретния
-                случай, профила на клиента и договорените условия.
-            </p>
-        </div>
-
-        <div class="content-section">
-            <span
-                class="inline-flex items-center rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
-            >
-                Дългосрочен подход
-            </span>
-
-            <h3 class="mt-4 text-2xl font-bold tracking-tight text-text">
-                Временна подкрепа, дългосрочна стабилност
-            </h3>
-
-            <div
-                class="mt-5 space-y-4 text-sm leading-7 text-text-muted md:text-[15px]"
-            >
-                <p>
-                    В много случаи участието на поръчителя е необходимо само в
-                    началния период – обикновено до около една година, а
-                    понякога и значително по-кратко.
-                </p>
-
-                <p>
-                    След подобряване на финансовите показатели съществува
-                    възможност за рефинансиране без поръчител.
-                </p>
-
-                <p>
-                    Нашият подход не е „бързо решение“. Той е структурирана
-                    финансова стратегия, насочена към устойчивост и реално
-                    подобрение на кредитния профил.
-                </p>
             </div>
         </div>
     </section>
 </template>
 
 <script setup>
-const routes = window.laravelRoutes || {};
-
-function normalizeRoutePath(url, fallback = "/") {
-    const safeFallback =
-        typeof fallback === "string" && fallback.trim() ? fallback : "/";
-
-    if (typeof url !== "string") {
-        return safeFallback;
-    }
-
-    const value = url.trim();
-
-    if (!value) {
-        return safeFallback;
-    }
-
-    try {
-        if (/^https?:\/\//i.test(value)) {
-            const parsed = new URL(value);
-            const normalizedPath = `${parsed.pathname || ""}${parsed.search || ""}${parsed.hash || ""}`;
-
-            return normalizedPath || safeFallback;
-        }
-
-        if (/^\/\//.test(value)) {
-            const parsed = new URL(`${window.location.protocol}${value}`);
-            const normalizedPath = `${parsed.pathname || ""}${parsed.search || ""}${parsed.hash || ""}`;
-
-            return normalizedPath || safeFallback;
-        }
-
-        if (/^[a-z][a-z\d+\-.]*:/i.test(value)) {
-            return safeFallback;
-        }
-
-        return value;
-    } catch {
-        return safeFallback;
-    }
-}
-
 const services = [
     {
-        title: "Рефинансиране и обединяване на задължения",
+        title: "Анализ на текущата ситуация",
         description:
-            "Обединете текущите си задължения в една по-ясна и по-лека месечна вноска.",
-        // url: normalizeRoutePath(routes.refinance, "/refinansirane"),
+            "Разглеждаме доходи, ангажименти, кредитна история и реалната месечна тежест преди да очертаем посока.",
         icon: "fa-solid fa-file-lines",
     },
     {
-        title: "Ипотечен кредит",
+        title: "Преглед на оферти и условия",
         description:
-            "Финансиране срещу имот с индивидуален подход и ясно структурирани условия.",
-        // url: normalizeRoutePath(routes.mortgage, "/ipotechen-kredit"),
+            "Подреждаме условията по офертите на разбираем език, така че да знаете какво е важно за вашия случай.",
         icon: "fa-solid fa-house",
     },
-];
-
-const benefits = [
-    "по-ниско месечно напрежение",
-    "единна структура на плащане",
-    "предвидимост",
-    "възможност за възстановяване на кредитния профил",
+    {
+        title: "Подготовка на документи",
+        description:
+            "Помагаме да подготвите информацията и документите, които обичайно се изискват в процеса.",
+        icon: "fa-solid fa-building-columns",
+    },
+    {
+        title: "План за следващи стъпки",
+        description:
+            "Получавате по-ясен план как да продължите след консултацията според конкретната ситуация.",
+        icon: "fa-solid fa-check",
+    },
 ];
 </script>

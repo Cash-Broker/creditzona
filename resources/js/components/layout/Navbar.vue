@@ -5,7 +5,6 @@
         <div
             class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 lg:py-5"
         >
-            <!-- Logo -->
             <RouterLink
                 to="/"
                 class="flex shrink-0 items-center transition-opacity hover:opacity-90"
@@ -13,11 +12,13 @@
                 <img
                     :src="logo"
                     alt="Кредит Зона"
+                    width="200"
+                    height="113"
                     class="h-14 w-auto lg:h-16"
+                    decoding="async"
                 />
             </RouterLink>
 
-            <!-- Desktop navigation -->
             <div class="hidden items-center gap-3 lg:flex">
                 <nav
                     class="flex items-center gap-1 rounded-full border border-border bg-background/80 p-1.5"
@@ -32,15 +33,15 @@
                     </RouterLink>
                 </nav>
 
-                <RouterLink
-                    to="/contacts"
+                <button
+                    type="button"
                     class="inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-surface shadow-[0_10px_20px_-14px_rgba(17,24,39,0.6)] transition-all duration-200 hover:bg-accent-hover hover:-translate-y-[1px]"
+                    @click="goToConsultationForm"
                 >
                     Безплатна консултация
-                </RouterLink>
+                </button>
             </div>
 
-            <!-- Mobile burger -->
             <button
                 type="button"
                 class="inline-flex items-center justify-center rounded-2xl border border-border-strong bg-surface p-2.5 text-secondary transition hover:border-accent-soft-border hover:bg-accent-soft hover:text-accent-darkened lg:hidden"
@@ -82,7 +83,6 @@
             </button>
         </div>
 
-        <!-- Mobile navigation -->
         <transition
             enter-active-class="transition duration-200 ease-out"
             enter-from-class="opacity-0 -translate-y-2"
@@ -111,13 +111,13 @@
                             </RouterLink>
                         </div>
 
-                        <RouterLink
-                            to="/contacts"
+                        <button
+                            type="button"
                             class="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-accent px-5 py-3.5 text-sm font-semibold text-surface transition-all duration-200 hover:bg-accent-hover"
-                            @click="closeMobileMenu"
+                            @click="goToConsultationForm"
                         >
                             Безплатна консултация
-                        </RouterLink>
+                        </button>
                     </nav>
                 </div>
             </div>
@@ -127,17 +127,17 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 const logo = "/images/logo/logo.png";
+const consultationHash = "#lead-form-compact";
+const consultationRoutes = new Set(["/", "/about"]);
 
 const route = useRoute();
+const router = useRouter();
 const isMobileMenuOpen = ref(false);
 
 const navItems = [
-    // { label: "Потребителски", url: "/potrebitelski-kredit" },
-    // { label: "Ипотечен", url: "/ipotechen-kredit" },
-    // { label: "Рефинансиране", url: "/refinansirane" },
     { label: "За нас", url: "/about" },
     { label: "ЧЗВ", url: "/faq" },
     { label: "Блог", url: "/blog" },
@@ -168,6 +168,48 @@ function getMobileLinkClasses(url) {
 
 function closeMobileMenu() {
     isMobileMenuOpen.value = false;
+}
+
+function scrollToConsultationForm() {
+    const element = document.getElementById("lead-form-compact");
+
+    if (!element) {
+        return false;
+    }
+
+    const stickyHeader = document.querySelector("header.sticky");
+    const offset =
+        stickyHeader instanceof HTMLElement ? stickyHeader.offsetHeight + 16 : 96;
+    const top = element.getBoundingClientRect().top + window.scrollY - offset;
+
+    window.scrollTo({
+        top: Math.max(top, 0),
+        behavior: "smooth",
+    });
+
+    return true;
+}
+
+async function goToConsultationForm() {
+    closeMobileMenu();
+
+    if (scrollToConsultationForm()) {
+        if (route.hash !== consultationHash) {
+            await router.replace({
+                path: route.path,
+                hash: consultationHash,
+            });
+        }
+
+        return;
+    }
+
+    const targetPath = consultationRoutes.has(route.path) ? route.path : "/";
+
+    await router.push({
+        path: targetPath,
+        hash: consultationHash,
+    });
 }
 
 watch(

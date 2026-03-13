@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="mx-auto max-w-5xl px-4 py-10 md:py-12">
         <section class="max-w-3xl">
             <span
@@ -54,11 +54,25 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import FaqAccordion from "@/components/faq/FaqAccordion.vue";
+import { getInitialData } from "@/utils/appConfig";
+import { applyRouteSeo, buildFaqSchema } from "@/seo";
 
+const route = useRoute();
 const faqs = ref([]);
 const loading = ref(true);
 const error = ref("");
+
+function syncSeo() {
+    if (!faqs.value.length) {
+        return;
+    }
+
+    applyRouteSeo(route, {
+        structuredData: [buildFaqSchema(faqs.value)],
+    });
+}
 
 async function loadFaqs() {
     loading.value = true;
@@ -77,6 +91,7 @@ async function loadFaqs() {
 
         const payload = await response.json();
         faqs.value = Array.isArray(payload) ? payload : [];
+        syncSeo();
     } catch (e) {
         console.error(e);
         error.value =
@@ -86,5 +101,16 @@ async function loadFaqs() {
     }
 }
 
-onMounted(loadFaqs);
+onMounted(() => {
+    const initialFaqs = getInitialData("faqs", []);
+
+    if (Array.isArray(initialFaqs) && initialFaqs.length) {
+        faqs.value = initialFaqs;
+        loading.value = false;
+        syncSeo();
+        return;
+    }
+
+    loadFaqs();
+});
 </script>

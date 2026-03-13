@@ -18,7 +18,10 @@
                         <img
                             :src="logo"
                             alt="Кредит Зона"
+                            width="200"
+                            height="113"
                             class="h-14 w-auto shrink-0"
+                            decoding="async"
                         />
 
                         <div class="min-w-0">
@@ -29,22 +32,23 @@
                             </div>
 
                             <p class="mt-1 text-sm text-text-subtle">
-                                Ипотечни и рефинансиращи решения
+                                Кредитна консултация за Пловдив и онлайн
                             </p>
                         </div>
                     </RouterLink>
 
                     <p class="mt-5 max-w-md text-sm leading-7 text-text-muted">
-                        Консултации и съдействие при ипотечни и рефинансиращи
-                        решения. Насочваме към подходяща кредитна оферта според
-                        конкретния случай.
+                        Консултации и съдействие при избор на по-ясна
+                        финансова посока с фокус върху реално изпълним план,
+                        спокойна комуникация и конкретни следващи стъпки.
                     </p>
 
-                    <div
-                        class="mt-6 inline-flex items-center justify-center rounded-2xl border border-accent-soft-border bg-accent-soft px-4 py-3 text-sm font-medium text-accent-ink"
+                    <RouterLink
+                        to="/contacts"
+                        class="mt-6 inline-flex items-center justify-center rounded-2xl border border-accent-soft-border bg-accent-soft px-4 py-3 text-sm font-medium text-accent-ink transition-colors hover:bg-white"
                     >
                         Безплатна първоначална консултация
-                    </div>
+                    </RouterLink>
                 </div>
 
                 <nav
@@ -141,6 +145,9 @@ const logo = "/images/logo/logo.png";
 
 const navigationLinks = [
     { label: "Начало", to: "/" },
+    { label: "За нас", to: "/about" },
+    { label: "ЧЗВ", to: "/faq" },
+    { label: "Блог", to: "/blog" },
     { label: "Контакти", to: "/contacts" },
 ];
 
