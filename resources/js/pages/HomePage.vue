@@ -1,8 +1,11 @@
 <template>
     <div class="max-w-6xl mx-auto px-4 py-10">
-        <!-- <HeroSection /> -->
-
-        <QuickConsultationCard class="mt-5 relative z-20" />
+        <QuickConsultationCard
+            class="mt-5 relative z-20"
+            heading-tag="h1"
+            image-loading="eager"
+            image-fetch-priority="high"
+        />
 
         <div class="mt-12">
             <LeadInfo />
@@ -15,7 +18,6 @@
 </template>
 
 <script setup>
-import HeroSection from "@/components/home/HeroSection.vue";
 import LeadInfo from "@/components/home/LeadInfo.vue";
 import QuickConsultationCard from "@/components/home/QuickConsultationCard.vue";
 import ServicesSection from "@/components/home/ServicesSection.vue";

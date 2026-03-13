@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { getInitialData } from "@/utils/appConfig";
 
 const posts = ref([]);
 const postsLastFetchedAt = ref(0);
@@ -15,6 +16,45 @@ function isCacheFresh(timestamp) {
 
 function normalizeArray(payload) {
     return Array.isArray(payload) ? payload : [];
+}
+
+function seedInitialData() {
+    const initialPosts = normalizeArray(getInitialData("blogs", []));
+    const initialBlogPost = getInitialData("blogPost", null);
+
+    if (initialPosts.length > 0) {
+        posts.value = initialPosts;
+        postsLastFetchedAt.value = Date.now();
+
+        for (const post of initialPosts) {
+            if (post?.slug) {
+                postDetails.set(post.slug, {
+                    data: post,
+                    fetchedAt: postsLastFetchedAt.value,
+                });
+            }
+        }
+    }
+
+    if (initialBlogPost?.slug) {
+        postDetails.set(initialBlogPost.slug, {
+            data: initialBlogPost,
+            fetchedAt: Date.now(),
+        });
+
+        const existingIndex = posts.value.findIndex(
+            (post) => post?.slug === initialBlogPost.slug,
+        );
+
+        if (existingIndex >= 0) {
+            posts.value[existingIndex] = {
+                ...posts.value[existingIndex],
+                ...initialBlogPost,
+            };
+        } else {
+            posts.value.unshift(initialBlogPost);
+        }
+    }
 }
 
 async function fetchJson(url) {
@@ -42,7 +82,11 @@ export function useBlogPosts() {
 }
 
 export async function getBlogs({ force = false } = {}) {
-    if (!force && posts.value.length > 0 && isCacheFresh(postsLastFetchedAt.value)) {
+    if (
+        !force &&
+        posts.value.length > 0 &&
+        isCacheFresh(postsLastFetchedAt.value)
+    ) {
         return posts.value;
     }
 
@@ -149,3 +193,5 @@ export function prefetchBlogBySlug(slug) {
         // Ignore prefetch errors.
     });
 }
+
+seedInitialData();

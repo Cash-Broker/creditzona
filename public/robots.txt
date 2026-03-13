@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /filament
+Disallow: /api
+Disallow: /up
+Disallow: /storage
+
+Sitemap: https://creditzona.bg/sitemap.xml

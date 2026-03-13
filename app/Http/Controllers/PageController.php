@@ -2,61 +2,142 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Blog;
+use App\Models\Faq;
+use App\Support\Seo\SeoManager;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PageController extends Controller
 {
-    public function home(): View
-    {
-        return $this->renderPage('home', 'ÐšÑ€ÐµÐ´Ð¸Ñ‚Ð—Ð¾Ð½Ð°');
+    public function __construct(
+        private readonly SeoManager $seoManager,
+    ) {
     }
 
-    public function about(): View
+    public function home(Request $request): View
     {
-        return $this->renderPage('about', 'Ð—Ð° Ð½Ð°Ñ');
+        return $this->renderPage('home', $request);
     }
 
-    public function contact(): View
+    public function about(Request $request): View
     {
-        return $this->renderPage('contact', 'ÐšÐ¾Ð½Ñ‚Ð°ÐºÑ‚Ð¸');
+        return $this->renderPage('about', $request);
     }
 
-    public function faq(): View
+    public function contact(Request $request): View
     {
-        return $this->renderPage('faq', 'Ð§ÐµÑÑ‚Ð¾ Ð·Ð°Ð´Ð°Ð²Ð°Ð½Ð¸ Ð²ÑŠÐ¿Ñ€Ð¾ÑÐ¸');
+        return $this->renderPage('contact', $request);
     }
 
-    public function blog(?string $slug = null): View
+    public function faq(Request $request): View
     {
-        return $this->renderPage('blog', 'Ð‘Ð»Ð¾Ð³');
+        $faqs = Faq::query()
+            ->published()
+            ->ordered()
+            ->get(['question', 'answer']);
+
+        return $this->renderPage('faq', $request, [
+            'json_ld' => [$this->seoManager->faqSchema($faqs)],
+            'initial_data' => [
+                'faqs' => $faqs->values()->all(),
+            ],
+        ]);
     }
 
-    public function consumer(): View
+    public function blog(Request $request): View
     {
-        return $this->renderPage('consumer', 'ÐŸÐ¾Ñ‚Ñ€ÐµÐ±Ð¸Ñ‚ÐµÐ»ÑÐºÐ¸ ÐºÑ€ÐµÐ´Ð¸Ñ‚');
+        $posts = Blog::query()
+            ->published()
+            ->latestPublished()
+            ->get([
+                'id',
+                'title',
+                'slug',
+                'excerpt',
+                'image_path',
+                'published_at',
+            ]);
+
+        return $this->renderPage('blog', $request, [
+            'initial_data' => [
+                'blogs' => $posts->values()->all(),
+            ],
+        ]);
     }
 
-    public function mortgage(): View
+    public function blogShow(Request $request, string $slug): View
     {
-        return $this->renderPage('mortgage', 'Ð˜Ð¿Ð¾Ñ‚ÐµÑ‡ÐµÐ½ ÐºÑ€ÐµÐ´Ð¸Ñ‚');
+        $post = Blog::query()
+            ->published()
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        $description = $post->excerpt ?: Str::limit(Str::squish(strip_tags((string) $post->content)), 160);
+
+        return $this->renderPage('blog_show', $request, [
+            'title' => $post->title,
+            'description' => $description,
+            'canonical' => route('blog.show', $post->slug),
+            'image' => Blog::getPublicImageUrl($post->image_path) ?: config('seo.site.default_image'),
+            'open_graph' => [
+                'og:type' => 'article',
+            ],
+            'breadcrumbs' => [
+                ['label' => 'Начало', 'route' => 'home'],
+                ['label' => 'Блог', 'route' => 'blog'],
+                ['label' => $post->title, 'route' => 'blog.show', 'parameters' => ['slug' => $post->slug]],
+            ],
+            'json_ld' => [$this->seoManager->articleSchema($post)],
+            'initial_data' => [
+                'blogs' => [[
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'slug' => $post->slug,
+                    'excerpt' => $post->excerpt,
+                    'image_path' => $post->image_path,
+                    'published_at' => $post->published_at,
+                ]],
+                'blogPost' => [
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'slug' => $post->slug,
+                    'excerpt' => $post->excerpt,
+                    'content' => $post->content,
+                    'image_path' => $post->image_path,
+                    'published_at' => $post->published_at,
+                ],
+            ],
+        ]);
     }
 
-    public function refinance(): View
+    public function privacyPolicy(Request $request): View
     {
-        return $this->renderPage('refinance', 'Ð ÐµÑ„Ð¸Ð½Ð°Ð½ÑÐ¸Ñ€Ð°Ð½Ðµ');
+        return $this->renderPage('privacy_policy', $request);
     }
 
-    public function debtBuyout(): View
+    public function cookiePolicy(Request $request): View
     {
-        return $this->renderPage('debt_buyout', 'Ð˜Ð·ÐºÑƒÐ¿ÑƒÐ²Ð°Ð½Ðµ Ð½Ð° Ð·Ð°Ð´ÑŠÐ»Ð¶ÐµÐ½Ð¸Ñ');
+        return $this->renderPage('cookie_policy', $request);
     }
 
-    private function renderPage(string $page, string $title): View
+    public function terms(Request $request): View
     {
+        return $this->renderPage('terms', $request);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function renderPage(string $page, Request $request, array $overrides = []): View
+    {
+        $seo = $this->seoManager->forPage($page, $request, $overrides);
+
         return view('layouts.app', [
             'page' => $page,
-            'title' => $title,
+            'seo' => $seo->toArray(),
+            'appConfig' => $this->seoManager->browserPayload($overrides['initial_data'] ?? []),
         ]);
     }
 }
-

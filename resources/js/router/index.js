@@ -1,88 +1,78 @@
 import { createRouter, createWebHistory } from "vue-router";
 import BlogPage from "@/pages/BlogPage.vue";
 import BlogDetailsPage from "@/pages/BlogDetailsPage.vue";
-
-const siteName = document.title.includes("|")
-    ? document.title.split("|").pop().trim()
-    : document.title;
+import { applyRouteSeo } from "@/seo";
 
 const routes = [
     {
         path: "/",
         component: () => import("@/pages/HomePage.vue"),
-        meta: { title: "Кредит Зона" },
+        meta: { seoKey: "home" },
     },
     {
         path: "/about",
         component: () => import("@/pages/AboutPage.vue"),
-        meta: { title: "За нас" },
+        meta: { seoKey: "about" },
     },
     {
         path: "/contacts",
         component: () => import("@/pages/ContactPage.vue"),
-        meta: { title: "Контакти" },
+        meta: { seoKey: "contact" },
     },
     {
         path: "/faq",
-        alias: ["/chesto-zadavani-vaprosi"],
         component: () => import("@/pages/FaqPage.vue"),
-        meta: { title: "Често задавани въпроси" },
+        meta: { seoKey: "faq" },
     },
     {
         path: "/blog",
         component: BlogPage,
-        meta: { title: "Блог" },
+        meta: { seoKey: "blog" },
     },
     {
         path: "/blog/:slug",
         component: BlogDetailsPage,
-        meta: { title: "Блог" },
+        meta: { seoKey: "blog_show" },
     },
     {
         path: "/politika-za-poveritelnost",
         component: () => import("@/pages/PrivacyPolicyPage.vue"),
-        meta: { title: "Политика за поверителност" },
+        meta: { seoKey: "privacy_policy" },
     },
     {
         path: "/politika-za-biskvitki",
         component: () => import("@/pages/CookiePolicyPage.vue"),
-        meta: { title: "Политика за бисквитки" },
+        meta: { seoKey: "cookie_policy" },
     },
     {
         path: "/obshti-usloviya",
         component: () => import("@/pages/TermsPage.vue"),
-        meta: { title: "Общи условия" },
+        meta: { seoKey: "terms" },
     },
-    // {
-    //     path: "/potrebitelski-kredit",
-    //     component: () => import("@/pages/ConsumerPage.vue"),
-    // },
-    // {
-    //     path: "/ipotechen-kredit",
-    //     component: () => import("@/pages/MortgagePage.vue"),
-    // },
-    // {
-    //     path: "/refinansirane",
-    //     component: () => import("@/pages/RefinancePage.vue"),
-    // },
-    // {
-    //     path: "/izkupuvane-na-zadalzheniya",
-    //     component: () => import("@/pages/DebtBuyoutPage.vue"),
-    // },
 ];
 
 const router = createRouter({
     history: createWebHistory(),
     routes,
-    scrollBehavior() {
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition;
+        }
+
+        if (to.hash) {
+            return {
+                el: to.hash,
+                top: 96,
+                behavior: "smooth",
+            };
+        }
+
         return { top: 0 };
     },
 });
 
 router.afterEach((to) => {
-    document.title = to.meta?.title
-        ? `${to.meta.title} | ${siteName}`
-        : siteName;
+    applyRouteSeo(to);
 });
 
 export default router;

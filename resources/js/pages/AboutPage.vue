@@ -191,6 +191,10 @@
                     :src="member.image"
                     :alt="member.name"
                     class="h-16 w-16 rounded-xl object-cover"
+                    width="200"
+                    height="200"
+                    loading="lazy"
+                    decoding="async"
                 />
 
                 <div>

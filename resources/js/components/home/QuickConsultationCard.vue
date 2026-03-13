@@ -1,18 +1,30 @@
 <template>
     <section
-        class="relative overflow-hidden rounded-[32px] bg-cover bg-center bg-no-repeat px-4 py-10 sm:px-6 lg:px-8"
-        :style="{ backgroundImage: `url('/images/formBG.jpg')` }"
+        :id="sectionId"
+        class="relative overflow-hidden rounded-[32px] px-4 py-10 sm:px-6 lg:px-8"
     >
+        <img
+            :src="backgroundImage"
+            alt=""
+            aria-hidden="true"
+            width="1382"
+            height="921"
+            class="absolute inset-0 h-full w-full object-cover"
+            :loading="imageLoading"
+            :fetchpriority="imageFetchPriority"
+            decoding="async"
+        />
         <div class="absolute inset-0 bg-black/40"></div>
 
         <div class="relative z-10 mx-auto w-full max-w-5xl">
             <div class="mb-6 text-center">
-                <h1
+                <component
+                    :is="headingTag"
                     class="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-[-0.03em] text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.35)] sm:text-4xl lg:text-5xl"
                 >
-                    Когато другите виждат риск,
+                    Когато другите ви виждат риск,
                     <span class="text-accent-soft">ние търсим решение</span>
-                </h1>
+                </component>
 
                 <div
                     class="mt-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-1.5 text-xs font-semibold text-accent-ink shadow-sm"
@@ -49,7 +61,9 @@
 <script setup>
 import LeadFormCompact from "./LeadFormCompact.vue";
 
-const props = defineProps({
+const backgroundImage = "/images/formBG.jpg";
+
+defineProps({
     initialCreditType: {
         type: String,
         default: "",
@@ -57,6 +71,22 @@ const props = defineProps({
     lockCreditType: {
         type: Boolean,
         default: false,
+    },
+    headingTag: {
+        type: String,
+        default: "h2",
+    },
+    imageLoading: {
+        type: String,
+        default: "lazy",
+    },
+    imageFetchPriority: {
+        type: String,
+        default: "auto",
+    },
+    sectionId: {
+        type: String,
+        default: "consultation-form",
     },
 });
 </script>
