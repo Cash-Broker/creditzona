@@ -1,7 +1,7 @@
 <template>
     <section
         :id="sectionId"
-        class="relative left-1/2 w-dvw max-w-[100dvw] -translate-x-1/2 overflow-hidden rounded-[32px] px-4 py-10 sm:px-6 lg:px-8"
+        class="relative left-1/2 w-dvw max-w-[100dvw] -translate-x-1/2 overflow-hidden px-4 py-10 sm:px-6 lg:px-8"
     >
         <img
             :src="backgroundImage"
@@ -61,7 +61,7 @@
 <script setup>
 import LeadFormCompact from "./LeadFormCompact.vue";
 
-const backgroundImage = "/images/formBG.jpg";
+const backgroundImage = "/images/bg-image.jpg";
 
 defineProps({
     initialCreditType: {
