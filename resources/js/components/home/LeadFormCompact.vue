@@ -194,6 +194,13 @@
                 </div>
             </div>
 
+            <p
+                class="mt-4 rounded-2xl border border-accent-soft-border bg-accent-soft/70 px-4 py-3 text-sm font-medium text-text-muted"
+            >
+                Моля, попълвайте имената, града и местоположението само на
+                кирилица.
+            </p>
+
             <transition name="fade-slide">
                 <div
                     v-if="isMortgage"
