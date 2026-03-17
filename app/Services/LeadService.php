@@ -2,15 +2,18 @@
 
 namespace App\Services;
 
+use App\Mail\LeadSubmittedConfirmation;
 use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class LeadService
 {
     public function createLead(array $data): Lead
     {
-        return DB::transaction(function () use ($data): Lead {
+        $lead = DB::transaction(function () use ($data): Lead {
             $isMortgage = ($data['credit_type'] ?? null) === 'mortgage';
             $assignedUserId = $this->resolveAssignedUserId($data);
 
@@ -49,6 +52,10 @@ class LeadService
 
             return $lead->loadMissing('assignedUser', 'additionalUser', 'guarantors');
         });
+
+        $this->sendConfirmationEmail($lead);
+
+        return $lead;
     }
 
     private function resolveAssignedUserId(array $data): ?int
@@ -122,5 +129,23 @@ class LeadService
             ])
             ->values()
             ->all();
+    }
+
+    private function sendConfirmationEmail(Lead $lead): void
+    {
+        if (blank($lead->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($lead->email)
+                ->send(new LeadSubmittedConfirmation($lead));
+        } catch (\Throwable $exception) {
+            Log::error('Failed to send lead confirmation email.', [
+                'lead_id' => $lead->id,
+                'email' => $lead->email,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }
