@@ -73,6 +73,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Lead::class, 'additional_user_id');
     }
 
+    public function uploadedAdminDocuments(): HasMany
+    {
+        return $this->hasMany(AdminDocument::class, 'uploaded_by_user_id');
+    }
+
     public function leadMessages(): HasMany
     {
         return $this->hasMany(LeadMessage::class);

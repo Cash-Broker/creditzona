@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminDocumentFileController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadDocumentDownloadController;
 use App\Http\Controllers\PageController;
@@ -35,6 +36,10 @@ Route::middleware([Authenticate::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function (): void {
+        Route::get('/documents/{adminDocument}/open', [AdminDocumentFileController::class, 'open'])
+            ->name('documents.open');
+        Route::get('/documents/{adminDocument}/download', [AdminDocumentFileController::class, 'download'])
+            ->name('documents.download');
         Route::get('/leads/{lead}/documents/download', LeadDocumentDownloadController::class)
             ->name('leads.documents.download');
     });
