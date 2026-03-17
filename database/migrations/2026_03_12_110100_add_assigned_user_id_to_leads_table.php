@@ -14,12 +14,18 @@ return new class extends Migration
                 ->after('status')
                 ->constrained('users')
                 ->nullOnDelete();
+            $table->foreignId('additional_user_id')
+                ->nullable()
+                ->after('assigned_user_id')
+                ->constrained('users')
+                ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('leads', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('additional_user_id');
             $table->dropConstrainedForeignId('assigned_user_id');
         });
     }

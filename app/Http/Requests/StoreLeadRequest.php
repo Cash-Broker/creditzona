@@ -3,8 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Models\Lead;
+use App\Models\LeadGuarantor;
 use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreLeadRequest extends FormRequest
 {
@@ -18,23 +21,30 @@ class StoreLeadRequest extends FormRequest
         $this->merge([
             'credit_type' => $this->normalizeString($this->input('credit_type')),
             'first_name' => $this->normalizeString($this->input('first_name')),
+            'middle_name' => $this->normalizeString($this->input('middle_name')),
             'last_name' => $this->normalizeString($this->input('last_name')),
             'phone' => $this->normalizeString($this->input('phone')),
             'email' => $this->normalizeString($this->input('email')),
             'city' => $this->normalizeString($this->input('city')),
+            'workplace' => $this->normalizeString($this->input('workplace')),
+            'job_title' => $this->normalizeString($this->input('job_title')),
+            'marital_status' => $this->normalizeString($this->input('marital_status')),
+            'salary_bank' => $this->normalizeString($this->input('salary_bank')),
             'property_type' => $this->normalizeString($this->input('property_type')),
             'property_location' => $this->normalizeString($this->input('property_location')),
+            'guarantors' => $this->normalizeGuarantors($this->input('guarantors')),
         ]);
     }
 
     /**
-     * @return array<string, array<int, Closure|string>>
+     * @return array<string, array<int, Closure|ValidationRule|string>>
      */
     public function rules(): array
     {
         return [
             'credit_type' => ['required', 'in:consumer,mortgage'],
             'first_name' => ['required', 'string', 'max:60'],
+            'middle_name' => ['nullable', 'string', 'max:60'],
             'last_name' => ['required', 'string', 'max:60'],
             'phone' => [
                 'bail',
@@ -58,9 +68,20 @@ class StoreLeadRequest extends FormRequest
             ],
             'email' => ['required', 'email', 'max:120'],
             'city' => ['required', 'string', 'max:120'],
+            'workplace' => ['nullable', 'string', 'max:120'],
+            'job_title' => ['nullable', 'string', 'max:120'],
+            'salary' => ['nullable', 'integer', 'min:0'],
+            'marital_status' => ['nullable', Rule::in(array_keys(Lead::getMaritalStatusOptions()))],
+            'children_under_18' => ['nullable', 'integer', 'min:0'],
+            'salary_bank' => ['nullable', 'string', 'max:120'],
             'amount' => ['required', 'integer', 'min:5000', 'max:50000'],
             'property_type' => ['nullable', 'required_if:credit_type,mortgage', 'in:house,apartment'],
             'property_location' => ['nullable', 'required_if:credit_type,mortgage', 'string', 'max:120'],
+            'guarantors' => ['nullable', 'array'],
+            'guarantors.*.first_name' => ['required', 'string', 'max:60'],
+            'guarantors.*.last_name' => ['required', 'string', 'max:60'],
+            'guarantors.*.phone' => ['nullable', 'string', 'max:30'],
+            'guarantors.*.status' => ['required', Rule::in(array_keys(LeadGuarantor::getStatusOptions()))],
         ];
     }
 
@@ -76,6 +97,9 @@ class StoreLeadRequest extends FormRequest
             'first_name.required' => 'Моля, въведете вашето име.',
             'first_name.string' => 'Името трябва да бъде текст.',
             'first_name.max' => 'Името не може да бъде по-дълго от 60 символа.',
+
+            'middle_name.string' => 'Презимето трябва да бъде текст.',
+            'middle_name.max' => 'Презимето не може да бъде по-дълго от 60 символа.',
 
             'last_name.required' => 'Моля, въведете вашата фамилия.',
             'last_name.string' => 'Фамилията трябва да бъде текст.',
@@ -93,6 +117,23 @@ class StoreLeadRequest extends FormRequest
             'city.string' => 'Градът трябва да бъде текст.',
             'city.max' => 'Градът не може да бъде по-дълъг от 120 символа.',
 
+            'workplace.string' => 'Местоработата трябва да бъде текст.',
+            'workplace.max' => 'Местоработата не може да бъде по-дълга от 120 символа.',
+
+            'job_title.string' => 'Длъжността трябва да бъде текст.',
+            'job_title.max' => 'Длъжността не може да бъде по-дълга от 120 символа.',
+
+            'salary.integer' => 'Заплатата трябва да бъде цяло число.',
+            'salary.min' => 'Заплатата не може да бъде отрицателна.',
+
+            'marital_status.in' => 'Моля, изберете валидно семейно положение.',
+
+            'children_under_18.integer' => 'Броят деца под 18 трябва да бъде цяло число.',
+            'children_under_18.min' => 'Броят деца под 18 не може да бъде отрицателен.',
+
+            'salary_bank.string' => 'Банката за заплата трябва да бъде текст.',
+            'salary_bank.max' => 'Банката за заплата не може да бъде по-дълга от 120 символа.',
+
             'amount.required' => 'Моля, изберете желаната сума.',
             'amount.integer' => 'Сумата трябва да бъде цяло число.',
             'amount.min' => 'Сумата трябва да бъде поне 5000.',
@@ -104,6 +145,18 @@ class StoreLeadRequest extends FormRequest
             'property_location.required_if' => 'Моля, въведете местонахождение на имота.',
             'property_location.string' => 'Местонахождението на имота трябва да бъде текст.',
             'property_location.max' => 'Местонахождението на имота не може да бъде по-дълго от 120 символа.',
+
+            'guarantors.array' => 'Поръчителите трябва да бъдат в валиден формат.',
+            'guarantors.*.first_name.required' => 'Моля, въведете име на поръчител.',
+            'guarantors.*.first_name.string' => 'Името на поръчителя трябва да бъде текст.',
+            'guarantors.*.first_name.max' => 'Името на поръчителя не може да бъде по-дълго от 60 символа.',
+            'guarantors.*.last_name.required' => 'Моля, въведете фамилия на поръчител.',
+            'guarantors.*.last_name.string' => 'Фамилията на поръчителя трябва да бъде текст.',
+            'guarantors.*.last_name.max' => 'Фамилията на поръчителя не може да бъде по-дълга от 60 символа.',
+            'guarantors.*.phone.string' => 'Телефонът на поръчителя трябва да бъде текст.',
+            'guarantors.*.phone.max' => 'Телефонът на поръчителя не може да бъде по-дълъг от 30 символа.',
+            'guarantors.*.status.required' => 'Моля, изберете статус на поръчител.',
+            'guarantors.*.status.in' => 'Моля, изберете валиден статус на поръчител.',
         ];
     }
 
@@ -116,5 +169,25 @@ class StoreLeadRequest extends FormRequest
         $trimmed = trim($value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function normalizeGuarantors(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        return array_map(function (mixed $guarantor): mixed {
+            if (! is_array($guarantor)) {
+                return $guarantor;
+            }
+
+            return array_merge($guarantor, [
+                'first_name' => $this->normalizeString($guarantor['first_name'] ?? null),
+                'last_name' => $this->normalizeString($guarantor['last_name'] ?? null),
+                'phone' => $this->normalizeString($guarantor['phone'] ?? null),
+                'status' => $this->normalizeString($guarantor['status'] ?? null),
+            ]);
+        }, array_values($value));
     }
 }

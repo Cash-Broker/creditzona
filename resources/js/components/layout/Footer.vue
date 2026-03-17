@@ -107,7 +107,12 @@
             <div
                 class="mt-8 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between"
             >
-                <p class="text-xs text-text-subtle">© Кредит Зона</p>
+                <div class="space-y-1">
+                    <p class="text-xs text-text-subtle">© Кредит Зона</p>
+                    <p class="text-xs text-text-subtle">
+                        Сайтът е собственост на РеКредо Консулт
+                    </p>
+                </div>
 
                 <nav
                     class="flex flex-wrap items-center gap-x-5 gap-y-2"

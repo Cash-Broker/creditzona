@@ -11,8 +11,8 @@
             <h1
                 class="mt-4 text-4xl font-extrabold tracking-tight text-text md:text-5xl"
             >
-                Кредит Зона - консултация, анализ и ясна посока към
-                по-подходящо финансово решение
+                Кредит Зона - консултация, анализ и ясна посока към по-подходящо
+                финансово решение
             </h1>
 
             <p class="mt-5 text-lg leading-8 text-text-muted">
@@ -43,8 +43,8 @@
                 <div class="mt-4 space-y-4 text-sm leading-7 text-text-muted">
                     <p>
                         Кредит Зона предоставя консултации и съдействие при
-                        потребителски кредити, ипотечни решения, рефинансиране
-                        и преструктуриране на задължения. Работим с фокус върху
+                        потребителски кредити, ипотечни решения, рефинансиране и
+                        преструктуриране на задължения. Работим с фокус върху
                         анализ, прозрачност и реалистични стъпки.
                     </p>
                     <p>
@@ -175,71 +175,71 @@
             </div>
         </section>
 
-       <section class="mt-16">
-    <h2 class="text-2xl font-semibold text-text">
-        Екип
-    </h2>
+        <section class="mt-16">
+            <h2 class="text-2xl font-semibold text-text">Екип</h2>
 
-    <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article
-            v-for="member in teamMembers"
-            :key="member.email"
-            class="service-card"
+            <div class="mt-6 grid gap-6 sm:grid-cols-2">
+                <article
+                    v-for="member in teamMembers"
+                    :key="member.email"
+                    class="service-card min-h-[22rem] items-center p-8 text-center sm:p-10"
+                >
+                    <div class="flex flex-1 flex-col items-center">
+                        <img
+                            :src="member.image"
+                            :alt="member.name"
+                            class="h-60 w-40 rounded-3xl object-cover object-top sm:h-72 sm:w-48"
+                            width="192"
+                            height="288"
+                            loading="lazy"
+                            decoding="async"
+                        />
+
+                        <div class="mt-6">
+                            <h3 class="text-xl font-semibold text-text">
+                                {{ member.name }}
+                            </h3>
+
+                            <p class="mt-2 text-base text-text-muted">
+                                {{ member.position }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 space-y-3 text-sm leading-6 text-secondary sm:text-base">
+                        <div class="flex items-center justify-center gap-2">
+                            <font-awesome-icon
+                                icon="fa-solid fa-phone"
+                                class="text-accent-darkened"
+                            />
+                            <a
+                                :href="`tel:${member.phoneHref}`"
+                                class="hover:text-accent-darkened"
+                            >
+                                {{ member.phone }}
+                            </a>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-2">
+                            <font-awesome-icon
+                                icon="fa-solid fa-envelope"
+                                class="text-accent-darkened"
+                            />
+                            <a
+                                :href="`mailto:${member.email}`"
+                                class="hover:text-accent-darkened break-all"
+                            >
+                                {{ member.email }}
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section
+            class="mt-16 grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr]"
         >
-            <div class="flex items-center gap-4">
-                <img
-                    :src="member.image"
-                    :alt="member.name"
-                    class="h-16 w-16 rounded-xl object-cover"
-                    width="200"
-                    height="200"
-                    loading="lazy"
-                    decoding="async"
-                />
-
-                <div>
-                    <h3 class="text-lg font-semibold text-text">
-                        {{ member.name }}
-                    </h3>
-
-                    <p class="text-sm text-text-muted">
-                        {{ member.position }}
-                    </p>
-                </div>
-            </div>
-
-            <div class="mt-5 space-y-2 text-sm text-secondary">
-                <div class="flex items-center gap-2">
-                    <font-awesome-icon
-                        icon="fa-solid fa-phone"
-                        class="text-accent-darkened"
-                    />
-                    <a
-                        :href="`tel:${member.phoneHref}`"
-                        class="hover:text-accent-darkened"
-                    >
-                        {{ member.phone }}
-                    </a>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <font-awesome-icon
-                        icon="fa-solid fa-envelope"
-                        class="text-accent-darkened"
-                    />
-                    <a
-                        :href="`mailto:${member.email}`"
-                        class="hover:text-accent-darkened break-all"
-                    >
-                        {{ member.email }}
-                    </a>
-                </div>
-            </div>
-        </article>
-    </div>
-</section>
-
-        <section class="mt-16 grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div class="content-section">
                 <h2 class="text-2xl font-semibold text-text">
                     Готови ли сте за следваща стъпка?
@@ -263,15 +263,11 @@
                     </li>
                 </ul>
             </div>
-
-            <QuickConsultationCard />
         </section>
     </div>
 </template>
 
 <script setup>
-import QuickConsultationCard from "@/components/home/QuickConsultationCard.vue";
-
 const trustBadges = [
     "Безпристрастен анализ",
     "Индивидуален подход",
@@ -337,43 +333,20 @@ const processSteps = [
 
 const teamMembers = [
     {
-        name: "Симеон Борисов",
-        position: "Кредитен консултант",
-        phone: "+359 089 000 0000",
-        phoneHref: "+359890000000",
-        email: "office@creditzona.bg",
-        image: "https://placehold.co/200x200/e8f4f7/0b4f5b?text=CZ",
+        name: "Елена Стефанова",
+        position: "Юрисконсулт",
+        phone: "0883222251",
+        phoneHref: "0883222251",
+        email: "stefanova.kreditzona@abv.bg",
+        image: "/about/elena.jpg",
     },
     {
-        name: "Мария Георгиева",
-        position: "Финансов консултант",
-        phone: "+359 089 000 0000",
-        phoneHref: "+359890000000",
-        email: "info@creditzona.bg",
-        image: "https://placehold.co/200x200/e8f4f7/0b4f5b?text=CZ",
-    },
-    {
-        name: "Иван Петров",
-        position: "Кредитен специалист",
-        phone: "+359 089 000 0000",
-        phoneHref: "+359890000000",
-        email: "contact@creditzona.bg",
-        image: "https://placehold.co/200x200/e8f4f7/0b4f5b?text=CZ",
-    },
-];
-
-const teamContactSteps = [
-    {
-        title: "Свързваш се с наш консултант",
-        text: "Оставяш запитване или звъниш директно, а ние поемаме комуникацията по случая.",
-    },
-    {
-        title: "Разглеждаме конкретната ситуация",
-        text: "Преглеждаме параметрите, задълженията и възможните следващи стъпки според профила.",
-    },
-    {
-        title: "Получаваш ясна насока",
-        text: "Даваме ти разбираема обратна връзка и структура за това как да продължиш.",
+        name: "Анна Манолова",
+        position: "Мениджър екип",
+        phone: "0879000685",
+        phoneHref: "0879000685",
+        email: "manolova.creditzona@gmail.com",
+        image: "/about/ani.jpg",
     },
 ];
 

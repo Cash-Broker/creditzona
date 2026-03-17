@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lead;
+use App\Models\LeadGuarantor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -61,6 +62,96 @@ class LeadSubmissionTest extends TestCase
             'property_type' => 'house',
             'property_location' => 'София',
         ]);
+    }
+
+    public function test_submission_accepts_additional_fields_and_guarantors(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'middle_name' => 'Петров',
+            'workplace' => 'Тест ООД',
+            'job_title' => 'Кредитен консултант',
+            'salary' => 2800,
+            'marital_status' => Lead::MARITAL_STATUS_MARRIED,
+            'children_under_18' => 1,
+            'salary_bank' => 'УниКредит Булбанк',
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Иванова',
+                    'phone' => '0888000111',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+                [
+                    'first_name' => 'Георги',
+                    'last_name' => 'Петров',
+                    'phone' => null,
+                    'status' => LeadGuarantor::STATUS_UNSUITABLE,
+                ],
+            ],
+        ]));
+
+        $response->assertOk();
+
+        $lead = Lead::query()->latest('id')->firstOrFail();
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $lead->id,
+            'middle_name' => 'Петров',
+            'workplace' => 'Тест ООД',
+            'job_title' => 'Кредитен консултант',
+            'salary' => 2800,
+            'marital_status' => Lead::MARITAL_STATUS_MARRIED,
+            'children_under_18' => 1,
+            'salary_bank' => 'УниКредит Булбанк',
+        ]);
+
+        $this->assertDatabaseCount('lead_guarantors', 2);
+
+        $this->assertDatabaseHas('lead_guarantors', [
+            'lead_id' => $lead->id,
+            'first_name' => 'Мария',
+            'last_name' => 'Иванова',
+            'phone' => '0888000111',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        $this->assertDatabaseHas('lead_guarantors', [
+            'lead_id' => $lead->id,
+            'first_name' => 'Георги',
+            'last_name' => 'Петров',
+            'phone' => null,
+            'status' => LeadGuarantor::STATUS_UNSUITABLE,
+        ]);
+    }
+
+    public function test_invalid_additional_fields_return_validation_errors(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'salary' => -1,
+            'marital_status' => 'unknown',
+            'children_under_18' => -2,
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Иванова',
+                    'phone' => '0888000111',
+                    'status' => 'pending',
+                ],
+            ],
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'salary',
+                'marital_status',
+                'children_under_18',
+                'guarantors.0.status',
+            ])
+            ->assertJsonPath('errors.salary.0', 'Заплатата не може да бъде отрицателна.');
+
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('lead_guarantors', 0);
     }
 
     public function test_mortgage_without_property_type_returns_validation_error(): void
@@ -178,6 +269,7 @@ class LeadSubmissionTest extends TestCase
 
         $historicalOperator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
         ]);
 
         User::factory()->create([
@@ -209,16 +301,18 @@ class LeadSubmissionTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_old_lead_without_assigned_user_uses_fallback_admin_or_operator(): void
+    public function test_old_lead_without_assigned_user_uses_fallback_primary_assignment_pool(): void
     {
         Carbon::setTestNow('2026-03-12 10:00:00');
 
-        $fallbackAdmin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
         ]);
 
         User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'renata@creditzona.test',
         ]);
 
         Lead::query()->insert([
@@ -241,19 +335,21 @@ class LeadSubmissionTest extends TestCase
 
         $newLead = Lead::query()->latest('id')->firstOrFail();
 
-        $this->assertSame($fallbackAdmin->id, $newLead->assigned_user_id);
+        $this->assertSame($anna->id, $newLead->assigned_user_id);
 
         Carbon::setTestNow();
     }
 
-    public function test_new_lead_without_history_uses_fallback_admin_or_operator(): void
+    public function test_new_lead_without_history_uses_fallback_primary_assignment_pool(): void
     {
-        $fallbackAdmin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
         ]);
 
         User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'iskra@creditzona.test',
         ]);
 
         $response = $this->postJson('/leads', $this->validPayload([
@@ -264,21 +360,29 @@ class LeadSubmissionTest extends TestCase
 
         $newLead = Lead::query()->latest('id')->firstOrFail();
 
-        $this->assertSame($fallbackAdmin->id, $newLead->assigned_user_id);
+        $this->assertSame($anna->id, $newLead->assigned_user_id);
     }
 
-    public function test_fallback_assignment_uses_round_robin_between_eligible_users(): void
+    public function test_fallback_assignment_uses_round_robin_between_the_three_primary_operators(): void
     {
-        $admin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
         ]);
 
-        $operatorOne = User::factory()->create([
+        $elena = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
         ]);
 
-        $operatorTwo = User::factory()->create([
+        $krasimira = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'krasimira@creditzona.test',
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'renata@creditzona.test',
         ]);
 
         $phones = [
@@ -300,25 +404,28 @@ class LeadSubmissionTest extends TestCase
             ->all();
 
         $this->assertSame([
-            $admin->id,
-            $operatorOne->id,
-            $operatorTwo->id,
-            $admin->id,
+            $anna->id,
+            $elena->id,
+            $krasimira->id,
+            $anna->id,
         ], $assignedUserIds);
     }
 
     public function test_multiple_sequential_new_leads_are_distributed_evenly_with_round_robin(): void
     {
-        $admin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
         ]);
 
-        $operatorOne = User::factory()->create([
+        $elena = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
         ]);
 
-        $operatorTwo = User::factory()->create([
+        $krasimira = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'krasimira@creditzona.test',
         ]);
 
         foreach (range(1, 9) as $index) {
@@ -332,9 +439,9 @@ class LeadSubmissionTest extends TestCase
             ->groupBy('assigned_user_id')
             ->pluck('aggregate', 'assigned_user_id');
 
-        $this->assertSame(3, $distribution[$admin->id]);
-        $this->assertSame(3, $distribution[$operatorOne->id]);
-        $this->assertSame(3, $distribution[$operatorTwo->id]);
+        $this->assertSame(3, $distribution[$anna->id]);
+        $this->assertSame(3, $distribution[$elena->id]);
+        $this->assertSame(3, $distribution[$krasimira->id]);
     }
 
     /**
@@ -345,13 +452,21 @@ class LeadSubmissionTest extends TestCase
         return array_merge([
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
+            'middle_name' => null,
             'last_name' => 'Иванов',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
+            'workplace' => null,
+            'job_title' => null,
+            'salary' => null,
+            'marital_status' => null,
+            'children_under_18' => null,
+            'salary_bank' => null,
             'amount' => 10000,
             'property_type' => null,
             'property_location' => null,
+            'guarantors' => [],
             'source' => 'landing-page',
             'utm_source' => 'google',
             'utm_campaign' => 'spring-campaign',

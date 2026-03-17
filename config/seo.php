@@ -37,7 +37,6 @@ return [
         'phone' => env('SEO_PHONE', '+359879000685'),
         'phones' => array_values(array_filter([
             env('SEO_PHONE', '0879000685'),
-            env('SEO_SECONDARY_PHONE', '0887703365'),
         ])),
         'street_address' => env('SEO_STREET_ADDRESS', 'ул. Полк. Сава Муткуров 30'),
         'address_locality' => env('SEO_CITY', 'Пловдив'),

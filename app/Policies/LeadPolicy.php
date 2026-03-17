@@ -9,7 +9,7 @@ class LeadPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdmin() || $user->isOperator();
     }
 
     public function create(User $user): bool
@@ -19,12 +19,12 @@ class LeadPolicy
 
     public function view(User $user, Lead $lead): bool
     {
-        return true;
+        return $this->canAccessLead($user, $lead);
     }
 
     public function update(User $user, Lead $lead): bool
     {
-        return true;
+        return $this->canAccessLead($user, $lead);
     }
 
     public function delete(User $user, Lead $lead): bool
@@ -55,5 +55,19 @@ class LeadPolicy
     public function forceDeleteAny(User $user): bool
     {
         return false;
+    }
+
+    private function canAccessLead(User $user, Lead $lead): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if (! $user->isOperator()) {
+            return false;
+        }
+
+        return $lead->assigned_user_id === $user->id
+            || $lead->additional_user_id === $user->id;
     }
 }

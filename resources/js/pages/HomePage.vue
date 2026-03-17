@@ -7,11 +7,11 @@
             image-fetch-priority="high"
         />
 
+        <ServicesSection class="mt-20" />
+
         <div class="mt-12">
             <LeadInfo />
         </div>
-
-        <ServicesSection class="mt-20" />
 
         <WhyChooseUs />
     </div>

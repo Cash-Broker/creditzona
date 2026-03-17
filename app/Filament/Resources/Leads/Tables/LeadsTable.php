@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Leads\Tables;
 
 use App\Filament\Resources\Leads\LeadResource;
+use App\Models\Lead;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -21,12 +22,24 @@ class LeadsTable
                     ->color('primary')
                     ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state))
                     ->sortable(),
-                TextColumn::make('first_name')
-                    ->label('Име')
-                    ->searchable(),
-                TextColumn::make('last_name')
-                    ->label('Фамилия')
-                    ->searchable(),
+                TextColumn::make('full_name')
+                    ->label('Кандидат')
+                    ->state(fn (Lead $record): string => trim(implode(' ', array_filter([
+                        $record->first_name,
+                        $record->middle_name,
+                        $record->last_name,
+                    ]))))
+                    ->description(fn (Lead $record): ?string => filled($record->credit_bank) ? 'Банка по кредита: '.$record->credit_bank : null)
+                    ->searchable(['first_name', 'middle_name', 'last_name', 'credit_bank']),
+                TextColumn::make('assignedUser.name')
+                    ->label('Основен служител')
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('additionalUser.name')
+                    ->label('Допълнителен служител')
+                    ->sortable()
+                    ->placeholder('Няма')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('phone')
                     ->label('Телефон')
                     ->searchable(),
@@ -36,11 +49,31 @@ class LeadsTable
                 TextColumn::make('city')
                     ->label('Град')
                     ->searchable(),
+                TextColumn::make('workplace')
+                    ->label('Месторабота')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('amount')
                     ->label('Сума')
                     ->numeric(0, locale: 'bg')
                     ->suffix(' лв.')
                     ->sortable(),
+                TextColumn::make('salary')
+                    ->label('Заплата')
+                    ->numeric(0, locale: 'bg')
+                    ->suffix(' лв.')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('marital_status')
+                    ->label('Семейно положение')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => LeadResource::getMaritalStatusLabel($state))
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('guarantors_count')
+                    ->label('Поръчители')
+                    ->counts('guarantors')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()

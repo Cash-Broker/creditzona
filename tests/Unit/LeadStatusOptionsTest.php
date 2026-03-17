@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Filament\Resources\Leads\LeadResource;
+use App\Models\Lead;
 use PHPUnit\Framework\TestCase;
 
 class LeadStatusOptionsTest extends TestCase
@@ -22,5 +23,22 @@ class LeadStatusOptionsTest extends TestCase
     {
         $this->assertSame('Одобрена', LeadResource::getStatusLabel('approved'));
         $this->assertSame('Отказана', LeadResource::getStatusLabel('rejected'));
+    }
+
+    public function test_marital_status_options_are_exposed_for_admin_ui(): void
+    {
+        $this->assertSame([
+            Lead::MARITAL_STATUS_SINGLE => 'Неженен/Неомъжена',
+            Lead::MARITAL_STATUS_MARRIED => 'Женен/Омъжена',
+            Lead::MARITAL_STATUS_DIVORCED => 'Разведен/а',
+            Lead::MARITAL_STATUS_WIDOWED => 'Вдовец/Вдовица',
+            Lead::MARITAL_STATUS_COHABITING => 'На семейни начала',
+        ], LeadResource::getMaritalStatusOptions());
+    }
+
+    public function test_marital_status_label_returns_human_readable_value(): void
+    {
+        $this->assertSame('Женен/Омъжена', LeadResource::getMaritalStatusLabel(Lead::MARITAL_STATUS_MARRIED));
+        $this->assertSame('Няма', LeadResource::getMaritalStatusLabel(null));
     }
 }

@@ -2,23 +2,52 @@
 
 namespace App\Models;
 
+use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
+use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
-class Lead extends Model
+class Lead extends Model implements HasRichContent
 {
+    use InteractsWithRichContent;
+
+    public const MARITAL_STATUS_SINGLE = 'single';
+
+    public const MARITAL_STATUS_MARRIED = 'married';
+
+    public const MARITAL_STATUS_DIVORCED = 'divorced';
+
+    public const MARITAL_STATUS_WIDOWED = 'widowed';
+
+    public const MARITAL_STATUS_COHABITING = 'cohabiting';
+
     protected $fillable = [
         'credit_type',
         'first_name',
+        'middle_name',
         'last_name',
+        'egn',
         'phone',
         'email',
         'city',
+        'workplace',
+        'job_title',
+        'salary',
+        'marital_status',
+        'children_under_18',
+        'salary_bank',
+        'credit_bank',
+        'documents',
+        'document_file_names',
+        'internal_notes',
         'amount',
         'property_type',
         'property_location',
         'status',
         'assigned_user_id',
+        'additional_user_id',
         'source',
         'utm_source',
         'utm_campaign',
@@ -26,8 +55,138 @@ class Lead extends Model
         'gclid',
     ];
 
+    public static function getMaritalStatusOptions(): array
+    {
+        return [
+            self::MARITAL_STATUS_SINGLE => 'Неженен/Неомъжена',
+            self::MARITAL_STATUS_MARRIED => 'Женен/Омъжена',
+            self::MARITAL_STATUS_DIVORCED => 'Разведен/а',
+            self::MARITAL_STATUS_WIDOWED => 'Вдовец/Вдовица',
+            self::MARITAL_STATUS_COHABITING => 'На семейни начала',
+        ];
+    }
+
+    public static function getMaritalStatusLabel(?string $state): string
+    {
+        return static::getMaritalStatusOptions()[$state] ?? ($state ?: 'Няма');
+    }
+
+    public static function maskEgn(?string $value): string
+    {
+        if (blank($value)) {
+            return 'Няма';
+        }
+
+        $normalized = preg_replace('/\D+/', '', $value) ?: $value;
+        $visibleDigits = 4;
+
+        if (strlen($normalized) <= $visibleDigits) {
+            return str_repeat('*', strlen($normalized));
+        }
+
+        return str_repeat('*', strlen($normalized) - $visibleDigits).substr($normalized, -$visibleDigits);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getDocumentDisplayNames(): array
+    {
+        $fileNames = $this->document_file_names ?? [];
+
+        if ($fileNames !== []) {
+            return array_values($fileNames);
+        }
+
+        return array_map(
+            static fn (string $path): string => basename($path),
+            $this->documents ?? [],
+        );
+    }
+
+    /**
+     * @return array<int, array{name: string, path: string, is_available: bool}>
+     */
+    public function getDocumentDownloads(): array
+    {
+        $documentPaths = array_values(array_unique([
+            ...array_filter(
+                $this->documents ?? [],
+                static fn (mixed $path): bool => is_string($path) && filled($path),
+            ),
+            ...array_filter(
+                array_keys($this->document_file_names ?? []),
+                static fn (mixed $path): bool => is_string($path) && filled($path),
+            ),
+        ]));
+
+        if ($documentPaths === []) {
+            return [];
+        }
+
+        $disk = Storage::disk('local');
+        $fileNames = $this->document_file_names ?? [];
+
+        return array_map(function (string $path) use ($disk, $fileNames): array {
+            $isAvailable = $disk->exists($path);
+
+            return [
+                'name' => $fileNames[$path] ?? basename($path),
+                'path' => $path,
+                'is_available' => $isAvailable,
+            ];
+        }, $documentPaths);
+    }
+
+    /**
+     * @return array{name: string, path: string, is_available: bool}|null
+     */
+    public function findDocumentDownload(string $path): ?array
+    {
+        foreach ($this->getDocumentDownloads() as $document) {
+            if ($document['path'] === $path) {
+                return $document;
+            }
+        }
+
+        return null;
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'egn' => 'encrypted',
+            'salary' => 'integer',
+            'children_under_18' => 'integer',
+            'documents' => 'array',
+            'document_file_names' => 'array',
+        ];
+    }
+
+    protected function setUpRichContent(): void
+    {
+        $this->registerRichContent('internal_notes')
+            ->fileAttachmentsDisk('local')
+            ->fileAttachmentsVisibility('private');
+    }
+
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function additionalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'additional_user_id');
+    }
+
+    public function guarantors(): HasMany
+    {
+        return $this->hasMany(LeadGuarantor::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(LeadMessage::class);
     }
 }

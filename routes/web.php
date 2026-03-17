@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadDocumentDownloadController;
 use App\Http\Controllers\PageController;
+use Filament\Http\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PageController::class, 'home'])->name('home');
@@ -28,3 +30,11 @@ Route::redirect('/политика-за-поверителност', '/politika-
 Route::redirect('/политика-за-бисквитки', '/politika-za-biskvitki', 301);
 
 Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+
+Route::middleware([Authenticate::class])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
+        Route::get('/leads/{lead}/documents/download', LeadDocumentDownloadController::class)
+            ->name('leads.documents.download');
+    });
