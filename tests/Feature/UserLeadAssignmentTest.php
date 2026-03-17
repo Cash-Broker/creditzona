@@ -31,6 +31,24 @@ class UserLeadAssignmentTest extends TestCase
         $this->assertFalse($user->isAdmin());
     }
 
+    public function test_user_helpers_identify_assignment_eligibility(): void
+    {
+        $eligibleOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $ineligibleOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $this->assertTrue($eligibleOperator->canBeLeadPrimaryAssignee());
+        $this->assertTrue($eligibleOperator->canBeLeadAdditionalAssignee());
+        $this->assertFalse($ineligibleOperator->canBeLeadPrimaryAssignee());
+        $this->assertFalse($ineligibleOperator->canBeLeadAdditionalAssignee());
+    }
+
     public function test_user_leads_relationship_returns_assigned_leads(): void
     {
         $operator = User::factory()->create([
@@ -68,6 +86,32 @@ class UserLeadAssignmentTest extends TestCase
         $this->assertTrue($lead->assignedUser->is($operator));
     }
 
+    public function test_user_additional_leads_relationship_returns_collaborating_leads(): void
+    {
+        $additionalOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $otherOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $collaboratingLead = Lead::query()->create($this->leadData([
+            'phone' => '0888000003',
+            'additional_user_id' => $additionalOperator->id,
+        ]));
+
+        Lead::query()->create($this->leadData([
+            'phone' => '0888000004',
+            'additional_user_id' => $otherOperator->id,
+        ]));
+
+        $this->assertCount(1, $additionalOperator->additionalLeads);
+        $this->assertTrue($additionalOperator->additionalLeads->first()->is($collaboratingLead));
+    }
+
     public function test_deleting_assigned_user_nulls_lead_assignment(): void
     {
         $operator = User::factory()->create([
@@ -83,6 +127,25 @@ class UserLeadAssignmentTest extends TestCase
 
         $this->assertNull($lead->assigned_user_id);
         $this->assertNull($lead->assignedUser);
+    }
+
+    public function test_deleting_additional_user_nulls_lead_collaboration_assignment(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'krasimira@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'phone' => '0888000005',
+            'additional_user_id' => $operator->id,
+        ]));
+
+        $operator->delete();
+        $lead->refresh();
+
+        $this->assertNull($lead->additional_user_id);
+        $this->assertNull($lead->additionalUser);
     }
 
     /**
@@ -102,6 +165,7 @@ class UserLeadAssignmentTest extends TestCase
             'property_location' => null,
             'status' => 'new',
             'assigned_user_id' => null,
+            'additional_user_id' => null,
         ], $overrides);
     }
 }

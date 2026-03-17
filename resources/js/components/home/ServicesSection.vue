@@ -1,5 +1,55 @@
 <template>
     <section class="space-y-10 md:space-y-12">
+        <div
+            class="relative overflow-hidden rounded-[32px] border border-border bg-surface p-6 shadow-[0_10px_30px_-18px_rgba(17,24,39,0.35)] sm:p-7"
+        >
+            <div
+                class="absolute right-0 top-0 h-28 w-28 translate-x-8 -translate-y-8 rounded-full bg-accent-soft blur-2xl"
+            ></div>
+
+            <div class="relative z-10 max-w-3xl">
+                <span
+                    class="inline-flex items-center rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
+                >
+                    Ключово послание
+                </span>
+
+                <h3
+                    class="mt-4 text-2xl font-bold tracking-tight text-text md:text-3xl"
+                >
+                    Когато другите виждат риск, ние търсим работещо решение
+                </h3>
+
+                <div
+                    class="mt-5 space-y-4 text-sm leading-7 text-text-muted md:text-[15px]"
+                >
+                    <p>
+                        Влошена кредитна история, запори, множество активни
+                        кредити или трудно доказуем доход не означават, че няма
+                        възможност за адекватна посока.
+                    </p>
+
+                    <p>
+                        Нашата роля е да подредим ситуацията, да обясним
+                        параметрите спокойно и да очертаем следващите стъпки
+                        според конкретния казус.
+                    </p>
+
+                    <p>
+                        При нужда от по-добра структура на бюджета, търсим
+                        решение, което да намали месечното натоварване и да даде
+                        по-ясна предвидимост.
+                    </p>
+
+                    <p class="font-bold">
+                        „КРЕДИТ ЗОНА БГ“ ИЗВЪРШВА ЕДИНСТВЕНО И ЕКСКЛУЗИВНО
+                        КОНСУЛТАНТСКА ДЕЙНОСТ В СФЕРАТА НА ФИНАНСИТЕ И НЕ
+                        ПРЕДОСТАВЯ СОБСТВЕНИ ПРОДУКТИ! „КРЕДИТ ЗОНА БГ“ НЕ
+                        ОТПУСКА КРЕДИТИ!
+                    </p>
+                </div>
+            </div>
+        </div>
         <div class="max-w-3xl">
             <span
                 class="inline-flex items-center rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
@@ -16,8 +66,8 @@
             <p
                 class="mt-4 max-w-2xl text-sm leading-7 text-text-muted md:text-base"
             >
-                Консултираме и структурираме решения за хора и семейства с
-                фокус върху яснота, контрол и устойчивост при избора на кредит.
+                Консултираме и структурираме решения за хора и семейства с фокус
+                върху яснота, контрол и устойчивост при избора на кредит.
             </p>
         </div>
 
@@ -68,50 +118,6 @@
                     </span>
                 </div>
             </article>
-        </div>
-
-        <div
-            class="relative overflow-hidden rounded-[32px] border border-border bg-surface p-6 shadow-[0_10px_30px_-18px_rgba(17,24,39,0.35)] sm:p-7"
-        >
-            <div
-                class="absolute right-0 top-0 h-28 w-28 translate-x-8 -translate-y-8 rounded-full bg-accent-soft blur-2xl"
-            ></div>
-
-            <div class="relative z-10 max-w-3xl">
-                <span
-                    class="inline-flex items-center rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent-darkened"
-                >
-                    Ключово послание
-                </span>
-
-                <h3
-                    class="mt-4 text-2xl font-bold tracking-tight text-text md:text-3xl"
-                >
-                    Когато другите виждат риск, ние търсим работещо решение
-                </h3>
-
-                <div
-                    class="mt-5 space-y-4 text-sm leading-7 text-text-muted md:text-[15px]"
-                >
-                    <p>
-                        Влошена кредитна история, запори, множество активни
-                        кредити или трудно доказуем доход не означават, че
-                        няма възможност за адекватна посока.
-                    </p>
-
-                    <p>
-                        Нашата роля е да подредим ситуацията, да обясним
-                        параметрите спокойно и да очертаем следващите стъпки
-                        според конкретния казус.
-                    </p>
-
-                    <p>
-                        При нужда от по-добра структура на бюджета, търсим
-                        решение, което да намали месечното натоварване и да
-                        даде по-ясна предвидимост.
-                    </p>
-                </div>
-            </div>
         </div>
     </section>
 </template>

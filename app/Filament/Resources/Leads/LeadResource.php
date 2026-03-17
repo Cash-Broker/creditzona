@@ -9,12 +9,15 @@ use App\Filament\Resources\Leads\Schemas\LeadForm;
 use App\Filament\Resources\Leads\Schemas\LeadInfolist;
 use App\Filament\Resources\Leads\Tables\LeadsTable;
 use App\Models\Lead;
+use App\Models\LeadGuarantor;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
@@ -44,7 +47,11 @@ class LeadResource extends Resource
             return parent::getRecordTitle($record);
         }
 
-        return trim("{$record->first_name} {$record->last_name}");
+        return trim(implode(' ', array_filter([
+            $record->first_name,
+            $record->middle_name,
+            $record->last_name,
+        ])));
     }
 
     public static function getCreditTypeOptions(): array
@@ -89,6 +96,44 @@ class LeadResource extends Resource
         return static::getStatusOptions()[$state] ?? ($state ?: 'Няма');
     }
 
+    public static function getMaritalStatusOptions(): array
+    {
+        return Lead::getMaritalStatusOptions();
+    }
+
+    public static function getMaritalStatusLabel(?string $state): string
+    {
+        return Lead::getMaritalStatusLabel($state);
+    }
+
+    public static function getGuarantorStatusOptions(): array
+    {
+        return LeadGuarantor::getStatusOptions();
+    }
+
+    public static function getGuarantorStatusLabel(?string $state): string
+    {
+        return LeadGuarantor::getStatusLabel($state);
+    }
+
+    public static function getPrimaryAssignmentOptions(): array
+    {
+        return User::query()
+            ->eligibleForLeadPrimaryAssignment()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    public static function getAdditionalAssignmentOptions(): array
+    {
+        return User::query()
+            ->eligibleForLeadAdditionalAssignment()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return LeadForm::configure($schema);
@@ -118,5 +163,25 @@ class LeadResource extends Resource
             'view' => ViewLead::route('/{record}'),
             'edit' => EditLead::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($user): void {
+            $query
+                ->where('assigned_user_id', $user->id)
+                ->orWhere('additional_user_id', $user->id);
+        });
     }
 }
