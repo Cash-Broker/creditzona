@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Mail\LeadSubmittedConfirmation;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class LeadSubmissionTest extends TestCase
@@ -41,6 +43,23 @@ class LeadSubmissionTest extends TestCase
             'utm_medium' => 'cpc',
             'gclid' => 'test-gclid',
         ]);
+    }
+
+    public function test_successful_submission_sends_confirmation_email_to_client_without_queueing(): void
+    {
+        Mail::fake();
+
+        $response = $this->postJson('/leads', $this->validPayload());
+
+        $response->assertOk();
+
+        Mail::assertSent(LeadSubmittedConfirmation::class, function (LeadSubmittedConfirmation $mail): bool {
+            return $mail->hasTo('ivan@example.com')
+                && $mail->lead->first_name === 'Иван'
+                && $mail->lead->last_name === 'Иванов';
+        });
+        Mail::assertNotQueued(LeadSubmittedConfirmation::class);
+        Mail::assertNothingQueued();
     }
 
     public function test_successful_mortgage_lead_submission(): void
@@ -186,6 +205,20 @@ class LeadSubmissionTest extends TestCase
                 'amount',
             ])
             ->assertJsonPath('errors.first_name.0', 'Моля, въведете вашето име.');
+    }
+
+    public function test_invalid_email_returns_validation_error(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'email' => 'invalid-email',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['email'])
+            ->assertJsonPath('errors.email.0', 'Моля, въведете валиден имейл адрес.');
+
+        $this->assertDatabaseCount('leads', 0);
     }
 
     public function test_amount_out_of_range_returns_validation_error(): void

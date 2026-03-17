@@ -15,6 +15,7 @@ class LeadsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->poll('5s')
             ->columns([
                 TextColumn::make('credit_type')
                     ->label('Тип кредит')
