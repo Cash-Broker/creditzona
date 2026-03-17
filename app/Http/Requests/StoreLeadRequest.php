@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
+use App\Rules\CyrillicText;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -43,9 +44,9 @@ class StoreLeadRequest extends FormRequest
     {
         return [
             'credit_type' => ['required', 'in:consumer,mortgage'],
-            'first_name' => ['required', 'string', 'max:60'],
-            'middle_name' => ['nullable', 'string', 'max:60'],
-            'last_name' => ['required', 'string', 'max:60'],
+            'first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името')],
+            'middle_name' => ['nullable', 'string', 'max:60', CyrillicText::lettersOnly('Презимето')],
+            'last_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Фамилията')],
             'phone' => [
                 'bail',
                 'required',
@@ -67,19 +68,19 @@ class StoreLeadRequest extends FormRequest
                 },
             ],
             'email' => ['required', 'email', 'max:120'],
-            'city' => ['required', 'string', 'max:120'],
-            'workplace' => ['nullable', 'string', 'max:120'],
-            'job_title' => ['nullable', 'string', 'max:120'],
+            'city' => ['required', 'string', 'max:120', CyrillicText::withoutLatin('Градът')],
+            'workplace' => ['nullable', 'string', 'max:120', CyrillicText::withoutLatin('Местоработата')],
+            'job_title' => ['nullable', 'string', 'max:120', CyrillicText::withoutLatin('Длъжността')],
             'salary' => ['nullable', 'integer', 'min:0'],
             'marital_status' => ['nullable', Rule::in(array_keys(Lead::getMaritalStatusOptions()))],
             'children_under_18' => ['nullable', 'integer', 'min:0'],
-            'salary_bank' => ['nullable', 'string', 'max:120'],
+            'salary_bank' => ['nullable', 'string', 'max:120', CyrillicText::withoutLatin('Банката за заплата')],
             'amount' => ['required', 'integer', 'min:5000', 'max:50000'],
             'property_type' => ['nullable', 'required_if:credit_type,mortgage', 'in:house,apartment'],
-            'property_location' => ['nullable', 'required_if:credit_type,mortgage', 'string', 'max:120'],
+            'property_location' => ['nullable', 'required_if:credit_type,mortgage', 'string', 'max:120', CyrillicText::withoutLatin('Местонахождението на имота')],
             'guarantors' => ['nullable', 'array'],
-            'guarantors.*.first_name' => ['required', 'string', 'max:60'],
-            'guarantors.*.last_name' => ['required', 'string', 'max:60'],
+            'guarantors.*.first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името на поръчителя')],
+            'guarantors.*.last_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Фамилията на поръчителя')],
             'guarantors.*.phone' => ['nullable', 'string', 'max:30'],
             'guarantors.*.status' => ['required', Rule::in(array_keys(LeadGuarantor::getStatusOptions()))],
         ];

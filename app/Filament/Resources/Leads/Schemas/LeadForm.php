@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Leads\Schemas;
 
 use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
+use App\Rules\CyrillicText;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -71,14 +72,20 @@ class LeadForm
                         TextInput::make('first_name')
                             ->label('Име')
                             ->required()
-                            ->maxLength(60),
+                            ->maxLength(60)
+                            ->rule(CyrillicText::lettersOnly('Името'))
+                            ->helperText('Пишете само на кирилица.'),
                         TextInput::make('middle_name')
                             ->label('Презиме')
-                            ->maxLength(60),
+                            ->maxLength(60)
+                            ->rule(CyrillicText::lettersOnly('Презимето'))
+                            ->helperText('Пишете само на кирилица.'),
                         TextInput::make('last_name')
                             ->label('Фамилия')
                             ->required()
-                            ->maxLength(60),
+                            ->maxLength(60)
+                            ->rule(CyrillicText::lettersOnly('Фамилията'))
+                            ->helperText('Пишете само на кирилица.'),
                         TextInput::make('egn')
                             ->label('ЕГН')
                             ->password()
@@ -101,17 +108,23 @@ class LeadForm
                         TextInput::make('city')
                             ->label('Град')
                             ->required()
-                            ->maxLength(120),
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Градът'))
+                            ->helperText('Не използвайте латински букви.'),
                     ]),
                 Section::make('Допълнителна информация')
                     ->columns(3)
                     ->schema([
                         TextInput::make('workplace')
                             ->label('Месторабота')
-                            ->maxLength(120),
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Местоработата'))
+                            ->helperText('Не използвайте латински букви.'),
                         TextInput::make('job_title')
                             ->label('Длъжност')
-                            ->maxLength(120),
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Длъжността'))
+                            ->helperText('Не използвайте латински букви.'),
                         TextInput::make('salary')
                             ->label('Заплата')
                             ->numeric()
@@ -129,10 +142,14 @@ class LeadForm
                             ->minValue(0),
                         TextInput::make('salary_bank')
                             ->label('Банка, в която влиза заплатата')
-                            ->maxLength(120),
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Банката за заплата'))
+                            ->helperText('Не използвайте латински букви.'),
                         TextInput::make('credit_bank')
                             ->label('Банка по кредита')
-                            ->maxLength(120),
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Банката по кредита'))
+                            ->helperText('Не използвайте латински букви.'),
                     ]),
                 Section::make('Данни за имота')
                     ->columns(2)
@@ -146,6 +163,8 @@ class LeadForm
                         TextInput::make('property_location')
                             ->label('Местоположение на имота')
                             ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Местоположението на имота'))
+                            ->helperText('Не използвайте латински букви.')
                             ->visible(fn (Get $get): bool => $get('credit_type') === 'mortgage')
                             ->requiredIf('credit_type', 'mortgage'),
                     ]),
@@ -165,11 +184,15 @@ class LeadForm
                                 TextInput::make('first_name')
                                     ->label('Име')
                                     ->required()
-                                    ->maxLength(60),
+                                    ->maxLength(60)
+                                    ->rule(CyrillicText::lettersOnly('Името на поръчителя'))
+                                    ->helperText('Пишете само на кирилица.'),
                                 TextInput::make('last_name')
                                     ->label('Фамилия')
                                     ->required()
-                                    ->maxLength(60),
+                                    ->maxLength(60)
+                                    ->rule(CyrillicText::lettersOnly('Фамилията на поръчителя'))
+                                    ->helperText('Пишете само на кирилица.'),
                                 TextInput::make('egn')
                                     ->label('ЕГН')
                                     ->password()

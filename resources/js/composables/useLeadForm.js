@@ -6,6 +6,12 @@ const amountStep = 500;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const allowedCreditTypes = new Set(["consumer", "mortgage"]);
 const allowedPropertyTypes = new Set(["house", "apartment"]);
+const fieldsWithoutLatin = new Set([
+    "first_name",
+    "last_name",
+    "city",
+    "property_location",
+]);
 
 function createInitialForm(initialCreditType = "") {
     return {
@@ -19,6 +25,21 @@ function createInitialForm(initialCreditType = "") {
         property_type: "",
         property_location: "",
     };
+}
+
+function stripLatinCharacters(value) {
+    return typeof value === "string" ? value.replace(/[A-Za-z]/g, "") : value;
+}
+
+function hasLatinCharacters(value) {
+    return typeof value === "string" && /[A-Za-z]/.test(value);
+}
+
+function isCyrillicName(value) {
+    return (
+        typeof value === "string" &&
+        /^[\p{Script=Cyrillic}\s-]+$/u.test(value)
+    );
 }
 
 export function useLeadForm(options = {}) {
@@ -48,6 +69,7 @@ export function useLeadForm(options = {}) {
     const amountProgress = computed(() => {
         const value = Number(form.amount) || amountMin;
         const clamped = Math.min(amountMax, Math.max(amountMin, value));
+
         return ((clamped - amountMin) / (amountMax - amountMin)) * 100;
     });
 
@@ -80,6 +102,7 @@ export function useLeadForm(options = {}) {
 
     function setFieldError(field, message) {
         errors[field] = message;
+
         return false;
     }
 
@@ -146,6 +169,13 @@ export function useLeadForm(options = {}) {
                     );
                 }
 
+                if (!isCyrillicName(firstName)) {
+                    return setFieldError(
+                        "first_name",
+                        "Името трябва да съдържа само букви на кирилица.",
+                    );
+                }
+
                 break;
             case "last_name":
                 if (!lastName) {
@@ -159,6 +189,13 @@ export function useLeadForm(options = {}) {
                     return setFieldError(
                         "last_name",
                         "Фамилията не може да бъде по-дълга от 60 символа.",
+                    );
+                }
+
+                if (!isCyrillicName(lastName)) {
+                    return setFieldError(
+                        "last_name",
+                        "Фамилията трябва да съдържа само букви на кирилица.",
                     );
                 }
 
@@ -214,6 +251,13 @@ export function useLeadForm(options = {}) {
                     return setFieldError(
                         "city",
                         "Градът не може да бъде по-дълъг от 120 символа.",
+                    );
+                }
+
+                if (hasLatinCharacters(city)) {
+                    return setFieldError(
+                        "city",
+                        "Градът не може да съдържа латински букви.",
                     );
                 }
 
@@ -280,12 +324,20 @@ export function useLeadForm(options = {}) {
                     );
                 }
 
+                if (hasLatinCharacters(propertyLocation)) {
+                    return setFieldError(
+                        "property_location",
+                        "Местонахождението на имота не може да съдържа латински букви.",
+                    );
+                }
+
                 break;
             default:
                 break;
         }
 
         clearFieldError(field);
+
         return true;
     }
 
@@ -310,11 +362,19 @@ export function useLeadForm(options = {}) {
     }
 
     function handleBlur(field) {
+        if (fieldsWithoutLatin.has(field)) {
+            form[field] = stripLatinCharacters(form[field]);
+        }
+
         touchField(field);
         validateField(field);
     }
 
     function handleInput(field) {
+        if (fieldsWithoutLatin.has(field)) {
+            form[field] = stripLatinCharacters(form[field]);
+        }
+
         validateIfTouched(field);
     }
 
@@ -377,15 +437,14 @@ export function useLeadForm(options = {}) {
             });
 
             if (!response.ok) {
-                const responseData = await response
-                    .json()
-                    .catch(() => null);
+                const responseData = await response.json().catch(() => null);
 
                 if (response.status === 422) {
                     applyServerErrors(responseData);
                     submitError.value =
                         responseData?.message ??
                         "Моля, проверете въведените данни.";
+
                     return;
                 }
 

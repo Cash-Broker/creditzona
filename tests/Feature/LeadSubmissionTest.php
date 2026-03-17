@@ -444,6 +444,75 @@ class LeadSubmissionTest extends TestCase
         $this->assertSame(3, $distribution[$krasimira->id]);
     }
 
+    public function test_submission_rejects_latin_letters_in_public_text_fields(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'first_name' => 'Ivan',
+            'last_name' => 'Ivanov',
+            'city' => 'Plovdiv',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'first_name',
+                'last_name',
+                'city',
+            ])
+            ->assertJsonPath('errors.first_name.0', 'Името трябва да съдържа само букви на кирилица.')
+            ->assertJsonPath('errors.last_name.0', 'Фамилията трябва да съдържа само букви на кирилица.')
+            ->assertJsonPath('errors.city.0', 'Градът не може да съдържа латински букви.');
+    }
+
+    public function test_submission_rejects_latin_letters_in_additional_fields_and_guarantors(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => 'mortgage',
+            'property_type' => 'house',
+            'property_location' => 'Center 5',
+            'workplace' => 'Office 1',
+            'job_title' => 'Manager',
+            'salary_bank' => 'Bank',
+            'guarantors' => [
+                [
+                    'first_name' => 'Maria',
+                    'last_name' => 'Petrova',
+                    'phone' => '0888000111',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+            ],
+        ]));
+
+        $errors = $response->json('errors');
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'workplace',
+                'job_title',
+                'salary_bank',
+                'property_location',
+                'guarantors.0.first_name',
+                'guarantors.0.last_name',
+            ])
+            ->assertJsonPath('errors.workplace.0', 'Местоработата не може да съдържа латински букви.')
+            ->assertJsonPath('errors.job_title.0', 'Длъжността не може да съдържа латински букви.')
+            ->assertJsonPath('errors.salary_bank.0', 'Банката за заплата не може да съдържа латински букви.')
+            ->assertJsonPath('errors.property_location.0', 'Местонахождението на имота не може да съдържа латински букви.');
+
+        $this->assertSame(
+            'Името на поръчителя трябва да съдържа само букви на кирилица.',
+            $errors['guarantors.0.first_name'][0] ?? null,
+        );
+        $this->assertSame(
+            'Фамилията на поръчителя трябва да съдържа само букви на кирилица.',
+            $errors['guarantors.0.last_name'][0] ?? null,
+        );
+
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('lead_guarantors', 0);
+    }
+
     /**
      * @return array<string, mixed>
      */
