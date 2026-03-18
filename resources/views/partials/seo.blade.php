@@ -1,3 +1,7 @@
+@php
+    $jsonLdFlags = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+@endphp
+
 <title>{{ $seo['title'] }}</title>
 <meta name="description" content="{{ $seo['description'] }}">
 <meta name="robots" content="{{ $seo['robots'] }}">
@@ -17,6 +21,6 @@
 
 @foreach($seo['json_ld'] as $schema)
     <script type="application/ld+json" data-seo-schema="true">
-        {!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
+        {!! json_encode($schema, $jsonLdFlags) !!}
     </script>
 @endforeach

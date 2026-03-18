@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AdminDocuments\Schemas;
 
+use App\Models\AdminDocument;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -35,8 +36,12 @@ class AdminDocumentForm
                             ->visibility('private')
                             ->directory('admin-documents')
                             ->storeFileNamesIn('original_file_name')
+                            ->acceptedFileTypes(AdminDocument::getSafeUploadMimeTypes())
+                            ->rules([
+                                'mimetypes:'.implode(',', AdminDocument::getSafeUploadMimeTypes()),
+                            ])
                             ->maxSize(51200)
-                            ->helperText('Можете да качвате произволни файлове до 50 MB. Файлът ще се пази в защитеното вътрешно хранилище.')
+                            ->helperText('Допустими са PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF и WEBP до 50 MB. Файлът се пази във вътрешното защитено хранилище.')
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 Storage::disk('local')->delete($file);
                             })

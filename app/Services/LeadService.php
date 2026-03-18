@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Mail\LeadSubmittedConfirmation;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\Phone\PhoneNormalizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -13,6 +14,11 @@ class LeadService
 {
     public function createLead(array $data): Lead
     {
+        $normalizedPhone = PhoneNormalizer::normalize($data['phone'] ?? null);
+
+        $data['phone'] = $normalizedPhone;
+        $data['normalized_phone'] = $normalizedPhone;
+
         $lead = DB::transaction(function () use ($data): Lead {
             $isMortgage = ($data['credit_type'] ?? null) === 'mortgage';
             $assignedUserId = $this->resolveAssignedUserId($data);
@@ -23,6 +29,7 @@ class LeadService
                 'middle_name' => $data['middle_name'] ?? null,
                 'last_name' => $data['last_name'],
                 'phone' => $data['phone'],
+                'normalized_phone' => $data['normalized_phone'],
                 'email' => $data['email'],
                 'city' => $data['city'],
                 'workplace' => $data['workplace'] ?? null,
@@ -76,7 +83,7 @@ class LeadService
         $eligibleUserIds = $eligibleUsers->pluck('id');
 
         $historicalLead = Lead::query()
-            ->where('phone', $data['phone'])
+            ->forNormalizedPhone($data['normalized_phone'])
             ->where('created_at', '<', now()->subDays(14))
             ->whereIn('assigned_user_id', $eligibleUserIds)
             ->latest('created_at')
@@ -124,7 +131,7 @@ class LeadService
             ->map(fn (array $guarantor): array => [
                 'first_name' => $guarantor['first_name'],
                 'last_name' => $guarantor['last_name'],
-                'phone' => $guarantor['phone'] ?? null,
+                'phone' => PhoneNormalizer::normalize($guarantor['phone'] ?? null),
                 'status' => $guarantor['status'],
             ])
             ->values()

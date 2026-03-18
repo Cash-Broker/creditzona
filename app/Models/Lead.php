@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
 use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,6 +31,7 @@ class Lead extends Model implements HasRichContent
         'last_name',
         'egn',
         'phone',
+        'normalized_phone',
         'email',
         'city',
         'workplace',
@@ -161,6 +163,19 @@ class Lead extends Model implements HasRichContent
             'documents' => 'array',
             'document_file_names' => 'array',
         ];
+    }
+
+    public function scopeForNormalizedPhone(Builder $query, string $phone): Builder
+    {
+        return $query->where(function (Builder $innerQuery) use ($phone): void {
+            $innerQuery
+                ->where('normalized_phone', $phone)
+                ->orWhere(function (Builder $legacyQuery) use ($phone): void {
+                    $legacyQuery
+                        ->whereNull('normalized_phone')
+                        ->where('phone', $phone);
+                });
+        });
     }
 
     protected function setUpRichContent(): void

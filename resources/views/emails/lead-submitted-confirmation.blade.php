@@ -77,7 +77,7 @@
                                         Желана сума
                                     </td>
                                     <td style="padding: 16px 18px; font-size: 15px; color: #111827;">
-                                        {{ number_format((int) $lead->amount, 0, ',', ' ') }} лв.
+                                        {{ number_format((int) $lead->amount, 0, ',', ' ') }} €
                                     </td>
                                 </tr>
                             </table>

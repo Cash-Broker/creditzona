@@ -58,6 +58,57 @@ class AdminDocumentDownloadTest extends TestCase
         );
     }
 
+    public function test_staff_user_can_open_pdf_inline(): void
+    {
+        Storage::disk('local')->put('admin-documents/guide.pdf', '%PDF-1.4 test');
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $document = AdminDocument::query()->create([
+            'title' => 'Наръчник',
+            'description' => null,
+            'file_path' => 'admin-documents/guide.pdf',
+            'original_file_name' => 'guide.pdf',
+            'mime_type' => 'application/pdf',
+            'uploaded_by_user_id' => $operator->id,
+        ]);
+
+        $response = $this
+            ->actingAs($operator)
+            ->get(route('admin.documents.open', $document));
+
+        $response->assertOk();
+        $this->assertStringContainsString(
+            'application/pdf',
+            (string) $response->headers->get('content-type'),
+        );
+    }
+
+    public function test_staff_user_cannot_open_unsafe_file_inline(): void
+    {
+        Storage::disk('local')->put('admin-documents/offer.docx', 'doc-content');
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $document = AdminDocument::query()->create([
+            'title' => 'Оферта',
+            'description' => null,
+            'file_path' => 'admin-documents/offer.docx',
+            'original_file_name' => 'offer.docx',
+            'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'uploaded_by_user_id' => $operator->id,
+        ]);
+
+        $this
+            ->actingAs($operator)
+            ->get(route('admin.documents.open', $document))
+            ->assertForbidden();
+    }
+
     public function test_non_staff_user_cannot_download_shared_document(): void
     {
         Storage::disk('local')->put('admin-documents/internal.xlsx', 'sheet');

@@ -39,7 +39,7 @@ class LeadInfolist
                         TextEntry::make('amount')
                             ->label('Сума')
                             ->numeric(0, locale: 'bg')
-                            ->suffix(' лв.'),
+                            ->suffix(' €'),
                         TextEntry::make('first_name')
                             ->label('Име'),
                         TextEntry::make('middle_name')
@@ -80,7 +80,7 @@ class LeadInfolist
                         TextEntry::make('salary')
                             ->label('Заплата')
                             ->numeric(0, locale: 'bg')
-                            ->suffix(' лв.')
+                            ->suffix(' €')
                             ->placeholder('Няма'),
                         TextEntry::make('marital_status')
                             ->label('Семейно положение')

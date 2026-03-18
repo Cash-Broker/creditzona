@@ -4,26 +4,28 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContactMessageRequest;
-use App\Mail\ContactMessageReceived;
-use App\Models\ContactMessage;
+use App\Services\ContactMessageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class ContactMessageController extends Controller
 {
+    public function __construct(
+        private readonly ContactMessageService $contactMessageService,
+    ) {}
+
     public function store(StoreContactMessageRequest $request): JsonResponse
     {
-        $contactMessage = ContactMessage::create($request->validated());
-
         try {
-            Mail::to(config('mail.contact_recipient'))
-                ->send(new ContactMessageReceived($contactMessage));
-        } catch (\Throwable $e) {
-            Log::error('Failed to send contact message email.', [
-                'contact_message_id' => $contactMessage->id,
-                'error' => $e->getMessage(),
+            $this->contactMessageService->storeMessage($request->validated());
+        } catch (\Throwable $exception) {
+            Log::error('Failed to store contact message.', [
+                'error' => $exception->getMessage(),
             ]);
+
+            return response()->json([
+                'message' => 'Възникна проблем при изпращането на съобщението. Моля, опитайте отново след малко.',
+            ], 500);
         }
 
         return response()->json([

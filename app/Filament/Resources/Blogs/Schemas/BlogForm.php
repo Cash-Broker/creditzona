@@ -3,15 +3,17 @@
 namespace App\Filament\Resources\Blogs\Schemas;
 
 use App\Models\Blog;
+use Closure;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class BlogForm
@@ -32,7 +34,16 @@ class BlogForm
                             ->label('Slug')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->rule(static function (): Closure {
+                                return static function (string $attribute, mixed $value, Closure $fail): void {
+                                    if (! is_string($value) || Str::slug($value) === '') {
+                                        $fail('Slug-ът трябва да съдържа само малки латински букви, цифри и тирета.');
+                                    }
+                                };
+                            })
+                            ->dehydrateStateUsing(static fn (?string $state): ?string => filled($state) ? Str::slug($state) : null)
+                            ->helperText('Използвайте малки латински букви, цифри и тирета.'),
                         FileUpload::make('image_path')
                             ->label('Изображение')
                             ->image()
@@ -66,7 +77,7 @@ class BlogForm
                                     $component->getDiskName(),
                                 );
 
-                                return blank($path) ? null : '/storage/' . ltrim($path, '/');
+                                return blank($path) ? null : '/storage/'.ltrim($path, '/');
                             })
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 $storagePath = Blog::getStorageImagePath($file);

@@ -9,6 +9,33 @@ use Illuminate\Support\Str;
 
 class AdminDocument extends Model
 {
+    public const SAFE_UPLOAD_MIME_TYPES = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+    ];
+
+    public const INLINE_OPEN_MIME_TYPES = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+    ];
+
+    public const PREVIEWABLE_IMAGE_MIME_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+    ];
+
     protected $fillable = [
         'title',
         'description',
@@ -18,6 +45,14 @@ class AdminDocument extends Model
         'file_size',
         'uploaded_by_user_id',
     ];
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getSafeUploadMimeTypes(): array
+    {
+        return self::SAFE_UPLOAD_MIME_TYPES;
+    }
 
     protected function casts(): array
     {
@@ -63,8 +98,10 @@ class AdminDocument extends Model
 
     public function isPreviewableImage(): bool
     {
-        if (filled($this->mime_type) && Str::startsWith($this->mime_type, 'image/')) {
-            return true;
+        $mimeType = Str::lower((string) $this->mime_type);
+
+        if ($mimeType !== '') {
+            return in_array($mimeType, self::PREVIEWABLE_IMAGE_MIME_TYPES, strict: true);
         }
 
         return in_array(Str::lower((string) $this->getFileExtension()), [
@@ -73,7 +110,24 @@ class AdminDocument extends Model
             'png',
             'gif',
             'webp',
-            'svg',
+        ], strict: true);
+    }
+
+    public function canBeOpenedInline(): bool
+    {
+        $mimeType = Str::lower((string) $this->mime_type);
+
+        if ($mimeType !== '') {
+            return in_array($mimeType, self::INLINE_OPEN_MIME_TYPES, strict: true);
+        }
+
+        return in_array(Str::lower((string) $this->getFileExtension()), [
+            'pdf',
+            'jpg',
+            'jpeg',
+            'png',
+            'gif',
+            'webp',
         ], strict: true);
     }
 

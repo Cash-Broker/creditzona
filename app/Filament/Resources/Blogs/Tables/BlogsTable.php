@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Blogs\Tables;
 
+use App\Models\Blog;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;

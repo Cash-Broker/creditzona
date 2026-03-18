@@ -192,6 +192,20 @@
                         </div>
                     </div>
 
+                    <input
+                        v-model="form.website"
+                        type="text"
+                        tabindex="-1"
+                        autocomplete="off"
+                        aria-hidden="true"
+                        class="hidden"
+                    />
+
+                    <input
+                        v-model="form.form_started_at"
+                        type="hidden"
+                    />
+
                     <div class="grid gap-1.5">
                         <label class="input-label">Съобщение</label>
 

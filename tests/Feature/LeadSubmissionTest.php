@@ -296,6 +296,86 @@ class LeadSubmissionTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_submission_normalizes_phone_before_storing_lead(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'phone' => '+359 888 123 456',
+        ]));
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('leads', [
+            'phone' => '0888123456',
+            'normalized_phone' => '0888123456',
+        ]);
+    }
+
+    public function test_recent_lead_with_same_phone_format_variant_returns_validation_error(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '+359 888 123 456',
+            'normalized_phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+            'created_at' => now()->subDays(13),
+            'updated_at' => now()->subDays(13),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'phone' => '0888 123 456',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath(
+                'errors.phone.0',
+                'Вече има подадена заявка с този телефонен номер през последните 14 дни.',
+            );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_spam_honeypot_submission_is_rejected(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'website' => 'spam-bot',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['website']);
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_lead_submission_is_rate_limited(): void
+    {
+        $client = $this->withServerVariables([
+            'REMOTE_ADDR' => '10.10.10.10',
+            'HTTP_USER_AGENT' => 'LeadThrottleTest',
+        ]);
+
+        foreach (range(1, 5) as $index) {
+            $client->postJson('/leads', $this->validPayload([
+                'phone' => sprintf('08889999%02d', $index),
+            ]))->assertOk();
+        }
+
+        $client->postJson('/leads', $this->validPayload([
+            'phone' => '0888999999',
+        ]))
+            ->assertStatus(429)
+            ->assertJsonPath('message', 'Изпращате твърде често. Моля, опитайте отново след малко.');
+    }
+
     public function test_old_lead_with_same_phone_reuses_historical_assigned_user(): void
     {
         Carbon::setTestNow('2026-03-12 10:00:00');
@@ -462,9 +542,15 @@ class LeadSubmissionTest extends TestCase
         ]);
 
         foreach (range(1, 9) as $index) {
-            $this->postJson('/leads', $this->validPayload([
-                'phone' => sprintf('08880000%02d', $index),
-            ]))->assertOk();
+            $this
+                ->withServerVariables([
+                    'REMOTE_ADDR' => sprintf('10.10.10.%d', $index),
+                    'HTTP_USER_AGENT' => 'LeadRoundRobinDistributionTest',
+                ])
+                ->postJson('/leads', $this->validPayload([
+                    'phone' => sprintf('08880000%02d', $index),
+                ]))
+                ->assertOk();
         }
 
         $distribution = Lead::query()
@@ -574,6 +660,8 @@ class LeadSubmissionTest extends TestCase
             'utm_campaign' => 'spring-campaign',
             'utm_medium' => 'cpc',
             'gclid' => 'test-gclid',
+            'website' => '',
+            'form_started_at' => now()->subSeconds(5)->getTimestampMs(),
         ], $overrides);
     }
 }

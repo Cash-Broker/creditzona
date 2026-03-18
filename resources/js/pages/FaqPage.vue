@@ -93,7 +93,6 @@ async function loadFaqs() {
         faqs.value = Array.isArray(payload) ? payload : [];
         syncSeo();
     } catch (e) {
-        console.error(e);
         error.value =
             "Възникна проблем при зареждането. Моля, опитайте отново след малко.";
     } finally {

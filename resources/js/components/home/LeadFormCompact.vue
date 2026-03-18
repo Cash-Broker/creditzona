@@ -173,6 +173,20 @@
                     </p>
                 </div>
 
+                <input
+                    v-model="form.website"
+                    type="text"
+                    tabindex="-1"
+                    autocomplete="off"
+                    aria-hidden="true"
+                    class="hidden"
+                />
+
+                <input
+                    v-model="form.form_started_at"
+                    type="hidden"
+                />
+
                 <div class="field">
                     <label class="field-label" for="city">Град</label>
                     <input

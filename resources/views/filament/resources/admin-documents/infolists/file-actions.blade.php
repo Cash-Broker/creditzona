@@ -13,18 +13,26 @@
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                         {{ $record->fileExists() ? 'Файлът е наличен във вътрешното хранилище.' : 'Файлът в момента не е достъпен.' }}
                     </div>
+
+                    @if ($record->fileExists() && ! $record->canBeOpenedInline())
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                            Този тип файл е достъпен само за сваляне.
+                        </div>
+                    @endif
                 </div>
 
                 @if ($record->fileExists())
                     <div class="flex flex-col gap-3 sm:flex-row">
-                        <a
-                            href="{{ route('admin.documents.open', $record) }}"
-                            target="_blank"
-                            rel="noreferrer"
-                            class="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm transition hover:border-primary-200 hover:text-primary-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary-500/40 dark:hover:text-primary-200"
-                        >
-                            <span>Отвори</span>
-                        </a>
+                        @if ($record->canBeOpenedInline())
+                            <a
+                                href="{{ route('admin.documents.open', $record) }}"
+                                target="_blank"
+                                rel="noreferrer"
+                                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm transition hover:border-primary-200 hover:text-primary-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary-500/40 dark:hover:text-primary-200"
+                            >
+                                <span>Отвори</span>
+                            </a>
+                        @endif
 
                         <a
                             href="{{ route('admin.documents.download', $record) }}"

@@ -181,8 +181,6 @@ async function loadPost(slug) {
         post.value = payload;
         syncSeo();
     } catch (e) {
-        console.error(e);
-
         if (e?.status === 404) {
             error.value = "Статията не беше намерена или не е публикувана.";
             post.value = null;

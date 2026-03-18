@@ -85,7 +85,6 @@ async function loadPosts() {
     try {
         await getBlogs();
     } catch (e) {
-        console.error(e);
         error.value =
             "Възникна проблем при зареждането на блога. Моля, опитайте отново след малко.";
     } finally {

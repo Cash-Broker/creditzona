@@ -13,8 +13,7 @@ class PageController extends Controller
 {
     public function __construct(
         private readonly SeoManager $seoManager,
-    ) {
-    }
+    ) {}
 
     public function home(Request $request): View
     {

@@ -30,7 +30,9 @@ Route::redirect('/obshtiusloviq', '/obshti-usloviya', 301);
 Route::redirect('/политика-за-поверителност', '/politika-za-poveritelnost', 301);
 Route::redirect('/политика-за-бисквитки', '/politika-za-biskvitki', 301);
 
-Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+Route::post('/leads', [LeadController::class, 'store'])
+    ->middleware('throttle:lead-submissions')
+    ->name('leads.store');
 
 Route::middleware([Authenticate::class])
     ->prefix('admin')

@@ -12,8 +12,7 @@ class LeadController extends Controller
 {
     public function __construct(
         private readonly LeadService $leadService
-    ) {
-    }
+    ) {}
 
     public function store(StoreLeadRequest $request): JsonResponse|RedirectResponse
     {
@@ -21,18 +20,7 @@ class LeadController extends Controller
         $errorMessage = 'Възникна грешка при изпращането на заявката. Моля, опитайте отново.';
 
         try {
-            $leadData = array_merge(
-                $request->validated(),
-                $request->only([
-                    'source',
-                    'utm_source',
-                    'utm_campaign',
-                    'utm_medium',
-                    'gclid',
-                ])
-            );
-
-            $this->leadService->createLead($leadData);
+            $this->leadService->createLead($request->validated());
         } catch (\Throwable $exception) {
             Log::error('Failed to store lead.', [
                 'error' => $exception->getMessage(),

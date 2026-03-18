@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use App\Models\ContactMessage;
-use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
@@ -12,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 
 class ContactMessageReceived extends Mailable
 {
-    use Queueable, SerializesModels;
+    use SerializesModels;
 
     public function __construct(
         public ContactMessage $contactMessage
@@ -22,7 +21,7 @@ class ContactMessageReceived extends Mailable
     {
         $replyTo = [];
 
-        if (!empty($this->contactMessage->email)) {
+        if (! empty($this->contactMessage->email)) {
             $replyTo[] = new Address(
                 $this->contactMessage->email,
                 $this->contactMessage->full_name

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Faq;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -46,5 +47,21 @@ class SeoMetadataTest extends TestCase
             '<meta name="robots" content="noindex,follow">',
             false,
         );
+    }
+
+    public function test_faq_schema_escapes_dangerous_script_sequences(): void
+    {
+        Faq::query()->create([
+            'question' => 'Безопасно ли е?',
+            'answer' => '</script><script>alert("x")</script>',
+            'sort_order' => 1,
+            'is_published' => true,
+        ]);
+
+        $response = $this->get('/faq');
+
+        $response->assertOk();
+        $response->assertDontSee('</script><script>alert("x")</script>', false);
+        $response->assertSee('\u003C\/script\u003E\u003Cscript\u003Ealert(', false);
     }
 }

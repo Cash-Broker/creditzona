@@ -24,8 +24,7 @@ class SeoData
         public readonly array $jsonLd = [],
         public readonly array $preloadImages = [],
         public readonly array $breadcrumbs = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

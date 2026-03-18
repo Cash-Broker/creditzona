@@ -1,0 +1,19 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*.php';
+@source '../../../../resources/views/filament/**/*.blade.php';
+
+.fi-body,
+.fi-layout,
+.fi-main-ctn,
+.fi-simple-layout,
+.fi-simple-main-ctn {
+    background-color: #ffffff;
+}
+
+.fi-sidebar,
+.fi-sidebar-header,
+.fi-topbar,
+.fi-simple-main {
+    background-color: #ffffff;
+}

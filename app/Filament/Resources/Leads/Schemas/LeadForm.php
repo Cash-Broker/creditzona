@@ -68,7 +68,7 @@ class LeadForm
                             ->integer()
                             ->minValue(5000)
                             ->maxValue(50000)
-                            ->suffix('лв.'),
+                            ->suffix('€'),
                         TextInput::make('first_name')
                             ->label('Име')
                             ->required()
@@ -130,7 +130,7 @@ class LeadForm
                             ->numeric()
                             ->integer()
                             ->minValue(0)
-                            ->suffix('лв.'),
+                            ->suffix('€'),
                         Select::make('marital_status')
                             ->label('Семейно положение')
                             ->options(LeadResource::getMaritalStatusOptions())

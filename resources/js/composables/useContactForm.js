@@ -6,6 +6,8 @@ function createInitialForm() {
         phone: "",
         email: "",
         message: "",
+        website: "",
+        form_started_at: Date.now(),
     };
 }
 
@@ -63,17 +65,7 @@ export function useContactForm() {
                 body: JSON.stringify(form),
             });
 
-            const rawText = await response.text();
-            console.log("STATUS:", response.status);
-            console.log("RAW RESPONSE:", rawText);
-
-            let payload = null;
-
-            try {
-                payload = rawText ? JSON.parse(rawText) : null;
-            } catch (err) {
-                console.warn("Response is not valid JSON");
-            }
+            const payload = await response.json().catch(() => null);
 
             if (response.status === 422) {
                 if (payload?.errors && typeof payload.errors === "object") {
@@ -92,7 +84,6 @@ export function useContactForm() {
             success.value = true;
             resetForm();
         } catch (e) {
-            console.error("SUBMIT ERROR:", e);
             generalError.value =
                 "Възникна проблем при изпращане на съобщението. Моля, опитайте отново след малко.";
         } finally {

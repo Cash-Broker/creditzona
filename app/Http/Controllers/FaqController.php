@@ -11,7 +11,10 @@ class FaqController extends Controller
     {
         $faqs = Faq::published()
             ->ordered()
-            ->get();
+            ->get([
+                'question',
+                'answer',
+            ]);
 
         return response()->json($faqs);
     }

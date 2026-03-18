@@ -57,12 +57,12 @@ class LeadsTable
                 TextColumn::make('amount')
                     ->label('Сума')
                     ->numeric(0, locale: 'bg')
-                    ->suffix(' лв.')
+                    ->suffix(' €')
                     ->sortable(),
                 TextColumn::make('salary')
                     ->label('Заплата')
                     ->numeric(0, locale: 'bg')
-                    ->suffix(' лв.')
+                    ->suffix(' €')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('marital_status')

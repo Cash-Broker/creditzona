@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ProtectsPublicForms;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Rules\CyrillicText;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class StoreLeadRequest extends FormRequest
 {
+    use ProtectsPublicForms;
+
     public function authorize(): bool
     {
         return true;
@@ -24,7 +27,7 @@ class StoreLeadRequest extends FormRequest
             'first_name' => $this->normalizeString($this->input('first_name')),
             'middle_name' => $this->normalizeString($this->input('middle_name')),
             'last_name' => $this->normalizeString($this->input('last_name')),
-            'phone' => $this->normalizeString($this->input('phone')),
+            'phone' => $this->normalizePhone($this->input('phone')),
             'email' => $this->normalizeString($this->input('email')),
             'city' => $this->normalizeString($this->input('city')),
             'workplace' => $this->normalizeString($this->input('workplace')),
@@ -33,8 +36,15 @@ class StoreLeadRequest extends FormRequest
             'salary_bank' => $this->normalizeString($this->input('salary_bank')),
             'property_type' => $this->normalizeString($this->input('property_type')),
             'property_location' => $this->normalizeString($this->input('property_location')),
+            'source' => $this->normalizeString($this->input('source')),
+            'utm_source' => $this->normalizeString($this->input('utm_source')),
+            'utm_campaign' => $this->normalizeString($this->input('utm_campaign')),
+            'utm_medium' => $this->normalizeString($this->input('utm_medium')),
+            'gclid' => $this->normalizeString($this->input('gclid')),
             'guarantors' => $this->normalizeGuarantors($this->input('guarantors')),
         ]);
+
+        $this->preparePublicFormProtection();
     }
 
     /**
@@ -42,7 +52,7 @@ class StoreLeadRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'credit_type' => ['required', 'in:consumer,mortgage'],
             'first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името')],
             'middle_name' => ['nullable', 'string', 'max:60', CyrillicText::lettersOnly('Презимето')],
@@ -58,7 +68,7 @@ class StoreLeadRequest extends FormRequest
                     }
 
                     $hasRecentLead = Lead::query()
-                        ->where('phone', $value)
+                        ->forNormalizedPhone($value)
                         ->where('created_at', '>=', now()->subDays(14))
                         ->exists();
 
@@ -78,12 +88,17 @@ class StoreLeadRequest extends FormRequest
             'amount' => ['required', 'integer', 'min:5000', 'max:50000'],
             'property_type' => ['nullable', 'required_if:credit_type,mortgage', 'in:house,apartment'],
             'property_location' => ['nullable', 'required_if:credit_type,mortgage', 'string', 'max:120', CyrillicText::withoutLatin('Местонахождението на имота')],
+            'source' => ['nullable', 'string', 'max:120'],
+            'utm_source' => ['nullable', 'string', 'max:120'],
+            'utm_campaign' => ['nullable', 'string', 'max:150'],
+            'utm_medium' => ['nullable', 'string', 'max:120'],
+            'gclid' => ['nullable', 'string', 'max:255'],
             'guarantors' => ['nullable', 'array'],
             'guarantors.*.first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името на поръчителя')],
             'guarantors.*.last_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Фамилията на поръчителя')],
             'guarantors.*.phone' => ['nullable', 'string', 'max:30'],
             'guarantors.*.status' => ['required', Rule::in(array_keys(LeadGuarantor::getStatusOptions()))],
-        ];
+        ], $this->publicFormProtectionRules());
     }
 
     /**
@@ -91,7 +106,7 @@ class StoreLeadRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        return array_merge([
             'credit_type.required' => 'Моля, изберете тип кредит.',
             'credit_type.in' => 'Моля, изберете валиден тип кредит.',
 
@@ -158,18 +173,7 @@ class StoreLeadRequest extends FormRequest
             'guarantors.*.phone.max' => 'Телефонът на поръчителя не може да бъде по-дълъг от 30 символа.',
             'guarantors.*.status.required' => 'Моля, изберете статус на поръчител.',
             'guarantors.*.status.in' => 'Моля, изберете валиден статус на поръчител.',
-        ];
-    }
-
-    private function normalizeString(mixed $value): ?string
-    {
-        if (! is_string($value)) {
-            return null;
-        }
-
-        $trimmed = trim($value);
-
-        return $trimmed === '' ? null : $trimmed;
+        ], $this->publicFormProtectionMessages());
     }
 
     private function normalizeGuarantors(mixed $value): mixed
@@ -186,7 +190,7 @@ class StoreLeadRequest extends FormRequest
             return array_merge($guarantor, [
                 'first_name' => $this->normalizeString($guarantor['first_name'] ?? null),
                 'last_name' => $this->normalizeString($guarantor['last_name'] ?? null),
-                'phone' => $this->normalizeString($guarantor['phone'] ?? null),
+                'phone' => $this->normalizePhone($guarantor['phone'] ?? null),
                 'status' => $this->normalizeString($guarantor['status'] ?? null),
             ]);
         }, array_values($value));

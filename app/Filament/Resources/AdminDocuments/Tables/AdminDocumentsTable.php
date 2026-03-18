@@ -51,6 +51,7 @@ class AdminDocumentsTable
                     ->label('Отвори')
                     ->icon(Heroicon::OutlinedEye)
                     ->url(fn (AdminDocument $record): string => route('admin.documents.open', $record))
+                    ->visible(fn (AdminDocument $record): bool => $record->canBeOpenedInline())
                     ->openUrlInNewTab(),
                 Action::make('download')
                     ->label('Свали')

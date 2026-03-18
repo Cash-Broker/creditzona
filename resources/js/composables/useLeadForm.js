@@ -24,6 +24,8 @@ function createInitialForm(initialCreditType = "") {
         amount: amountMin,
         property_type: "",
         property_location: "",
+        website: "",
+        form_started_at: Date.now(),
     };
 }
 
@@ -454,7 +456,6 @@ export function useLeadForm(options = {}) {
             success.value = true;
             resetForm();
         } catch (error) {
-            console.error("Lead submit error:", error);
             submitError.value =
                 "Възникна грешка при изпращането на заявката. Моля, опитайте отново.";
         } finally {
