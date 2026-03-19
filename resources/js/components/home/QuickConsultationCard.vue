@@ -1,7 +1,7 @@
 <template>
     <section
         :id="sectionId"
-        class="relative left-1/2 w-dvw max-w-[100dvw] -translate-x-1/2 overflow-hidden px-4 py-10 sm:px-6 lg:px-8"
+        class="relative left-1/2 w-screen max-w-none -translate-x-1/2 overflow-hidden px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20"
     >
         <img
             :src="backgroundImage"
@@ -9,14 +9,18 @@
             aria-hidden="true"
             width="1382"
             height="921"
-            class="absolute inset-0 h-full w-full object-cover"
+            class="absolute inset-0 h-full w-full scale-105 object-cover object-center"
             :loading="imageLoading"
             :fetchpriority="imageFetchPriority"
             decoding="async"
         />
-        <div class="absolute inset-0 bg-black/40"></div>
+        <div
+            class="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/60"
+        ></div>
 
-        <div class="relative z-10 mx-auto w-full max-w-5xl">
+        <div
+            class="relative z-10 mx-auto flex min-h-[38rem] w-full max-w-5xl flex-col justify-center sm:min-h-[42rem] lg:min-h-[46rem]"
+        >
             <div class="mb-6 text-center">
                 <component
                     :is="headingTag"
@@ -61,7 +65,7 @@
 <script setup>
 import LeadFormCompact from "./LeadFormCompact.vue";
 
-const backgroundImage = "/images/bg-image.jpg";
+const backgroundImage = "/images/bg-image2.jpg";
 
 defineProps({
     initialCreditType: {
