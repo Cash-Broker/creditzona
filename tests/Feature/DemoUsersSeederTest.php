@@ -16,36 +16,36 @@ class DemoUsersSeederTest extends TestCase
         $this->seed(DemoUsersSeeder::class);
 
         $this->assertDatabaseMissing('users', [
-            'email' => 'admin@creditzona.test',
+            'email' => 'admin@creditzona.bg',
         ]);
 
         $this->assertDatabaseHas('users', [
             'name' => 'Рената',
-            'email' => 'renata@creditzona.test',
+            'email' => 'renata@creditzona.bg',
             'role' => User::ROLE_ADMIN,
         ]);
 
         $this->assertDatabaseHas('users', [
             'name' => 'Анна',
-            'email' => 'anna@creditzona.test',
+            'email' => 'anna@creditzona.bg',
             'role' => User::ROLE_OPERATOR,
         ]);
 
         $this->assertDatabaseHas('users', [
             'name' => 'Елена',
-            'email' => 'elena@creditzona.test',
+            'email' => 'elena@creditzona.bg',
             'role' => User::ROLE_OPERATOR,
         ]);
 
         $this->assertDatabaseHas('users', [
             'name' => 'Красимира',
-            'email' => 'krasimira@creditzona.test',
+            'email' => 'krasimira@creditzona.bg',
             'role' => User::ROLE_OPERATOR,
         ]);
 
         $this->assertDatabaseHas('users', [
             'name' => 'Искра',
-            'email' => 'iskra@creditzona.test',
+            'email' => 'iskra@creditzona.bg',
             'role' => User::ROLE_OPERATOR,
         ]);
     }

@@ -20,7 +20,7 @@ class LeadService
         $data['normalized_phone'] = $normalizedPhone;
 
         $lead = DB::transaction(function () use ($data): Lead {
-            $isMortgage = ($data['credit_type'] ?? null) === 'mortgage';
+            $isMortgage = ($data['credit_type'] ?? null) === Lead::CREDIT_TYPE_MORTGAGE;
             $assignedUserId = $this->resolveAssignedUserId($data);
 
             $lead = Lead::create([
@@ -30,8 +30,8 @@ class LeadService
                 'last_name' => $data['last_name'],
                 'phone' => $data['phone'],
                 'normalized_phone' => $data['normalized_phone'],
-                'email' => $data['email'],
-                'city' => $data['city'],
+                'email' => $data['email'] ?? null,
+                'city' => $data['city'] ?? null,
                 'workplace' => $data['workplace'] ?? null,
                 'job_title' => $data['job_title'] ?? null,
                 'salary' => $data['salary'] ?? null,

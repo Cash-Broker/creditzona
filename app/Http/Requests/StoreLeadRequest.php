@@ -6,6 +6,7 @@ use App\Http\Requests\Concerns\ProtectsPublicForms;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Rules\CyrillicText;
+use App\Rules\ExclusiveLeadParticipantPhone;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -53,7 +54,7 @@ class StoreLeadRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'credit_type' => ['required', 'in:consumer,mortgage'],
+            'credit_type' => ['required', Rule::in(array_keys(Lead::getCreditTypeOptions()))],
             'first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името')],
             'middle_name' => ['nullable', 'string', 'max:60', CyrillicText::lettersOnly('Презимето')],
             'last_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Фамилията')],
@@ -62,6 +63,7 @@ class StoreLeadRequest extends FormRequest
                 'required',
                 'string',
                 'max:30',
+                ExclusiveLeadParticipantPhone::forApplicant(),
                 function (string $attribute, mixed $value, Closure $fail): void {
                     if (! is_string($value) || $value === '') {
                         return;
@@ -84,19 +86,37 @@ class StoreLeadRequest extends FormRequest
             'salary' => ['nullable', 'integer', 'min:0'],
             'marital_status' => ['nullable', Rule::in(array_keys(Lead::getMaritalStatusOptions()))],
             'children_under_18' => ['nullable', 'integer', 'min:0'],
-            'salary_bank' => ['nullable', 'string', 'max:120', CyrillicText::withoutLatin('Банката за заплата')],
+            'salary_bank' => ['nullable', 'string', 'max:120', CyrillicText::withoutLatin('Банката за заплатата')],
             'amount' => ['required', 'integer', 'min:5000', 'max:50000'],
-            'property_type' => ['nullable', 'required_if:credit_type,mortgage', 'in:house,apartment'],
-            'property_location' => ['nullable', 'required_if:credit_type,mortgage', 'string', 'max:120', CyrillicText::withoutLatin('Местонахождението на имота')],
+            'property_type' => ['nullable', 'required_if:credit_type,'.Lead::CREDIT_TYPE_MORTGAGE, 'in:house,apartment'],
+            'property_location' => ['nullable', 'required_if:credit_type,'.Lead::CREDIT_TYPE_MORTGAGE, 'string', 'max:120', CyrillicText::withoutLatin('Местонахождението на имота')],
             'source' => ['nullable', 'string', 'max:120'],
             'utm_source' => ['nullable', 'string', 'max:120'],
             'utm_campaign' => ['nullable', 'string', 'max:150'],
             'utm_medium' => ['nullable', 'string', 'max:120'],
             'gclid' => ['nullable', 'string', 'max:255'],
-            'guarantors' => ['nullable', 'array'],
+            'guarantors' => [
+                Rule::requiredIf(fn (): bool => $this->isConsumerWithGuarantorLead()),
+                'nullable',
+                'array',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! $this->isConsumerWithGuarantorLead() || ! is_array($value) || $value === []) {
+                        return;
+                    }
+
+                    if (count($value) !== 1) {
+                        $fail('При потребителски кредит с поръчител трябва да въведете точно един поръчител.');
+                    }
+                },
+            ],
             'guarantors.*.first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името на поръчителя')],
             'guarantors.*.last_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Фамилията на поръчителя')],
-            'guarantors.*.phone' => ['nullable', 'string', 'max:30'],
+            'guarantors.*.phone' => [
+                'required',
+                'string',
+                'max:30',
+                ExclusiveLeadParticipantPhone::forGuarantor([$this->input('phone')]),
+            ],
             'guarantors.*.status' => ['required', Rule::in(array_keys(LeadGuarantor::getStatusOptions()))],
         ], $this->publicFormProtectionRules());
     }
@@ -162,6 +182,7 @@ class StoreLeadRequest extends FormRequest
             'property_location.string' => 'Местонахождението на имота трябва да бъде текст.',
             'property_location.max' => 'Местонахождението на имота не може да бъде по-дълго от 120 символа.',
 
+            'guarantors.required' => 'Моля, въведете име, фамилия и телефон на поръчителя.',
             'guarantors.array' => 'Поръчителите трябва да бъдат в валиден формат.',
             'guarantors.*.first_name.required' => 'Моля, въведете име на поръчител.',
             'guarantors.*.first_name.string' => 'Името на поръчителя трябва да бъде текст.',
@@ -169,6 +190,7 @@ class StoreLeadRequest extends FormRequest
             'guarantors.*.last_name.required' => 'Моля, въведете фамилия на поръчител.',
             'guarantors.*.last_name.string' => 'Фамилията на поръчителя трябва да бъде текст.',
             'guarantors.*.last_name.max' => 'Фамилията на поръчителя не може да бъде по-дълга от 60 символа.',
+            'guarantors.*.phone.required' => 'Моля, въведете телефон на поръчител.',
             'guarantors.*.phone.string' => 'Телефонът на поръчителя трябва да бъде текст.',
             'guarantors.*.phone.max' => 'Телефонът на поръчителя не може да бъде по-дълъг от 30 символа.',
             'guarantors.*.status.required' => 'Моля, изберете статус на поръчител.',
@@ -194,5 +216,10 @@ class StoreLeadRequest extends FormRequest
                 'status' => $this->normalizeString($guarantor['status'] ?? null),
             ]);
         }, array_values($value));
+    }
+
+    private function isConsumerWithGuarantorLead(): bool
+    {
+        return $this->input('credit_type') === Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR;
     }
 }

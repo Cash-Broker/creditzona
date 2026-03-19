@@ -54,9 +54,11 @@ class LeadInfolist
                         TextEntry::make('phone')
                             ->label('Телефон'),
                         TextEntry::make('email')
-                            ->label('Имейл'),
+                            ->label('Имейл')
+                            ->placeholder('Няма'),
                         TextEntry::make('city')
-                            ->label('Град'),
+                            ->label('Град')
+                            ->placeholder('Няма'),
                     ]),
                 Section::make('Екип по заявката')
                     ->columns(2)
@@ -114,26 +116,99 @@ class LeadInfolist
                             ->placeholder('Няма добавени поръчители')
                             ->contained(false)
                             ->schema([
-                                TextEntry::make('first_name')
-                                    ->label('Име'),
-                                TextEntry::make('last_name')
-                                    ->label('Фамилия'),
-                                TextEntry::make('phone')
-                                    ->label('Телефон')
-                                    ->placeholder('Няма'),
-                                TextEntry::make('egn')
-                                    ->label('ЕГН')
-                                    ->formatStateUsing(fn (?string $state): string => LeadGuarantor::maskEgn($state))
-                                    ->placeholder('Няма'),
-                                TextEntry::make('status')
-                                    ->label('Статус')
-                                    ->badge()
-                                    ->colors([
-                                        'success' => 'suitable',
-                                        'danger' => 'unsuitable',
-                                        'gray' => 'declined',
-                                    ])
-                                    ->formatStateUsing(fn (?string $state): string => LeadResource::getGuarantorStatusLabel($state)),
+                                Section::make('Основни данни на поръчителя')
+                                    ->columns(3)
+                                    ->schema([
+                                        TextEntry::make('status')
+                                            ->label('Статус')
+                                            ->badge()
+                                            ->colors([
+                                                'success' => 'suitable',
+                                                'danger' => 'unsuitable',
+                                                'gray' => 'declined',
+                                            ])
+                                            ->formatStateUsing(fn (?string $state): string => LeadResource::getGuarantorStatusLabel($state)),
+                                        TextEntry::make('amount')
+                                            ->label('Сума')
+                                            ->numeric(0, locale: 'bg')
+                                            ->suffix(' €')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('first_name')
+                                            ->label('Име'),
+                                        TextEntry::make('middle_name')
+                                            ->label('Презиме')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('last_name')
+                                            ->label('Фамилия'),
+                                        TextEntry::make('egn')
+                                            ->label('ЕГН')
+                                            ->formatStateUsing(fn (?string $state): string => LeadGuarantor::maskEgn($state))
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('phone')
+                                            ->label('Телефон')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('email')
+                                            ->label('Имейл')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('city')
+                                            ->label('Град')
+                                            ->placeholder('Няма'),
+                                    ]),
+                                Section::make('Допълнителна информация за поръчителя')
+                                    ->columns(3)
+                                    ->schema([
+                                        TextEntry::make('workplace')
+                                            ->label('Месторабота')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('job_title')
+                                            ->label('Длъжност')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('salary')
+                                            ->label('Заплата')
+                                            ->numeric(0, locale: 'bg')
+                                            ->suffix(' €')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('marital_status')
+                                            ->label('Семейно положение')
+                                            ->formatStateUsing(fn (?string $state): string => LeadResource::getMaritalStatusLabel($state))
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('children_under_18')
+                                            ->label('Деца под 18')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('salary_bank')
+                                            ->label('Банка, в която влиза заплатата')
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('credit_bank')
+                                            ->label('Банка по кредита')
+                                            ->placeholder('Няма'),
+                                    ]),
+                                Section::make('Данни за имота на поръчителя')
+                                    ->columns(2)
+                                    ->schema([
+                                        TextEntry::make('property_type')
+                                            ->label('Тип имот')
+                                            ->formatStateUsing(fn (?string $state): string => LeadResource::getPropertyTypeLabel($state))
+                                            ->placeholder('Няма'),
+                                        TextEntry::make('property_location')
+                                            ->label('Местоположение на имота')
+                                            ->placeholder('Няма'),
+                                    ]),
+                                Section::make('Документи към поръчителя')
+                                    ->schema([
+                                        ViewEntry::make('document_downloads')
+                                            ->label('Прикачени файлове')
+                                            ->view('filament.resources.leads.infolists.guarantor-document-downloads')
+                                            ->state(fn (LeadGuarantor $record): array => $record->getDocumentDownloads())
+                                            ->columnSpanFull(),
+                                    ]),
+                                Section::make('Вътрешна бележка за поръчителя')
+                                    ->schema([
+                                        TextEntry::make('internal_notes')
+                                            ->label('Бележка')
+                                            ->prose()
+                                            ->placeholder('Няма')
+                                            ->columnSpanFull(),
+                                    ]),
                             ]),
                     ]),
                 Section::make('Документи към клиента')

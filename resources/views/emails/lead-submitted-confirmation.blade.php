@@ -43,7 +43,7 @@
 
                             <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.8; color: #374151;">
                                 Потвърждаваме, че получихме Вашата заявка за
-                                <strong>{{ $lead->credit_type === 'mortgage' ? 'ипотечен кредит' : 'потребителски кредит' }}</strong>.
+                                <strong>{{ mb_strtolower(\App\Models\Lead::getCreditTypeLabel($lead->credit_type), 'UTF-8') }}</strong>.
                             </p>
 
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
@@ -69,7 +69,7 @@
                                         Град
                                     </td>
                                     <td style="padding: 16px 18px; font-size: 15px; color: #111827;">
-                                        {{ $lead->city }}
+                                        {{ $lead->city ?: 'Няма' }}
                                     </td>
                                 </tr>
                                 <tr>

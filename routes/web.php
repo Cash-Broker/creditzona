@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminDocumentFileController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadDocumentDownloadController;
+use App\Http\Controllers\LeadGuarantorDocumentDownloadController;
 use App\Http\Controllers\PageController;
 use Filament\Http\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
@@ -44,4 +45,6 @@ Route::middleware([Authenticate::class])
             ->name('documents.download');
         Route::get('/leads/{lead}/documents/download', LeadDocumentDownloadController::class)
             ->name('leads.documents.download');
+        Route::get('/leads/{lead}/guarantors/{guarantor}/documents/download', LeadGuarantorDocumentDownloadController::class)
+            ->name('leads.guarantors.documents.download');
     });

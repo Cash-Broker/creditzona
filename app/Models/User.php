@@ -18,11 +18,20 @@ class User extends Authenticatable implements FilamentUser
 
     public const LEAD_PRIMARY_ASSIGNMENT_EMAILS = [
         'anna@creditzona.test',
+        'anna@creditzona.bg',
         'elena@creditzona.test',
+        'elena@creditzona.bg',
         'krasimira@creditzona.test',
+        'krasimira@creditzona.bg',
     ];
 
-    public const LEAD_ADDITIONAL_ASSIGNMENT_EMAILS = self::LEAD_PRIMARY_ASSIGNMENT_EMAILS;
+    public const LEAD_ADDITIONAL_ASSIGNMENT_EMAILS = [
+        ...self::LEAD_PRIMARY_ASSIGNMENT_EMAILS,
+        'iskra@creditzona.test',
+        'iskra@creditzona.bg',
+        'renata@creditzona.test',
+        'renata@creditzona.bg',
+    ];
 
     public const ROLE_ADMIN = 'admin';
 
@@ -93,7 +102,7 @@ class User extends Authenticatable implements FilamentUser
     public function scopeEligibleForLeadAdditionalAssignment(Builder $query): Builder
     {
         return $query
-            ->where('role', self::ROLE_OPERATOR)
+            ->whereIn('role', [self::ROLE_ADMIN, self::ROLE_OPERATOR])
             ->whereIn('email', self::LEAD_ADDITIONAL_ASSIGNMENT_EMAILS);
     }
 

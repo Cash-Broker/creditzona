@@ -1,10 +1,15 @@
 import { computed, reactive, ref, watch } from "vue";
 
 const amountMin = 5000;
+const amountDefault = 5500;
 const amountMax = 50000;
 const amountStep = 500;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const allowedCreditTypes = new Set(["consumer", "mortgage"]);
+const allowedCreditTypes = new Set([
+    "consumer",
+    "consumer_with_guarantor",
+    "mortgage",
+]);
 const allowedPropertyTypes = new Set(["house", "apartment"]);
 const fieldsWithoutLatin = new Set([
     "first_name",
@@ -21,7 +26,10 @@ function createInitialForm(initialCreditType = "") {
         phone: "",
         email: "",
         city: "",
-        amount: amountMin,
+        guarantor_first_name: "",
+        guarantor_last_name: "",
+        guarantor_phone: "",
+        amount: amountDefault,
         property_type: "",
         property_location: "",
         website: "",
@@ -55,6 +63,12 @@ export function useLeadForm(options = {}) {
     const touched = reactive({});
 
     const isMortgage = computed(() => form.credit_type === "mortgage");
+    const isConsumerWithGuarantor = computed(
+        () => form.credit_type === "consumer_with_guarantor",
+    );
+    const shouldOfferGuarantorUpsell = computed(
+        () => !lockCreditType && form.credit_type === "consumer",
+    );
 
     const formattedAmount = computed(() => {
         return `${Number(form.amount).toLocaleString("bg-BG")} €`;
@@ -94,6 +108,24 @@ export function useLeadForm(options = {}) {
                 validateIfTouched("property_location");
             }
 
+            if (creditType !== "consumer_with_guarantor") {
+                form.guarantor_first_name = "";
+                form.guarantor_last_name = "";
+                form.guarantor_phone = "";
+                clearFieldError("guarantor_first_name");
+                clearFieldError("guarantor_last_name");
+                clearFieldError("guarantor_phone");
+                delete touched.guarantor_first_name;
+                delete touched.guarantor_last_name;
+                delete touched.guarantor_phone;
+            } else {
+                validateIfTouched("guarantor_first_name");
+                validateIfTouched("guarantor_last_name");
+                validateIfTouched("guarantor_phone");
+            }
+
+            validateIfTouched("email");
+            validateIfTouched("city");
             validateIfTouched("credit_type");
         },
     );
@@ -136,6 +168,9 @@ export function useLeadForm(options = {}) {
         const phone = normalized(form.phone);
         const email = normalized(form.email);
         const city = normalized(form.city);
+        const guarantorFirstName = normalized(form.guarantor_first_name);
+        const guarantorLastName = normalized(form.guarantor_last_name);
+        const guarantorPhone = normalized(form.guarantor_phone);
         const propertyLocation = normalized(form.property_location);
         const amount = Number(form.amount);
 
@@ -264,6 +299,80 @@ export function useLeadForm(options = {}) {
                 }
 
                 break;
+            case "guarantor_first_name":
+                if (!isConsumerWithGuarantor.value) {
+                    break;
+                }
+
+                if (!guarantorFirstName) {
+                    return setFieldError(
+                        "guarantor_first_name",
+                        "Моля, въведете име на поръчител.",
+                    );
+                }
+
+                if (guarantorFirstName.length > 60) {
+                    return setFieldError(
+                        "guarantor_first_name",
+                        "Името на поръчителя не може да бъде по-дълго от 60 символа.",
+                    );
+                }
+
+                if (!isCyrillicName(guarantorFirstName)) {
+                    return setFieldError(
+                        "guarantor_first_name",
+                        "Името на поръчителя трябва да съдържа само букви на кирилица.",
+                    );
+                }
+
+                break;
+            case "guarantor_last_name":
+                if (!isConsumerWithGuarantor.value) {
+                    break;
+                }
+
+                if (!guarantorLastName) {
+                    return setFieldError(
+                        "guarantor_last_name",
+                        "Моля, въведете фамилия на поръчител.",
+                    );
+                }
+
+                if (guarantorLastName.length > 60) {
+                    return setFieldError(
+                        "guarantor_last_name",
+                        "Фамилията на поръчителя не може да бъде по-дълга от 60 символа.",
+                    );
+                }
+
+                if (!isCyrillicName(guarantorLastName)) {
+                    return setFieldError(
+                        "guarantor_last_name",
+                        "Фамилията на поръчителя трябва да съдържа само букви на кирилица.",
+                    );
+                }
+
+                break;
+            case "guarantor_phone":
+                if (!isConsumerWithGuarantor.value) {
+                    break;
+                }
+
+                if (!guarantorPhone) {
+                    return setFieldError(
+                        "guarantor_phone",
+                        "Моля, въведете телефон на поръчител.",
+                    );
+                }
+
+                if (guarantorPhone.length > 30) {
+                    return setFieldError(
+                        "guarantor_phone",
+                        "Телефонът на поръчителя не може да бъде по-дълъг от 30 символа.",
+                    );
+                }
+
+                break;
             case "amount":
                 if (!Number.isInteger(amount)) {
                     return setFieldError(
@@ -354,6 +463,14 @@ export function useLeadForm(options = {}) {
             "amount",
         ];
 
+        if (isConsumerWithGuarantor.value) {
+            fields.push(
+                "guarantor_first_name",
+                "guarantor_last_name",
+                "guarantor_phone",
+            );
+        }
+
         if (isMortgage.value) {
             fields.push("property_type", "property_location");
         }
@@ -385,10 +502,19 @@ export function useLeadForm(options = {}) {
             return;
         }
 
+        const fieldMap = {
+            guarantors: "guarantor_first_name",
+            "guarantors.0.first_name": "guarantor_first_name",
+            "guarantors.0.last_name": "guarantor_last_name",
+            "guarantors.0.phone": "guarantor_phone",
+        };
+
         Object.entries(responseData.errors).forEach(([field, fieldErrors]) => {
             if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
-                errors[field] = String(fieldErrors[0]);
-                touched[field] = true;
+                const targetField = fieldMap[field] ?? field;
+
+                errors[targetField] = String(fieldErrors[0]);
+                touched[targetField] = true;
             }
         });
     }
@@ -400,12 +526,21 @@ export function useLeadForm(options = {}) {
         submitError.value = "";
     }
 
-    async function submitForm() {
+    function switchToConsumerWithGuarantor() {
+        form.credit_type = "consumer_with_guarantor";
+    }
+
+    async function submitForm(options = {}) {
+        const { skipGuarantorUpsell = false } = options;
         success.value = false;
         submitError.value = "";
 
         if (!validateForm()) {
-            return;
+            return { status: "validation_failed" };
+        }
+
+        if (!skipGuarantorUpsell && shouldOfferGuarantorUpsell.value) {
+            return { status: "show_guarantor_upsell" };
         }
 
         loading.value = true;
@@ -424,8 +559,25 @@ export function useLeadForm(options = {}) {
                 headers["X-CSRF-TOKEN"] = csrfToken;
             }
 
+            const {
+                guarantor_first_name,
+                guarantor_last_name,
+                guarantor_phone,
+                ...leadPayload
+            } = form;
+
             const payload = {
-                ...form,
+                ...leadPayload,
+                guarantors: isConsumerWithGuarantor.value
+                    ? [
+                          {
+                              first_name: guarantor_first_name,
+                              last_name: guarantor_last_name,
+                              phone: guarantor_phone,
+                              status: "suitable",
+                          },
+                      ]
+                    : [],
                 property_type: isMortgage.value ? form.property_type : null,
                 property_location: isMortgage.value
                     ? form.property_location
@@ -447,7 +599,7 @@ export function useLeadForm(options = {}) {
                         responseData?.message ??
                         "Моля, проверете въведените данни.";
 
-                    return;
+                    return { status: "validation_failed" };
                 }
 
                 throw new Error(`HTTP ${response.status}`);
@@ -455,9 +607,12 @@ export function useLeadForm(options = {}) {
 
             success.value = true;
             resetForm();
+
+            return { status: "submitted" };
         } catch (error) {
             submitError.value =
                 "Възникна грешка при изпращането на заявката. Моля, опитайте отново.";
+            return { status: "server_error" };
         } finally {
             loading.value = false;
         }
@@ -471,6 +626,8 @@ export function useLeadForm(options = {}) {
         errors,
         getFieldError,
         isMortgage,
+        isConsumerWithGuarantor,
+        shouldOfferGuarantorUpsell,
         lockCreditType,
         amountMin,
         amountMax,
@@ -482,6 +639,7 @@ export function useLeadForm(options = {}) {
         handleBlur,
         handleInput,
         submitForm,
+        switchToConsumerWithGuarantor,
         resetForm,
     };
 }

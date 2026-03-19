@@ -176,62 +176,90 @@
         </section>
 
         <section class="mt-16">
-            <h2 class="text-2xl font-semibold text-text">Екип</h2>
+            <div class="max-w-2xl">
+                <h2 class="text-2xl font-semibold text-text">Екип</h2>
 
-            <div class="mt-6 grid gap-6 sm:grid-cols-2">
+                <p class="mt-3 text-sm leading-7 text-text-muted">
+                    Хората, които поемат комуникацията, анализа и координацията,
+                    така че процесът да е ясен още от първия разговор.
+                </p>
+            </div>
+
+            <div class="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 <article
                     v-for="member in teamMembers"
-                    :key="member.email"
-                    class="service-card min-h-[22rem] items-center p-8 text-center sm:p-10"
+                    :key="member.name"
+                    class="group relative flex h-full flex-col overflow-hidden rounded-[30px] border border-border bg-surface p-6 shadow-[0_20px_48px_-32px_rgba(17,24,39,0.45)] transition-all duration-300 hover:-translate-y-1 hover:border-accent-soft-border hover:shadow-[0_28px_64px_-36px_rgba(11,79,91,0.35)]"
                 >
-                    <div class="flex flex-1 flex-col items-center">
-                        <img
-                            :src="member.image"
-                            :alt="member.name"
-                            class="h-60 w-40 rounded-3xl object-cover object-top sm:h-72 sm:w-48"
-                            width="192"
-                            height="288"
-                            loading="lazy"
-                            decoding="async"
-                        />
+                    <div
+                        class="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(183,219,227,0.8),transparent_72%)]"
+                    ></div>
 
-                        <div class="mt-6">
+                    <div
+                        class="relative flex flex-1 flex-col items-center pt-3 text-center"
+                    >
+                        <div
+                            class="overflow-hidden rounded-[28px] border border-white/80 bg-background shadow-[0_18px_38px_-24px_rgba(17,24,39,0.4)]"
+                        >
+                            <img
+                                v-if="member.image"
+                                :src="member.image"
+                                :alt="member.name"
+                                class="h-64 w-48 object-cover object-top"
+                                width="192"
+                                height="256"
+                                loading="lazy"
+                                decoding="async"
+                            />
+
+                            <div
+                                v-else
+                                class="flex h-64 w-48 items-center justify-center bg-[linear-gradient(160deg,#0f6b7a_0%,#083943_100%)] text-white"
+                            >
+                                <font-awesome-icon
+                                    icon="fa-solid fa-building-columns"
+                                    class="text-5xl"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="mt-6 max-w-xs">
                             <h3 class="text-xl font-semibold text-text">
                                 {{ member.name }}
                             </h3>
 
-                            <p class="mt-2 text-base text-text-muted">
+                            <p
+                                class="mt-2 text-sm font-medium uppercase tracking-[0.14em] text-accent-darkened"
+                            >
                                 {{ member.position }}
                             </p>
                         </div>
                     </div>
 
-                    <div class="mt-8 space-y-3 text-sm leading-6 text-secondary sm:text-base">
-                        <div class="flex items-center justify-center gap-2">
+                    <div
+                        class="relative mt-6 grid gap-3 text-sm text-secondary"
+                    >
+                        <a
+                            :href="`tel:${member.phoneHref}`"
+                            class="flex items-center justify-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 transition-colors duration-200 hover:border-accent-soft-border hover:text-accent-darkened"
+                        >
                             <font-awesome-icon
                                 icon="fa-solid fa-phone"
                                 class="text-accent-darkened"
                             />
-                            <a
-                                :href="`tel:${member.phoneHref}`"
-                                class="hover:text-accent-darkened"
-                            >
-                                {{ member.phone }}
-                            </a>
-                        </div>
+                            <span>{{ member.phone }}</span>
+                        </a>
 
-                        <div class="flex items-center justify-center gap-2">
+                        <a
+                            :href="`mailto:${member.email}`"
+                            class="flex items-center justify-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 transition-colors duration-200 hover:border-accent-soft-border hover:text-accent-darkened"
+                        >
                             <font-awesome-icon
                                 icon="fa-solid fa-envelope"
                                 class="text-accent-darkened"
                             />
-                            <a
-                                :href="`mailto:${member.email}`"
-                                class="hover:text-accent-darkened break-all"
-                            >
-                                {{ member.email }}
-                            </a>
-                        </div>
+                            <span class="break-all">{{ member.email }}</span>
+                        </a>
                     </div>
                 </article>
             </div>
@@ -268,6 +296,12 @@
 </template>
 
 <script setup>
+import { contactInfo } from "@/data/contactInfo";
+
+const normalizePhone = (phone) => phone.replace(/\s+/g, "");
+const primaryOfficePhone = contactInfo.phones[0] || "0879000685";
+const primaryOfficeEmail = contactInfo.email || "office@creditzona.bg";
+
 const trustBadges = [
     "Безпристрастен анализ",
     "Индивидуален подход",
@@ -337,7 +371,7 @@ const teamMembers = [
         position: "Юрисконсулт",
         phone: "0883222251",
         phoneHref: "0883222251",
-        email: "stefanova.kreditzona@abv.bg",
+        email: "stefanova.kreditzona@abv.bg", 
         image: "/about/elena.jpg",
     },
     {
@@ -345,8 +379,16 @@ const teamMembers = [
         position: "Мениджър екип",
         phone: "0879000685",
         phoneHref: "0879000685",
-        email: "manolova.creditzona@gmail.com",
+        email: "anna@creditzona.bg",
         image: "/about/ani.jpg",
+    },
+    {
+        name: "Красимира Кръстева",
+        position: "Финансово планиране",
+        phone: "0882030010",
+        phoneHref: "0882030010",
+        email: "krasimira@creditzona.bg",
+        image: "",
     },
 ];
 

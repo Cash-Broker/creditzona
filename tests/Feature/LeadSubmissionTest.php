@@ -83,6 +83,101 @@ class LeadSubmissionTest extends TestCase
         ]);
     }
 
+    public function test_successful_consumer_with_guarantor_submission_keeps_consumer_fields_and_stores_guarantor(): void
+    {
+        Mail::fake();
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Петрова',
+                    'phone' => '0888000111',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+            ],
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Благодарим! Ще се свържем с вас до 48ч.',
+            ]);
+
+        $this->assertDatabaseHas('leads', [
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'property_type' => null,
+            'property_location' => null,
+        ]);
+
+        $lead = Lead::query()->latest('id')->firstOrFail();
+
+        $this->assertDatabaseHas('lead_guarantors', [
+            'lead_id' => $lead->id,
+            'first_name' => 'Мария',
+            'last_name' => 'Петрова',
+            'phone' => '0888000111',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        Mail::assertSent(LeadSubmittedConfirmation::class);
+    }
+
+    public function test_consumer_with_guarantor_submission_requires_guarantor_data(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'guarantors' => [],
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['guarantors'])
+            ->assertJsonPath(
+                'errors.guarantors.0',
+                'Моля, въведете име, фамилия и телефон на поръчителя.',
+            );
+
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('lead_guarantors', 0);
+    }
+
+    public function test_consumer_with_guarantor_submission_rejects_same_phone_for_applicant_and_guarantor(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Петрова',
+                    'phone' => '0888123456',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+            ],
+        ]));
+
+        $errors = $response->json('errors');
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['guarantors.0.phone']);
+
+        $this->assertSame(
+            'Този телефон вече е използван за кредитоискател и не може да се използва и за поръчител.',
+            $errors['guarantors.0.phone'][0] ?? null,
+        );
+
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('lead_guarantors', 0);
+    }
+
     public function test_submission_accepts_additional_fields_and_guarantors(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
@@ -103,7 +198,7 @@ class LeadSubmissionTest extends TestCase
                 [
                     'first_name' => 'Георги',
                     'last_name' => 'Петров',
-                    'phone' => null,
+                    'phone' => '0888000222',
                     'status' => LeadGuarantor::STATUS_UNSUITABLE,
                 ],
             ],
@@ -138,7 +233,7 @@ class LeadSubmissionTest extends TestCase
             'lead_id' => $lead->id,
             'first_name' => 'Георги',
             'last_name' => 'Петров',
-            'phone' => null,
+            'phone' => '0888000222',
             'status' => LeadGuarantor::STATUS_UNSUITABLE,
         ]);
     }
@@ -343,6 +438,82 @@ class LeadSubmissionTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_submission_rejects_applicant_phone_when_it_is_already_used_by_existing_guarantor(): void
+    {
+        $lead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888000001',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+        ]);
+
+        $lead->guarantors()->create([
+            'first_name' => 'Мария',
+            'last_name' => 'Георгиева',
+            'phone' => '+359 888 123 456',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'phone' => '0888 123 456',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath(
+                'errors.phone.0',
+                'Този телефон вече е използван за поръчител и не може да се използва и за кредитоискател.',
+            );
+
+        $this->assertDatabaseCount('leads', 1);
+    }
+
+    public function test_submission_rejects_guarantor_phone_when_it_is_already_used_by_existing_applicant(): void
+    {
+        Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '+359 888 123 456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'phone' => '0888000999',
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Георгиева',
+                    'phone' => '0888 123 456',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+            ],
+        ]));
+
+        $errors = $response->json('errors');
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['guarantors.0.phone']);
+
+        $this->assertSame(
+            'Този телефон вече е използван за кредитоискател и не може да се използва и за поръчител.',
+            $errors['guarantors.0.phone'][0] ?? null,
+        );
+
+        $this->assertDatabaseCount('leads', 1);
+        $this->assertDatabaseCount('lead_guarantors', 0);
+    }
+
     public function test_spam_honeypot_submission_is_rejected(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
@@ -467,6 +638,34 @@ class LeadSubmissionTest extends TestCase
 
         $response = $this->postJson('/leads', $this->validPayload([
             'phone' => '0888999999',
+        ]));
+
+        $response->assertOk();
+
+        $newLead = Lead::query()->latest('id')->firstOrFail();
+
+        $this->assertSame($anna->id, $newLead->assigned_user_id);
+    }
+
+    public function test_new_lead_without_history_uses_fallback_primary_assignment_pool_with_bg_staff_emails(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.bg',
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.bg',
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'krasimira@creditzona.bg',
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'phone' => '0888777666',
         ]));
 
         $response->assertOk();
@@ -616,7 +815,7 @@ class LeadSubmissionTest extends TestCase
             ])
             ->assertJsonPath('errors.workplace.0', 'Местоработата не може да съдържа латински букви.')
             ->assertJsonPath('errors.job_title.0', 'Длъжността не може да съдържа латински букви.')
-            ->assertJsonPath('errors.salary_bank.0', 'Банката за заплата не може да съдържа латински букви.')
+            ->assertJsonPath('errors.salary_bank.0', 'Банката за заплатата не може да съдържа латински букви.')
             ->assertJsonPath('errors.property_location.0', 'Местонахождението на имота не може да съдържа латински букви.');
 
         $this->assertSame(

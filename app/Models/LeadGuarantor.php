@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use App\Support\Phone\PhoneNormalizer;
+use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
+use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
-class LeadGuarantor extends Model
+class LeadGuarantor extends Model implements HasRichContent
 {
+    use InteractsWithRichContent;
+
     public const STATUS_SUITABLE = 'suitable';
 
     public const STATUS_UNSUITABLE = 'unsuitable';
@@ -16,9 +22,25 @@ class LeadGuarantor extends Model
     protected $fillable = [
         'lead_id',
         'first_name',
+        'middle_name',
         'last_name',
         'egn',
         'phone',
+        'email',
+        'city',
+        'workplace',
+        'job_title',
+        'salary',
+        'marital_status',
+        'children_under_18',
+        'salary_bank',
+        'credit_bank',
+        'amount',
+        'property_type',
+        'property_location',
+        'documents',
+        'document_file_names',
+        'internal_notes',
         'status',
     ];
 
@@ -52,11 +74,93 @@ class LeadGuarantor extends Model
         return str_repeat('*', strlen($normalized) - $visibleDigits).substr($normalized, -$visibleDigits);
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public function getDocumentDisplayNames(): array
+    {
+        $fileNames = $this->document_file_names ?? [];
+
+        if ($fileNames !== []) {
+            return array_values($fileNames);
+        }
+
+        return array_map(
+            static fn (string $path): string => basename($path),
+            $this->documents ?? [],
+        );
+    }
+
+    /**
+     * @return array<int, array{name: string, path: string, is_available: bool}>
+     */
+    public function getDocumentDownloads(): array
+    {
+        $documentPaths = array_values(array_unique([
+            ...array_filter(
+                $this->documents ?? [],
+                static fn (mixed $path): bool => is_string($path) && filled($path),
+            ),
+            ...array_filter(
+                array_keys($this->document_file_names ?? []),
+                static fn (mixed $path): bool => is_string($path) && filled($path),
+            ),
+        ]));
+
+        if ($documentPaths === []) {
+            return [];
+        }
+
+        $disk = Storage::disk('local');
+        $fileNames = $this->document_file_names ?? [];
+
+        return array_map(function (string $path) use ($disk, $fileNames): array {
+            $isAvailable = $disk->exists($path);
+
+            return [
+                'name' => $fileNames[$path] ?? basename($path),
+                'path' => $path,
+                'is_available' => $isAvailable,
+            ];
+        }, $documentPaths);
+    }
+
+    /**
+     * @return array{name: string, path: string, is_available: bool}|null
+     */
+    public function findDocumentDownload(string $path): ?array
+    {
+        foreach ($this->getDocumentDownloads() as $document) {
+            if ($document['path'] === $path) {
+                return $document;
+            }
+        }
+
+        return null;
+    }
+
     protected function casts(): array
     {
         return [
             'egn' => 'encrypted',
+            'salary' => 'integer',
+            'children_under_18' => 'integer',
+            'amount' => 'integer',
+            'documents' => 'array',
+            'document_file_names' => 'array',
         ];
+    }
+
+    public function setPhoneAttribute(mixed $value): void
+    {
+        $this->attributes['phone'] = PhoneNormalizer::normalize($value);
+    }
+
+    protected function setUpRichContent(): void
+    {
+        $this->registerRichContent('internal_notes')
+            ->fileAttachmentsDisk('local')
+            ->fileAttachmentsVisibility('private');
     }
 
     public function lead(): BelongsTo

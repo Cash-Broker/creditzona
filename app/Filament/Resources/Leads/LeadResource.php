@@ -56,10 +56,7 @@ class LeadResource extends Resource
 
     public static function getCreditTypeOptions(): array
     {
-        return [
-            'consumer' => 'Потребителски кредит',
-            'mortgage' => 'Ипотечен кредит',
-        ];
+        return Lead::getCreditTypeOptions();
     }
 
     public static function getPropertyTypeOptions(): array
@@ -83,7 +80,7 @@ class LeadResource extends Resource
 
     public static function getCreditTypeLabel(?string $state): string
     {
-        return static::getCreditTypeOptions()[$state] ?? ($state ?: 'Няма');
+        return Lead::getCreditTypeLabel($state);
     }
 
     public static function getPropertyTypeLabel(?string $state): string

@@ -93,6 +93,33 @@ class LeadServiceTest extends TestCase
         ]);
     }
 
+    public function test_create_consumer_with_guarantor_lead_keeps_consumer_contact_fields_and_stores_guarantor(): void
+    {
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Георгиева',
+                    'phone' => '0888111222',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+            ],
+        ]));
+
+        $this->assertSame(Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR, $lead->credit_type);
+        $this->assertSame('ivan@example.com', $lead->email);
+        $this->assertSame('Пловдив', $lead->city);
+        $this->assertCount(1, $lead->guarantors);
+        $this->assertDatabaseHas('lead_guarantors', [
+            'lead_id' => $lead->id,
+            'first_name' => 'Мария',
+            'last_name' => 'Георгиева',
+            'phone' => '0888111222',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+    }
+
     public function test_create_lead_reuses_historical_assigned_user_for_same_phone(): void
     {
         Carbon::setTestNow('2026-03-12 10:00:00');

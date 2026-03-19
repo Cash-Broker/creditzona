@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Phone\PhoneNormalizer;
 use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
 use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,6 +14,12 @@ use Illuminate\Support\Facades\Storage;
 class Lead extends Model implements HasRichContent
 {
     use InteractsWithRichContent;
+
+    public const CREDIT_TYPE_CONSUMER = 'consumer';
+
+    public const CREDIT_TYPE_MORTGAGE = 'mortgage';
+
+    public const CREDIT_TYPE_CONSUMER_WITH_GUARANTOR = 'consumer_with_guarantor';
 
     public const MARITAL_STATUS_SINGLE = 'single';
 
@@ -56,6 +63,20 @@ class Lead extends Model implements HasRichContent
         'utm_medium',
         'gclid',
     ];
+
+    public static function getCreditTypeOptions(): array
+    {
+        return [
+            self::CREDIT_TYPE_CONSUMER => 'Потребителски кредит',
+            self::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR => 'Потребителски кредит с поръчител',
+            self::CREDIT_TYPE_MORTGAGE => 'Ипотечен кредит',
+        ];
+    }
+
+    public static function getCreditTypeLabel(?string $state): string
+    {
+        return static::getCreditTypeOptions()[$state] ?? ($state ?: 'Няма');
+    }
 
     public static function getMaritalStatusOptions(): array
     {
@@ -163,6 +184,14 @@ class Lead extends Model implements HasRichContent
             'documents' => 'array',
             'document_file_names' => 'array',
         ];
+    }
+
+    public function setPhoneAttribute(mixed $value): void
+    {
+        $normalizedPhone = PhoneNormalizer::normalize($value);
+
+        $this->attributes['phone'] = $normalizedPhone;
+        $this->attributes['normalized_phone'] = $normalizedPhone;
     }
 
     public function scopeForNormalizedPhone(Builder $query, string $phone): Builder

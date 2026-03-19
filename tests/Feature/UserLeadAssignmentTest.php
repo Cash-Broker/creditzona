@@ -33,20 +33,79 @@ class UserLeadAssignmentTest extends TestCase
 
     public function test_user_helpers_identify_assignment_eligibility(): void
     {
-        $eligibleOperator = User::factory()->create([
+        $primaryEligibleOperator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
             'email' => 'anna@creditzona.test',
         ]);
 
-        $ineligibleOperator = User::factory()->create([
+        $primaryEligibleBgOperator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.bg',
+        ]);
+
+        $manualOnlyOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'iskra@creditzona.test',
+        ]);
+
+        $manualOnlyBgOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'iskra@creditzona.bg',
+        ]);
+
+        $manualOnlyAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
             'email' => 'renata@creditzona.test',
         ]);
 
-        $this->assertTrue($eligibleOperator->canBeLeadPrimaryAssignee());
-        $this->assertTrue($eligibleOperator->canBeLeadAdditionalAssignee());
+        $manualOnlyBgAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.bg',
+        ]);
+
+        $ineligibleOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'maria@creditzona.test',
+        ]);
+
+        $this->assertTrue($primaryEligibleOperator->canBeLeadPrimaryAssignee());
+        $this->assertTrue($primaryEligibleOperator->canBeLeadAdditionalAssignee());
+        $this->assertTrue($primaryEligibleBgOperator->canBeLeadPrimaryAssignee());
+        $this->assertTrue($primaryEligibleBgOperator->canBeLeadAdditionalAssignee());
+
+        $this->assertFalse($manualOnlyOperator->canBeLeadPrimaryAssignee());
+        $this->assertTrue($manualOnlyOperator->canBeLeadAdditionalAssignee());
+        $this->assertFalse($manualOnlyBgOperator->canBeLeadPrimaryAssignee());
+        $this->assertTrue($manualOnlyBgOperator->canBeLeadAdditionalAssignee());
+
+        $this->assertFalse($manualOnlyAdmin->canBeLeadPrimaryAssignee());
+        $this->assertTrue($manualOnlyAdmin->canBeLeadAdditionalAssignee());
+        $this->assertFalse($manualOnlyBgAdmin->canBeLeadPrimaryAssignee());
+        $this->assertTrue($manualOnlyBgAdmin->canBeLeadAdditionalAssignee());
+
         $this->assertFalse($ineligibleOperator->canBeLeadPrimaryAssignee());
         $this->assertFalse($ineligibleOperator->canBeLeadAdditionalAssignee());
+
+        $this->assertEqualsCanonicalizing([
+            'anna@creditzona.test',
+            'anna@creditzona.bg',
+            'iskra@creditzona.test',
+            'iskra@creditzona.bg',
+            'renata@creditzona.test',
+            'renata@creditzona.bg',
+        ], User::query()
+            ->whereIn('email', [
+                'anna@creditzona.test',
+                'anna@creditzona.bg',
+                'iskra@creditzona.test',
+                'iskra@creditzona.bg',
+                'renata@creditzona.test',
+                'renata@creditzona.bg',
+                'maria@creditzona.test',
+            ])
+            ->eligibleForLeadAdditionalAssignment()
+            ->pluck('email')
+            ->all());
     }
 
     public function test_user_leads_relationship_returns_assigned_leads(): void
