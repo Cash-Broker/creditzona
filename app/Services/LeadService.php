@@ -15,11 +15,13 @@ class LeadService
     public function createLead(array $data): Lead
     {
         $normalizedPhone = PhoneNormalizer::normalize($data['phone'] ?? null);
+        $privacyConsentAccepted = (bool) ($data['privacy_consent'] ?? false);
+        $privacyConsentAcceptedAt = $privacyConsentAccepted ? now() : null;
 
         $data['phone'] = $normalizedPhone;
         $data['normalized_phone'] = $normalizedPhone;
 
-        $lead = DB::transaction(function () use ($data): Lead {
+        $lead = DB::transaction(function () use ($data, $privacyConsentAccepted, $privacyConsentAcceptedAt): Lead {
             $isMortgage = ($data['credit_type'] ?? null) === Lead::CREDIT_TYPE_MORTGAGE;
             $assignedUserId = $this->resolveAssignedUserId($data);
 
@@ -49,6 +51,10 @@ class LeadService
                 'utm_campaign' => $data['utm_campaign'] ?? null,
                 'utm_medium' => $data['utm_medium'] ?? null,
                 'gclid' => $data['gclid'] ?? null,
+                'privacy_consent_accepted' => $privacyConsentAccepted,
+                'privacy_consent_accepted_at' => $privacyConsentAcceptedAt,
+                'privacy_consent_document_name' => $privacyConsentAccepted ? Lead::getPrivacyConsentDocumentName() : null,
+                'privacy_consent_document_path' => $privacyConsentAccepted ? Lead::getPrivacyConsentDocumentPath() : null,
             ]);
 
             $guarantors = $this->prepareGuarantors($data['guarantors'] ?? null);

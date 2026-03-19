@@ -219,6 +219,29 @@ class LeadInfolist
                             ->state(fn (Lead $record): array => $record->getDocumentDownloads())
                             ->columnSpanFull(),
                     ]),
+                Section::make('Съгласие за лични данни')
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('privacy_consent_accepted')
+                            ->label('Статус')
+                            ->state(fn (Lead $record): string => $record->hasPrivacyConsent() ? 'Дадено' : 'Няма')
+                            ->badge()
+                            ->color(fn (string $state): string => $state === 'Дадено' ? 'success' : 'gray'),
+                        TextEntry::make('privacy_consent_accepted_at')
+                            ->label('Дадено на')
+                            ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                            ->placeholder('Няма'),
+                        ViewEntry::make('privacy_consent_document_downloads')
+                            ->label('Приет документ')
+                            ->view('filament.resources.leads.infolists.document-downloads')
+                            ->state(fn (Lead $record): array => array_map(
+                                static fn (array $document): array => array_merge($document, [
+                                    'description' => 'Документът, с който клиентът е дал съгласие за обработване на личните данни.',
+                                ]),
+                                $record->getPrivacyConsentDocumentDownloads(),
+                            ))
+                            ->columnSpanFull(),
+                    ]),
                 Section::make('Вътрешна бележка')
                     ->schema([
                         TextEntry::make('internal_notes')

@@ -429,10 +429,55 @@
                     </div>
                 </transition>
 
+                <div
+                    class="consent-panel mt-5"
+                    :class="{
+                        'consent-panel-error': getFieldError('privacy_consent'),
+                    }"
+                >
+                    <label class="consent-check" for="privacy-consent">
+                        <input
+                            id="privacy-consent"
+                            v-model="form.privacy_consent"
+                            type="checkbox"
+                            class="consent-checkbox"
+                            @change="handleInput('privacy_consent')"
+                            @blur="handleBlur('privacy_consent')"
+                        />
+
+                        <span class="consent-copy">
+                            Съгласен/съгласна съм личните ми данни да бъдат обработвани
+                            за целите на кредитната консултация и запознат/а съм с
+                            документа
+                            <a
+                                :href="leadConsentDocument.url"
+                                class="consent-link"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                {{ leadConsentDocument.name }}
+                            </a>
+                            .
+                        </span>
+                    </label>
+
+                    <p class="consent-note">
+                        За да изпратите заявката, трябва първо да отбележите това
+                        съгласие.
+                    </p>
+
+                    <p
+                        v-if="getFieldError('privacy_consent')"
+                        class="field-error mt-3"
+                    >
+                        {{ getFieldError("privacy_consent") }}
+                    </p>
+                </div>
+
                 <div class="mt-5">
                     <button
                         type="submit"
-                        :disabled="loading"
+                        :disabled="loading || !form.privacy_consent"
                         :aria-busy="loading ? 'true' : 'false'"
                         class="cta-button"
                     >
@@ -503,6 +548,7 @@
 <script setup>
 import { nextTick, ref, watch } from "vue";
 import { useLeadForm } from "../../composables/useLeadForm";
+import { getInitialData } from "../../utils/appConfig";
 
 const props = defineProps({
     initialCreditType: {
@@ -518,6 +564,10 @@ const props = defineProps({
 const successPanel = ref(null);
 const guarantorFirstNameInput = ref(null);
 const showGuarantorUpsell = ref(false);
+const leadConsentDocument = getInitialData("leadConsentDocument", {
+    name: "Съгласие за обработка на лични данни",
+    url: "/documents/legal/lead-personal-data-consent-v1.pdf",
+});
 
 const {
     form,
@@ -1066,6 +1116,76 @@ watch(success, async (isSuccess) => {
     font-weight: 600;
     color: var(--color-error, #dc2626);
     padding-left: 0.1rem;
+}
+
+.consent-panel {
+    border-radius: 24px;
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 80%,
+        white
+    );
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in oklab, var(--color-accent-soft) 42%, white) 0%,
+            color-mix(in oklab, var(--color-surface) 95%, var(--color-accent-soft))
+                100%
+        );
+    padding: 1rem 1rem 1rem 1.05rem;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.82),
+        0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.consent-panel-error {
+    border-color: color-mix(in oklab, var(--color-error, #dc2626) 46%, white);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.82),
+        0 0 0 3px color-mix(in oklab, var(--color-error, #dc2626) 10%, white);
+}
+
+.consent-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+}
+
+.consent-checkbox {
+    width: 1.18rem;
+    height: 1.18rem;
+    flex-shrink: 0;
+    margin-top: 0.08rem;
+    accent-color: var(--color-accent-darkened);
+    cursor: pointer;
+}
+
+.consent-copy {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    font-weight: 600;
+    color: var(--color-accent-ink);
+}
+
+.consent-link {
+    color: var(--color-accent-darkened);
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+
+.consent-link:hover {
+    color: var(--color-accent);
+}
+
+.consent-note {
+    margin-top: 0.75rem;
+    padding-left: 2.05rem;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    font-weight: 700;
+    color: var(--color-text-subtle);
 }
 
 .cta-button {

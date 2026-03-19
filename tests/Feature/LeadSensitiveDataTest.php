@@ -131,6 +131,24 @@ class LeadSensitiveDataTest extends TestCase
         $this->assertTrue($documents[0]['is_available']);
     }
 
+    public function test_privacy_consent_document_uses_saved_public_document_snapshot(): void
+    {
+        $lead = Lead::query()->create($this->leadData([
+            'privacy_consent_accepted' => true,
+            'privacy_consent_accepted_at' => now(),
+            'privacy_consent_document_name' => 'consent-v2.docx',
+            'privacy_consent_document_path' => 'documents/legal/consent-v2.docx',
+        ]));
+
+        $documents = $lead->getPrivacyConsentDocumentDownloads();
+
+        $this->assertCount(1, $documents);
+        $this->assertSame('consent-v2.docx', $documents[0]['name']);
+        $this->assertSame('documents/legal/consent-v2.docx', $documents[0]['path']);
+        $this->assertSame(url('documents/legal/consent-v2.docx'), $documents[0]['url']);
+        $this->assertFalse($documents[0]['is_available']);
+    }
+
     public function test_authorized_staff_downloads_document_with_original_file_name(): void
     {
         Storage::disk('local')->put('lead-documents/1/application.pdf', 'test-content');
@@ -283,6 +301,10 @@ class LeadSensitiveDataTest extends TestCase
             'utm_campaign' => null,
             'utm_medium' => null,
             'gclid' => null,
+            'privacy_consent_accepted' => false,
+            'privacy_consent_accepted_at' => null,
+            'privacy_consent_document_name' => null,
+            'privacy_consent_document_path' => null,
         ], $overrides);
     }
 

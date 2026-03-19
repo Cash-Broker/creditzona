@@ -32,6 +32,7 @@ function createInitialForm(initialCreditType = "") {
         amount: amountDefault,
         property_type: "",
         property_location: "",
+        privacy_consent: false,
         website: "",
         form_started_at: Date.now(),
     };
@@ -443,6 +444,15 @@ export function useLeadForm(options = {}) {
                 }
 
                 break;
+            case "privacy_consent":
+                if (!form.privacy_consent) {
+                    return setFieldError(
+                        "privacy_consent",
+                        "За да изпратите заявката, трябва да се съгласите с обработването на личните данни.",
+                    );
+                }
+
+                break;
             default:
                 break;
         }
@@ -461,6 +471,7 @@ export function useLeadForm(options = {}) {
             "email",
             "city",
             "amount",
+            "privacy_consent",
         ];
 
         if (isConsumerWithGuarantor.value) {

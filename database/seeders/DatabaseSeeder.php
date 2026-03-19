@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             DemoUsersSeeder::class,
             FaqSeeder::class,
-            BlogSeeder::class,
+            // BlogSeeder::class,
         ]);
     }
 }

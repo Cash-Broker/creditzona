@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Blog;
 use App\Models\Faq;
+use App\Models\Lead;
 use App\Support\Seo\SeoManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -132,11 +133,14 @@ class PageController extends Controller
     private function renderPage(string $page, Request $request, array $overrides = []): View
     {
         $seo = $this->seoManager->forPage($page, $request, $overrides);
+        $initialData = array_merge([
+            'leadConsentDocument' => Lead::getPrivacyConsentDocumentMeta(),
+        ], $overrides['initial_data'] ?? []);
 
         return view('layouts.app', [
             'page' => $page,
             'seo' => $seo->toArray(),
-            'appConfig' => $this->seoManager->browserPayload($overrides['initial_data'] ?? []),
+            'appConfig' => $this->seoManager->browserPayload($initialData),
         ]);
     }
 }

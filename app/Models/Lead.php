@@ -15,6 +15,10 @@ class Lead extends Model implements HasRichContent
 {
     use InteractsWithRichContent;
 
+    public const PRIVACY_CONSENT_DOCUMENT_PATH = 'documents/legal/lead-personal-data-consent-v1.pdf';
+
+    public const PRIVACY_CONSENT_DOCUMENT_NAME = 'Съгласие за обработка на лични данни';
+
     public const CREDIT_TYPE_CONSUMER = 'consumer';
 
     public const CREDIT_TYPE_MORTGAGE = 'mortgage';
@@ -62,7 +66,41 @@ class Lead extends Model implements HasRichContent
         'utm_campaign',
         'utm_medium',
         'gclid',
+        'privacy_consent_accepted',
+        'privacy_consent_accepted_at',
+        'privacy_consent_document_name',
+        'privacy_consent_document_path',
     ];
+
+    public static function getPrivacyConsentDocumentPath(): string
+    {
+        return self::PRIVACY_CONSENT_DOCUMENT_PATH;
+    }
+
+    public static function getPrivacyConsentDocumentName(): string
+    {
+        return self::PRIVACY_CONSENT_DOCUMENT_NAME;
+    }
+
+    public static function getPrivacyConsentDocumentUrl(?string $path = null): string
+    {
+        return asset(ltrim($path ?? self::PRIVACY_CONSENT_DOCUMENT_PATH, '/'));
+    }
+
+    /**
+     * @return array{name: string, path: string, url: string, is_available: bool}
+     */
+    public static function getPrivacyConsentDocumentMeta(?string $path = null, ?string $name = null): array
+    {
+        $documentPath = ltrim($path ?? self::PRIVACY_CONSENT_DOCUMENT_PATH, '/');
+
+        return [
+            'name' => $name ?? self::PRIVACY_CONSENT_DOCUMENT_NAME,
+            'path' => $documentPath,
+            'url' => static::getPrivacyConsentDocumentUrl($documentPath),
+            'is_available' => is_file(public_path($documentPath)),
+        ];
+    }
 
     public static function getCreditTypeOptions(): array
     {
@@ -161,6 +199,28 @@ class Lead extends Model implements HasRichContent
         }, $documentPaths);
     }
 
+    public function hasPrivacyConsent(): bool
+    {
+        return (bool) $this->privacy_consent_accepted || $this->privacy_consent_accepted_at !== null;
+    }
+
+    /**
+     * @return array<int, array{name: string, path: string, url: string, is_available: bool}>
+     */
+    public function getPrivacyConsentDocumentDownloads(): array
+    {
+        if (! $this->hasPrivacyConsent()) {
+            return [];
+        }
+
+        return [
+            static::getPrivacyConsentDocumentMeta(
+                $this->privacy_consent_document_path ?: static::getPrivacyConsentDocumentPath(),
+                $this->privacy_consent_document_name ?: static::getPrivacyConsentDocumentName(),
+            ),
+        ];
+    }
+
     /**
      * @return array{name: string, path: string, is_available: bool}|null
      */
@@ -183,6 +243,8 @@ class Lead extends Model implements HasRichContent
             'children_under_18' => 'integer',
             'documents' => 'array',
             'document_file_names' => 'array',
+            'privacy_consent_accepted' => 'boolean',
+            'privacy_consent_accepted_at' => 'datetime',
         ];
     }
 

@@ -8,6 +8,9 @@
             @php
                 $extension = strtoupper(pathinfo($document['name'], PATHINFO_EXTENSION));
                 $badge = filled($extension) ? $extension : 'Файл';
+                $url = $document['url'] ?? null;
+                $isPublicDocument = is_string($url) && filled($url);
+                $description = $document['description'] ?? null;
             @endphp
 
             <div
@@ -24,15 +27,22 @@
                         </div>
 
                         <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {{ $document['is_available'] ? 'Прикачен документ към клиента' : 'Файлът в момента не е достъпен' }}
+                            @if (filled($description))
+                                {{ $description }}
+                            @else
+                                {{ $document['is_available'] ? 'Прикачен документ към клиента' : 'Файлът в момента не е достъпен' }}
+                            @endif
                         </div>
                     </div>
                 </div>
 
                 @if ($document['is_available'])
-                    <a href="{{ route('admin.leads.documents.download', ['lead' => $record, 'path' => $document['path']]) }}"
+                    <a href="{{ $isPublicDocument ? $url : route('admin.leads.documents.download', ['lead' => $record, 'path' => $document['path']]) }}"
+                        @if ($isPublicDocument)
+                            target="_blank" rel="noopener noreferrer"
+                        @endif
                         class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-primary-200 bg-white px-4 py-2.5 text-sm font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-primary-500/20 dark:bg-white/5 dark:text-primary-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200 dark:focus:ring-offset-gray-950">
-                        <span>Изтегли</span>
+                        <span>{{ $isPublicDocument ? 'Отвори' : 'Изтегли' }}</span>
                     </a>
                 @else
                     <span

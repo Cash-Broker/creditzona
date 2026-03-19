@@ -36,6 +36,7 @@ class SeoMetadataTest extends TestCase
             '"@type": "FinancialService"',
             false,
         );
+        $response->assertSee('lead-personal-data-consent-v1.pdf', false);
     }
 
     public function test_legal_page_is_marked_noindex(): void

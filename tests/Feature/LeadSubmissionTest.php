@@ -42,7 +42,14 @@ class LeadSubmissionTest extends TestCase
             'utm_campaign' => 'spring-campaign',
             'utm_medium' => 'cpc',
             'gclid' => 'test-gclid',
+            'privacy_consent_accepted' => true,
+            'privacy_consent_document_name' => Lead::getPrivacyConsentDocumentName(),
+            'privacy_consent_document_path' => Lead::getPrivacyConsentDocumentPath(),
         ]);
+
+        $lead = Lead::query()->latest('id')->firstOrFail();
+
+        $this->assertNotNull($lead->privacy_consent_accepted_at);
     }
 
     public function test_successful_submission_sends_confirmation_email_to_client_without_queueing(): void
@@ -298,8 +305,26 @@ class LeadSubmissionTest extends TestCase
                 'email',
                 'city',
                 'amount',
+                'privacy_consent',
             ])
             ->assertJsonPath('errors.first_name.0', 'Моля, въведете вашето име.');
+    }
+
+    public function test_submission_requires_explicit_privacy_consent(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'privacy_consent' => false,
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['privacy_consent'])
+            ->assertJsonPath(
+                'errors.privacy_consent.0',
+                'За да изпратите заявката, трябва да се съгласите с обработването на личните данни.',
+            );
+
+        $this->assertDatabaseCount('leads', 0);
     }
 
     public function test_invalid_email_returns_validation_error(): void
@@ -859,6 +884,7 @@ class LeadSubmissionTest extends TestCase
             'utm_campaign' => 'spring-campaign',
             'utm_medium' => 'cpc',
             'gclid' => 'test-gclid',
+            'privacy_consent' => true,
             'website' => '',
             'form_started_at' => now()->subSeconds(5)->getTimestampMs(),
         ], $overrides);

@@ -42,6 +42,7 @@ class StoreLeadRequest extends FormRequest
             'utm_campaign' => $this->normalizeString($this->input('utm_campaign')),
             'utm_medium' => $this->normalizeString($this->input('utm_medium')),
             'gclid' => $this->normalizeString($this->input('gclid')),
+            'privacy_consent' => $this->boolean('privacy_consent'),
             'guarantors' => $this->normalizeGuarantors($this->input('guarantors')),
         ]);
 
@@ -95,6 +96,7 @@ class StoreLeadRequest extends FormRequest
             'utm_campaign' => ['nullable', 'string', 'max:150'],
             'utm_medium' => ['nullable', 'string', 'max:120'],
             'gclid' => ['nullable', 'string', 'max:255'],
+            'privacy_consent' => ['accepted'],
             'guarantors' => [
                 Rule::requiredIf(fn (): bool => $this->isConsumerWithGuarantorLead()),
                 'nullable',
@@ -195,6 +197,7 @@ class StoreLeadRequest extends FormRequest
             'guarantors.*.phone.max' => 'Телефонът на поръчителя не може да бъде по-дълъг от 30 символа.',
             'guarantors.*.status.required' => 'Моля, изберете статус на поръчител.',
             'guarantors.*.status.in' => 'Моля, изберете валиден статус на поръчител.',
+            'privacy_consent.accepted' => 'За да изпратите заявката, трябва да се съгласите с обработването на личните данни.',
         ], $this->publicFormProtectionMessages());
     }
 
