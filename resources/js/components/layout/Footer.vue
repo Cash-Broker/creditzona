@@ -20,7 +20,7 @@
                             alt="Кредит Зона"
                             width="200"
                             height="113"
-                            class="h-14 w-auto shrink-0"
+                            class="h-30 w-auto shrink-0"
                             decoding="async"
                         />
 

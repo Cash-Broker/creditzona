@@ -15,9 +15,13 @@ class Lead extends Model implements HasRichContent
 {
     use InteractsWithRichContent;
 
-    public const PRIVACY_CONSENT_DOCUMENT_PATH = 'documents/legal/lead-personal-data-consent-v1.pdf';
+    public const PRIVACY_CONSENT_TEMPLATE_PATH = 'documents/legal/lead-personal-data-consent-ready.pdf';
+
+    public const PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH = 'documents/legal/lead-personal-data-consent-v1.pdf';
 
     public const PRIVACY_CONSENT_DOCUMENT_NAME = 'Съгласие за обработка на лични данни';
+
+    public const PRIVACY_CONSENT_DOWNLOAD_FILE_NAME = 'lead-personal-data-consent.pdf';
 
     public const CREDIT_TYPE_CONSUMER = 'consumer';
 
@@ -74,7 +78,12 @@ class Lead extends Model implements HasRichContent
 
     public static function getPrivacyConsentDocumentPath(): string
     {
-        return self::PRIVACY_CONSENT_DOCUMENT_PATH;
+        return self::PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH;
+    }
+
+    public static function getPrivacyConsentTemplatePath(): string
+    {
+        return self::PRIVACY_CONSENT_TEMPLATE_PATH;
     }
 
     public static function getPrivacyConsentDocumentName(): string
@@ -82,23 +91,65 @@ class Lead extends Model implements HasRichContent
         return self::PRIVACY_CONSENT_DOCUMENT_NAME;
     }
 
-    public static function getPrivacyConsentDocumentUrl(?string $path = null): string
+    public static function getPrivacyConsentDownloadFileName(): string
     {
-        return asset(ltrim($path ?? self::PRIVACY_CONSENT_DOCUMENT_PATH, '/'));
+        return self::PRIVACY_CONSENT_DOWNLOAD_FILE_NAME;
+    }
+
+    public function buildPrivacyConsentDownloadFileName(): string
+    {
+        $baseName = implode('', array_filter([
+            $this->sanitizePrivacyConsentDownloadSegment($this->first_name),
+            $this->sanitizePrivacyConsentDownloadSegment($this->last_name),
+            preg_replace('/\D+/u', '', (string) ($this->phone ?? '')) ?: null,
+        ]));
+
+        if ($baseName === '') {
+            $baseName = 'ДекларацияСъгласие';
+        }
+
+        return $baseName.'ДекларацияСъгласие.pdf';
+    }
+
+    public static function isPublicPrivacyConsentDocumentPath(string $path): bool
+    {
+        return str_starts_with(ltrim($path, '/'), 'documents/legal/');
+    }
+
+    public static function getPrivacyConsentDocumentUrl(?string $path = null): ?string
+    {
+        $documentPath = ltrim($path ?? self::PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH, '/');
+
+        if (! static::isPublicPrivacyConsentDocumentPath($documentPath)) {
+            return null;
+        }
+
+        $url = asset($documentPath);
+        $absolutePath = public_path($documentPath);
+
+        if (! is_file($absolutePath)) {
+            return $url;
+        }
+
+        return $url.'?v='.filemtime($absolutePath);
     }
 
     /**
-     * @return array{name: string, path: string, url: string, is_available: bool}
+     * @return array{name: string, path: string, url: ?string, is_available: bool, download_name: string}
      */
     public static function getPrivacyConsentDocumentMeta(?string $path = null, ?string $name = null): array
     {
-        $documentPath = ltrim($path ?? self::PRIVACY_CONSENT_DOCUMENT_PATH, '/');
+        $documentPath = ltrim($path ?? self::PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH, '/');
+        $isPublicDocument = static::isPublicPrivacyConsentDocumentPath($documentPath);
 
         return [
             'name' => $name ?? self::PRIVACY_CONSENT_DOCUMENT_NAME,
             'path' => $documentPath,
-            'url' => static::getPrivacyConsentDocumentUrl($documentPath),
-            'is_available' => is_file(public_path($documentPath)),
+            'url' => $isPublicDocument ? static::getPrivacyConsentDocumentUrl($documentPath) : null,
+            'is_available' => $isPublicDocument
+                ? is_file(public_path($documentPath))
+                : Storage::disk('local')->exists($documentPath),
+            'download_name' => static::getPrivacyConsentDownloadFileName(),
         ];
     }
 
@@ -205,7 +256,7 @@ class Lead extends Model implements HasRichContent
     }
 
     /**
-     * @return array<int, array{name: string, path: string, url: string, is_available: bool}>
+     * @return array<int, array{name: string, path: string, url: ?string, is_available: bool, download_name: string}>
      */
     public function getPrivacyConsentDocumentDownloads(): array
     {
@@ -214,11 +265,31 @@ class Lead extends Model implements HasRichContent
         }
 
         return [
-            static::getPrivacyConsentDocumentMeta(
+            array_merge(static::getPrivacyConsentDocumentMeta(
                 $this->privacy_consent_document_path ?: static::getPrivacyConsentDocumentPath(),
                 $this->privacy_consent_document_name ?: static::getPrivacyConsentDocumentName(),
-            ),
+            ), [
+                'download_name' => $this->buildPrivacyConsentDownloadFileName(),
+            ]),
         ];
+    }
+
+    /**
+     * @return array{name: string, path: string, url: ?string, is_available: bool, download_name: string}|null
+     */
+    public function findPrivacyConsentDocumentDownload(?string $path = null): ?array
+    {
+        $expectedPath = filled($path)
+            ? trim((string) $path)
+            : ($this->privacy_consent_document_path ?: static::getPrivacyConsentDocumentPath());
+
+        foreach ($this->getPrivacyConsentDocumentDownloads() as $document) {
+            if ($document['path'] === $expectedPath) {
+                return $document;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -233,6 +304,13 @@ class Lead extends Model implements HasRichContent
         }
 
         return null;
+    }
+
+    private function sanitizePrivacyConsentDownloadSegment(?string $value): ?string
+    {
+        $sanitized = preg_replace('/[^\p{L}\p{N}]+/u', '', (string) $value);
+
+        return filled($sanitized) ? $sanitized : null;
     }
 
     protected function casts(): array

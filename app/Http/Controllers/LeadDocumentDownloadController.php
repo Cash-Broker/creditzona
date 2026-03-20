@@ -23,7 +23,7 @@ class LeadDocumentDownloadController extends Controller
 
         abort_if(($document === null) || (! $document['is_available']), 404);
 
-        return Storage::disk('local')->download($document['path'], $document['name'], [
+        return Storage::disk('local')->download($document['path'], $document['download_name'] ?? $document['name'], [
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
         ]);
     }

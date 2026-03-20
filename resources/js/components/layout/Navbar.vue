@@ -14,7 +14,7 @@
                     alt="Кредит Зона"
                     width="200"
                     height="113"
-                    class="h-14 w-auto lg:h-16"
+                    class="h-20 w-auto lg:h-30"
                     decoding="async"
                 />
             </RouterLink>
@@ -131,7 +131,7 @@ import { useRoute, useRouter } from "vue-router";
 
 const logo = "/images/logo/logo.png";
 const consultationHash = "#lead-form-compact";
-const consultationRoutes = new Set(["/", "/about"]);
+const consultationRoutes = new Set(["/"]);
 
 const route = useRoute();
 const router = useRouter();

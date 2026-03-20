@@ -14,6 +14,13 @@ class LeadSensitiveDataTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('local');
+    }
+
     public function test_sensitive_lead_fields_are_encrypted_and_guarantor_admin_fields_are_cast_correctly(): void
     {
         $lead = Lead::query()->create($this->leadData([
@@ -149,6 +156,29 @@ class LeadSensitiveDataTest extends TestCase
         $this->assertFalse($documents[0]['is_available']);
     }
 
+    public function test_privacy_consent_document_uses_saved_private_pdf_snapshot(): void
+    {
+        Storage::disk('local')->put('lead-consents/2026/03/test-consent.pdf', '%PDF-1.4 test');
+
+        $lead = Lead::query()->create($this->leadData([
+            'privacy_consent_accepted' => true,
+            'privacy_consent_accepted_at' => now(),
+            'privacy_consent_document_name' => Lead::getPrivacyConsentDocumentName(),
+            'privacy_consent_document_path' => 'lead-consents/2026/03/test-consent.pdf',
+        ]));
+
+        $documents = $lead->getPrivacyConsentDocumentDownloads();
+
+        $this->assertCount(1, $documents);
+        $this->assertSame('lead-consents/2026/03/test-consent.pdf', $documents[0]['path']);
+        $this->assertNull($documents[0]['url']);
+        $this->assertTrue($documents[0]['is_available']);
+        $this->assertSame(
+            $lead->buildPrivacyConsentDownloadFileName(),
+            $documents[0]['download_name'],
+        );
+    }
+
     public function test_authorized_staff_downloads_document_with_original_file_name(): void
     {
         Storage::disk('local')->put('lead-documents/1/application.pdf', 'test-content');
@@ -213,6 +243,40 @@ class LeadSensitiveDataTest extends TestCase
         );
     }
 
+    public function test_authorized_staff_downloads_private_privacy_consent_snapshot(): void
+    {
+        Storage::disk('local')->put('lead-consents/2026/03/test-consent.pdf', '%PDF-1.4 consent');
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'privacy_consent_accepted' => true,
+            'privacy_consent_accepted_at' => now(),
+            'privacy_consent_document_name' => Lead::getPrivacyConsentDocumentName(),
+            'privacy_consent_document_path' => 'lead-consents/2026/03/test-consent.pdf',
+        ]));
+
+        $response = $this
+            ->actingAs($admin)
+            ->get(route('admin.leads.privacy-consent.download', [
+                'lead' => $lead,
+            ]));
+
+        $response->assertOk();
+        $contentDisposition = (string) $response->headers->get('content-disposition');
+
+        $this->assertStringContainsString(
+            'filename*=utf-8\'\'',
+            $contentDisposition,
+        );
+        $this->assertStringContainsString(
+            rawurlencode($lead->buildPrivacyConsentDownloadFileName()),
+            $contentDisposition,
+        );
+    }
+
     public function test_unrelated_operator_cannot_download_attached_document(): void
     {
         Storage::disk('local')->put('lead-documents/1/application.pdf', 'test-content');
@@ -263,6 +327,29 @@ class LeadSensitiveDataTest extends TestCase
                 'lead' => $lead,
                 'guarantor' => $guarantor,
                 'path' => 'lead-guarantor-documents/guarantor-application.pdf',
+            ]))
+            ->assertForbidden();
+    }
+
+    public function test_unrelated_operator_cannot_download_private_privacy_consent_snapshot(): void
+    {
+        Storage::disk('local')->put('lead-consents/2026/03/test-consent.pdf', '%PDF-1.4 consent');
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'privacy_consent_accepted' => true,
+            'privacy_consent_accepted_at' => now(),
+            'privacy_consent_document_name' => Lead::getPrivacyConsentDocumentName(),
+            'privacy_consent_document_path' => 'lead-consents/2026/03/test-consent.pdf',
+        ]));
+
+        $this
+            ->actingAs($operator)
+            ->get(route('admin.leads.privacy-consent.download', [
+                'lead' => $lead,
             ]))
             ->assertForbidden();
     }

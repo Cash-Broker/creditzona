@@ -9,11 +9,19 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LeadSubmissionTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('local');
+    }
 
     public function test_successful_consumer_lead_submission(): void
     {
@@ -44,12 +52,14 @@ class LeadSubmissionTest extends TestCase
             'gclid' => 'test-gclid',
             'privacy_consent_accepted' => true,
             'privacy_consent_document_name' => Lead::getPrivacyConsentDocumentName(),
-            'privacy_consent_document_path' => Lead::getPrivacyConsentDocumentPath(),
         ]);
 
         $lead = Lead::query()->latest('id')->firstOrFail();
 
         $this->assertNotNull($lead->privacy_consent_accepted_at);
+        $this->assertNotNull($lead->privacy_consent_document_path);
+        $this->assertStringStartsWith('lead-consents/', $lead->privacy_consent_document_path);
+        Storage::disk('local')->assertExists($lead->privacy_consent_document_path);
     }
 
     public function test_successful_submission_sends_confirmation_email_to_client_without_queueing(): void

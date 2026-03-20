@@ -237,6 +237,9 @@ class LeadInfolist
                             ->state(fn (Lead $record): array => array_map(
                                 static fn (array $document): array => array_merge($document, [
                                     'description' => 'Документът, с който клиентът е дал съгласие за обработване на личните данни.',
+                                    'download_url' => $document['url'] === null
+                                        ? route('admin.leads.privacy-consent.download', ['lead' => $record])
+                                        : null,
                                 ]),
                                 $record->getPrivacyConsentDocumentDownloads(),
                             ))

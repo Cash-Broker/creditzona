@@ -537,6 +537,48 @@ export function useLeadForm(options = {}) {
         submitError.value = "";
     }
 
+    function getJsonHeaders() {
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content");
+
+        const headers = {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+        };
+
+        if (csrfToken) {
+            headers["X-CSRF-TOKEN"] = csrfToken;
+        }
+
+        return headers;
+    }
+
+    function buildLeadPayload() {
+        const {
+            guarantor_first_name,
+            guarantor_last_name,
+            guarantor_phone,
+            ...leadPayload
+        } = form;
+
+        return {
+            ...leadPayload,
+            guarantors: isConsumerWithGuarantor.value
+                ? [
+                      {
+                          first_name: guarantor_first_name,
+                          last_name: guarantor_last_name,
+                          phone: guarantor_phone,
+                          status: "suitable",
+                      },
+                  ]
+                : [],
+            property_type: isMortgage.value ? form.property_type : null,
+            property_location: isMortgage.value ? form.property_location : null,
+        };
+    }
+
     function switchToConsumerWithGuarantor() {
         form.credit_type = "consumer_with_guarantor";
     }
@@ -557,48 +599,10 @@ export function useLeadForm(options = {}) {
         loading.value = true;
 
         try {
-            const csrfToken = document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute("content");
-
-            const headers = {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-            };
-
-            if (csrfToken) {
-                headers["X-CSRF-TOKEN"] = csrfToken;
-            }
-
-            const {
-                guarantor_first_name,
-                guarantor_last_name,
-                guarantor_phone,
-                ...leadPayload
-            } = form;
-
-            const payload = {
-                ...leadPayload,
-                guarantors: isConsumerWithGuarantor.value
-                    ? [
-                          {
-                              first_name: guarantor_first_name,
-                              last_name: guarantor_last_name,
-                              phone: guarantor_phone,
-                              status: "suitable",
-                          },
-                      ]
-                    : [],
-                property_type: isMortgage.value ? form.property_type : null,
-                property_location: isMortgage.value
-                    ? form.property_location
-                    : null,
-            };
-
             const response = await fetch("/leads", {
                 method: "POST",
-                headers,
-                body: JSON.stringify(payload),
+                headers: getJsonHeaders(),
+                body: JSON.stringify(buildLeadPayload()),
             });
 
             if (!response.ok) {

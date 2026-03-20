@@ -9,7 +9,12 @@
                 $extension = strtoupper(pathinfo($document['name'], PATHINFO_EXTENSION));
                 $badge = filled($extension) ? $extension : 'Файл';
                 $url = $document['url'] ?? null;
+                $downloadUrl = $document['download_url'] ?? null;
                 $isPublicDocument = is_string($url) && filled($url);
+                $resolvedUrl = $downloadUrl
+                    ?? ($isPublicDocument
+                        ? $url
+                        : route('admin.leads.documents.download', ['lead' => $record, 'path' => $document['path']]));
                 $description = $document['description'] ?? null;
             @endphp
 
@@ -37,7 +42,7 @@
                 </div>
 
                 @if ($document['is_available'])
-                    <a href="{{ $isPublicDocument ? $url : route('admin.leads.documents.download', ['lead' => $record, 'path' => $document['path']]) }}"
+                    <a href="{{ $resolvedUrl }}"
                         @if ($isPublicDocument)
                             target="_blank" rel="noopener noreferrer"
                         @endif

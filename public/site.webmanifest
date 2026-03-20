@@ -1,7 +1,6 @@
 {
-  "name": "Кредит Зона",
-  "short_name": "Кредит Зона",
-  "description": "Консултация за кредити, ипотечен кредит, потребителски кредит и рефинансиране в Пловдив.",
+  "name": "MyWebSite",
+  "short_name": "MySite",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -16,9 +15,7 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#f9fafb",
-  "background_color": "#f9fafb",
-  "display": "standalone",
-  "lang": "bg",
-  "start_url": "/"
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display": "standalone"
 }

@@ -8,11 +8,19 @@ use App\Models\User;
 use App\Services\LeadService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LeadServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('local');
+    }
 
     public function test_create_lead_stores_assigned_operator_when_provided(): void
     {
@@ -35,6 +43,19 @@ class LeadServiceTest extends TestCase
 
         $this->assertNull($lead->assigned_user_id);
         $this->assertNull($lead->assignedUser);
+    }
+
+    public function test_create_lead_stores_private_privacy_consent_snapshot(): void
+    {
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'privacy_consent' => true,
+        ]));
+
+        $this->assertTrue($lead->hasPrivacyConsent());
+        $this->assertSame(Lead::getPrivacyConsentDocumentName(), $lead->privacy_consent_document_name);
+        $this->assertNotNull($lead->privacy_consent_document_path);
+        $this->assertStringStartsWith('lead-consents/', (string) $lead->privacy_consent_document_path);
+        Storage::disk('local')->assertExists((string) $lead->privacy_consent_document_path);
     }
 
     public function test_create_lead_stores_additional_fields_and_guarantors(): void
@@ -328,6 +349,7 @@ class LeadServiceTest extends TestCase
             'property_location' => null,
             'guarantors' => [],
             'additional_user_id' => null,
+            'privacy_consent' => false,
         ], $overrides);
     }
 }

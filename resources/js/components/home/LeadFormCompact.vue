@@ -455,7 +455,11 @@
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
-                                {{ leadConsentDocument.name }}
+                                {{
+                                    false
+                                        ? "Подготвяме документа..."
+                                        : leadConsentDocument.name
+                                }}
                             </a>
                             .
                         </span>

@@ -9,62 +9,91 @@ use App\Support\Phone\PhoneNormalizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class LeadService
 {
+    public function __construct(
+        private readonly LeadPrivacyConsentPdfService $leadPrivacyConsentPdfService,
+    ) {}
+
     public function createLead(array $data): Lead
     {
         $normalizedPhone = PhoneNormalizer::normalize($data['phone'] ?? null);
         $privacyConsentAccepted = (bool) ($data['privacy_consent'] ?? false);
         $privacyConsentAcceptedAt = $privacyConsentAccepted ? now() : null;
+        $privacyConsentSnapshotPath = null;
 
         $data['phone'] = $normalizedPhone;
         $data['normalized_phone'] = $normalizedPhone;
 
-        $lead = DB::transaction(function () use ($data, $privacyConsentAccepted, $privacyConsentAcceptedAt): Lead {
-            $isMortgage = ($data['credit_type'] ?? null) === Lead::CREDIT_TYPE_MORTGAGE;
-            $assignedUserId = $this->resolveAssignedUserId($data);
+        try {
+            $lead = DB::transaction(function () use (
+                $data,
+                $privacyConsentAccepted,
+                $privacyConsentAcceptedAt,
+                &$privacyConsentSnapshotPath,
+            ): Lead {
+                $isMortgage = ($data['credit_type'] ?? null) === Lead::CREDIT_TYPE_MORTGAGE;
+                $assignedUserId = $this->resolveAssignedUserId($data);
 
-            $lead = Lead::create([
-                'credit_type' => $data['credit_type'],
-                'first_name' => $data['first_name'],
-                'middle_name' => $data['middle_name'] ?? null,
-                'last_name' => $data['last_name'],
-                'phone' => $data['phone'],
-                'normalized_phone' => $data['normalized_phone'],
-                'email' => $data['email'] ?? null,
-                'city' => $data['city'] ?? null,
-                'workplace' => $data['workplace'] ?? null,
-                'job_title' => $data['job_title'] ?? null,
-                'salary' => $data['salary'] ?? null,
-                'marital_status' => $data['marital_status'] ?? null,
-                'children_under_18' => $data['children_under_18'] ?? null,
-                'salary_bank' => $data['salary_bank'] ?? null,
-                'amount' => $data['amount'],
-                'property_type' => $isMortgage ? ($data['property_type'] ?? null) : null,
-                'property_location' => $isMortgage ? ($data['property_location'] ?? null) : null,
-                'status' => 'new',
-                'assigned_user_id' => $assignedUserId,
-                'additional_user_id' => null,
-                'source' => $data['source'] ?? null,
-                'utm_source' => $data['utm_source'] ?? null,
-                'utm_campaign' => $data['utm_campaign'] ?? null,
-                'utm_medium' => $data['utm_medium'] ?? null,
-                'gclid' => $data['gclid'] ?? null,
-                'privacy_consent_accepted' => $privacyConsentAccepted,
-                'privacy_consent_accepted_at' => $privacyConsentAcceptedAt,
-                'privacy_consent_document_name' => $privacyConsentAccepted ? Lead::getPrivacyConsentDocumentName() : null,
-                'privacy_consent_document_path' => $privacyConsentAccepted ? Lead::getPrivacyConsentDocumentPath() : null,
-            ]);
+                $lead = Lead::create([
+                    'credit_type' => $data['credit_type'],
+                    'first_name' => $data['first_name'],
+                    'middle_name' => $data['middle_name'] ?? null,
+                    'last_name' => $data['last_name'],
+                    'phone' => $data['phone'],
+                    'normalized_phone' => $data['normalized_phone'],
+                    'email' => $data['email'] ?? null,
+                    'city' => $data['city'] ?? null,
+                    'workplace' => $data['workplace'] ?? null,
+                    'job_title' => $data['job_title'] ?? null,
+                    'salary' => $data['salary'] ?? null,
+                    'marital_status' => $data['marital_status'] ?? null,
+                    'children_under_18' => $data['children_under_18'] ?? null,
+                    'salary_bank' => $data['salary_bank'] ?? null,
+                    'amount' => $data['amount'],
+                    'property_type' => $isMortgage ? ($data['property_type'] ?? null) : null,
+                    'property_location' => $isMortgage ? ($data['property_location'] ?? null) : null,
+                    'status' => 'new',
+                    'assigned_user_id' => $assignedUserId,
+                    'additional_user_id' => null,
+                    'source' => $data['source'] ?? null,
+                    'utm_source' => $data['utm_source'] ?? null,
+                    'utm_campaign' => $data['utm_campaign'] ?? null,
+                    'utm_medium' => $data['utm_medium'] ?? null,
+                    'gclid' => $data['gclid'] ?? null,
+                    'privacy_consent_accepted' => $privacyConsentAccepted,
+                    'privacy_consent_accepted_at' => $privacyConsentAcceptedAt,
+                    'privacy_consent_document_name' => null,
+                    'privacy_consent_document_path' => null,
+                ]);
 
-            $guarantors = $this->prepareGuarantors($data['guarantors'] ?? null);
+                if ($privacyConsentAccepted) {
+                    $privacyConsentSnapshot = $this->leadPrivacyConsentPdfService->storeSnapshot($lead);
+                    $privacyConsentSnapshotPath = $privacyConsentSnapshot['path'];
 
-            if ($guarantors !== []) {
-                $lead->guarantors()->createMany($guarantors);
+                    $lead->forceFill([
+                        'privacy_consent_document_name' => $privacyConsentSnapshot['name'],
+                        'privacy_consent_document_path' => $privacyConsentSnapshot['path'],
+                    ])->save();
+                }
+
+                $guarantors = $this->prepareGuarantors($data['guarantors'] ?? null);
+
+                if ($guarantors !== []) {
+                    $lead->guarantors()->createMany($guarantors);
+                }
+
+                return $lead->loadMissing('assignedUser', 'additionalUser', 'guarantors');
+            });
+        } catch (\Throwable $exception) {
+            if (filled($privacyConsentSnapshotPath)) {
+                Storage::disk('local')->delete($privacyConsentSnapshotPath);
             }
 
-            return $lead->loadMissing('assignedUser', 'additionalUser', 'guarantors');
-        });
+            throw $exception;
+        }
 
         $this->sendConfirmationEmail($lead);
 
