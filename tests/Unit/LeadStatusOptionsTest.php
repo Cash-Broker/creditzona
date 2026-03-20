@@ -12,6 +12,8 @@ class LeadStatusOptionsTest extends TestCase
     {
         $this->assertSame([
             'new' => 'Нова',
+            'sms' => 'SMS',
+            'email' => 'Имейл',
             'in_progress' => 'В обработка',
             'processed' => 'Обработена',
             'approved' => 'Одобрена',
@@ -23,6 +25,8 @@ class LeadStatusOptionsTest extends TestCase
     {
         $this->assertSame('Одобрена', LeadResource::getStatusLabel('approved'));
         $this->assertSame('Отказана', LeadResource::getStatusLabel('rejected'));
+        $this->assertSame('SMS', LeadResource::getStatusLabel('sms'));
+        $this->assertSame('Имейл', LeadResource::getStatusLabel('email'));
     }
 
     public function test_marital_status_options_are_exposed_for_admin_ui(): void

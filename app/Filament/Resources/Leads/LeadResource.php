@@ -71,6 +71,8 @@ class LeadResource extends Resource
     {
         return [
             'new' => 'Нова',
+            'sms' => 'SMS',
+            'email' => 'Имейл',
             'in_progress' => 'В обработка',
             'processed' => 'Обработена',
             'approved' => 'Одобрена',

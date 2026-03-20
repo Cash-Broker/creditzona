@@ -20,22 +20,22 @@ class LeadInfolist
                 Section::make('Основни данни')
                     ->columns(3)
                     ->schema([
-                        TextEntry::make('credit_type')
-                            ->label('Тип кредит')
-                            ->badge()
-                            ->color('primary')
-                            ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state)),
                         TextEntry::make('status')
                             ->label('Статус')
                             ->badge()
                             ->colors([
                                 'warning' => 'new',
+                                'success' => ['sms', 'processed', 'approved'],
+                                'info' => 'email',
                                 'primary' => 'in_progress',
-                                'gray' => 'processed',
-                                'success' => 'approved',
                                 'danger' => 'rejected',
                             ])
                             ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state)),
+                        TextEntry::make('credit_type')
+                            ->label('Тип кредит')
+                            ->badge()
+                            ->color('primary')
+                            ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state)),
                         TextEntry::make('amount')
                             ->label('Сума')
                             ->numeric(0, locale: 'bg')

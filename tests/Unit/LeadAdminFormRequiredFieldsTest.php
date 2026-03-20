@@ -63,7 +63,7 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
         $this->assertFalse($fields['internal_notes']->isRequired());
     }
 
-    public function test_consumer_with_guarantor_admin_fields_keep_consumer_fields_required_and_require_guarantor_section(): void
+    public function test_consumer_with_guarantor_admin_fields_keep_consumer_fields_required_while_guarantor_section_stays_optional(): void
     {
         $component = new class extends Component implements HasForms
         {
@@ -108,10 +108,116 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
             $this->assertTrue($fields[$field]->isRequired(), "Expected [{$field}] to be required for consumer leads with guarantor.");
         }
 
-        $this->assertTrue($fields['guarantors']->isRequired());
-        $this->assertTrue($fields['amount']->isRequired());
-        $this->assertTrue($fields['first_name']->isRequired());
-        $this->assertTrue($fields['last_name']->isRequired());
-        $this->assertTrue($fields['phone']->isRequired());
+        $this->assertFalse($fields['guarantors']->isRequired());
+
+        $guarantorFields = $this->getGuarantorSchemaFields();
+
+        foreach ([
+            'status',
+            'amount',
+            'first_name',
+            'middle_name',
+            'last_name',
+            'egn',
+            'phone',
+            'email',
+            'city',
+            'workplace',
+            'job_title',
+            'salary',
+            'marital_status',
+            'children_under_18',
+            'salary_bank',
+            'credit_bank',
+            'property_type',
+            'property_location',
+        ] as $field) {
+            $this->assertArrayHasKey($field, $guarantorFields);
+            $this->assertFalse($guarantorFields[$field]->isRequired(), "Expected guarantor field [{$field}] to stay optional in admin.");
+        }
+    }
+
+    public function test_sms_email_and_rejected_statuses_do_not_require_full_application_fields_in_admin(): void
+    {
+        foreach (['sms', 'email', 'rejected'] as $status) {
+            $component = new class extends Component implements HasForms
+            {
+                use InteractsWithForms;
+
+                public ?array $data = [];
+
+                public function form(Schema $schema): Schema
+                {
+                    return LeadForm::configure($schema)
+                        ->model(Lead::class)
+                        ->statePath('data');
+                }
+
+                public function render(): string
+                {
+                    return '';
+                }
+            };
+
+            $form = $component->form(Schema::make($component));
+            $form->fill([
+                'status' => $status,
+                'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            ]);
+
+            $fields = $form->getFlatFields(withHidden: true);
+
+            foreach ([
+                'middle_name',
+                'egn',
+                'workplace',
+                'job_title',
+                'salary',
+                'marital_status',
+                'children_under_18',
+                'salary_bank',
+                'credit_bank',
+                'guarantors',
+            ] as $field) {
+                $this->assertArrayHasKey($field, $fields);
+                $this->assertFalse($fields[$field]->isRequired(), "Expected [{$field}] to be optional for status [{$status}].");
+            }
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function getGuarantorSchemaFields(): array
+    {
+        $method = new \ReflectionMethod(LeadForm::class, 'guarantorSchema');
+        $method->setAccessible(true);
+
+        $component = new class extends Component implements HasForms
+        {
+            use InteractsWithForms;
+
+            public array $components = [];
+
+            public ?array $data = [];
+
+            public function form(Schema $schema): Schema
+            {
+                return $schema
+                    ->components($this->components)
+                    ->statePath('data');
+            }
+
+            public function render(): string
+            {
+                return '';
+            }
+        };
+
+        $component->components = $method->invoke(null);
+
+        return $component
+            ->form(Schema::make($component))
+            ->getFlatFields(withHidden: true);
     }
 }

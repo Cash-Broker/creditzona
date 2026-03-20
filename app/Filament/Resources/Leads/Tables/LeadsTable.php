@@ -18,6 +18,18 @@ class LeadsTable
         return $table
             ->poll('5s')
             ->columns([
+                TextColumn::make('status')
+                    ->label('Статус')
+                    ->badge()
+                    ->colors([
+                        'warning' => 'new',
+                        'success' => ['sms', 'processed', 'approved'],
+                        'info' => 'email',
+                        'primary' => 'in_progress',
+                        'danger' => 'rejected',
+                    ])
+                    ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state))
+                    ->searchable(),
                 TextColumn::make('credit_type')
                     ->label('Тип кредит')
                     ->badge()
@@ -76,18 +88,6 @@ class LeadsTable
                     ->counts('guarantors')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('status')
-                    ->label('Статус')
-                    ->badge()
-                    ->colors([
-                        'warning' => 'new',
-                        'primary' => 'in_progress',
-                        'gray' => 'processed',
-                        'success' => 'approved',
-                        'danger' => 'rejected',
-                    ])
-                    ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state))
-                    ->searchable(),
                 TextColumn::make('created_at')
                     ->label('Създадена на')
                     ->dateTime('d.m.Y H:i', 'Europe/Sofia')
