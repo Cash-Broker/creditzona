@@ -18,12 +18,6 @@ class LeadsTable
         return $table
             ->poll('5s')
             ->columns([
-                TextColumn::make('credit_type')
-                    ->label('Тип кредит')
-                    ->badge()
-                    ->color('primary')
-                    ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state))
-                    ->sortable(),
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -71,6 +65,12 @@ class LeadsTable
                     ->label('Сума')
                     ->numeric(0, locale: 'bg')
                     ->suffix(' €')
+                    ->sortable(),
+                TextColumn::make('credit_type')
+                    ->label('Тип кредит')
+                    ->badge()
+                    ->color('primary')
+                    ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state))
                     ->sortable(),
                 TextColumn::make('salary')
                     ->label('Заплата')
