@@ -7,6 +7,7 @@ use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
 use App\Models\User;
 use App\Policies\LeadPolicy;
+use App\Services\LeadService;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -185,6 +186,37 @@ class AdminAuthorizationTest extends TestCase
         $this->assertSame([
             $attachedToRenata->id,
         ], $adminAttachedLeadIds);
+    }
+
+    public function test_returned_attached_lead_disappears_from_attached_resource_query(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'phone' => '0888444444',
+            'email' => 'returned@example.com',
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $renata->id,
+        ]));
+
+        $this->actingAs($renata);
+
+        $this->assertSame([$lead->id], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $renata);
+
+        $lead->refresh();
+
+        $this->assertNull($lead->additional_user_id);
+        $this->assertSame([], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
     }
 
     /**

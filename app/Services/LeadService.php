@@ -6,6 +6,8 @@ use App\Mail\LeadSubmittedConfirmation;
 use App\Models\Lead;
 use App\Models\User;
 use App\Support\Phone\PhoneNormalizer;
+use DomainException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -98,6 +100,27 @@ class LeadService
         $this->sendConfirmationEmail($lead);
 
         return $lead;
+    }
+
+    public function returnAttachedLeadToPrimary(Lead $lead, User $actor): Lead
+    {
+        if (! $actor->isAdmin()) {
+            throw new AuthorizationException('Нямате достъп да върнете тази заявка.');
+        }
+
+        if ($lead->additional_user_id !== $actor->id) {
+            throw new AuthorizationException('Заявката не е закачена към вас.');
+        }
+
+        if ($lead->assigned_user_id === null) {
+            throw new DomainException('Изберете основен служител, преди да върнете заявката.');
+        }
+
+        $lead->forceFill([
+            'additional_user_id' => null,
+        ])->save();
+
+        return $lead->refresh();
     }
 
     private function resolveAssignedUserId(array $data): ?int

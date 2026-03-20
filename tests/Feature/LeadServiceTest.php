@@ -6,6 +6,8 @@ use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Models\User;
 use App\Services\LeadService;
+use DomainException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -323,6 +325,77 @@ class LeadServiceTest extends TestCase
         $this->assertSame($elena->id, $secondLead->assigned_user_id);
         $this->assertSame($krasimira->id, $thirdLead->assigned_user_id);
         $this->assertSame($anna->id, $fourthLead->assigned_user_id);
+    }
+
+    public function test_admin_can_return_attached_lead_to_primary_assignee(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $renata->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $renata);
+
+        $lead->refresh();
+
+        $this->assertSame($anna->id, $lead->assigned_user_id);
+        $this->assertNull($lead->additional_user_id);
+    }
+
+    public function test_returning_attached_lead_requires_current_additional_admin(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        $this->expectException(AuthorizationException::class);
+        $this->expectExceptionMessage('Заявката не е закачена към вас.');
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $renata);
+    }
+
+    public function test_returning_attached_lead_requires_primary_assignee(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => null,
+            'additional_user_id' => $renata->id,
+        ]));
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Изберете основен служител, преди да върнете заявката.');
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $renata);
     }
 
     /**

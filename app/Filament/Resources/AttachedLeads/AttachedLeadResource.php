@@ -69,7 +69,7 @@ class AttachedLeadResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table);
+        return LeadsTable::configure($table, isAttachedResource: true);
     }
 
     public static function getRelations(): array
