@@ -33,9 +33,8 @@ class LeadStatusOptionsTest extends TestCase
     {
         $this->assertSame([
             'warning' => 'new',
-            'gray' => 'sms',
-            'info' => 'email',
-            'primary' => 'in_progress',
+            'gray' => ['sms', 'email'],
+            'info' => 'in_progress',
             'success' => ['processed', 'approved'],
             'danger' => 'rejected',
         ], LeadResource::getStatusBadgeColors());
