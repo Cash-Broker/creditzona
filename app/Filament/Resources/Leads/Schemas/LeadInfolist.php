@@ -49,7 +49,6 @@ class LeadInfolist
                             ->label('Фамилия'),
                         TextEntry::make('egn')
                             ->label('ЕГН')
-                            ->formatStateUsing(fn (?string $state): string => Lead::maskEgn($state))
                             ->placeholder('Няма'),
                         TextEntry::make('phone')
                             ->label('Телефон'),
@@ -142,7 +141,6 @@ class LeadInfolist
                                             ->label('Фамилия'),
                                         TextEntry::make('egn')
                                             ->label('ЕГН')
-                                            ->formatStateUsing(fn (?string $state): string => LeadGuarantor::maskEgn($state))
                                             ->placeholder('Няма'),
                                         TextEntry::make('phone')
                                             ->label('Телефон')
