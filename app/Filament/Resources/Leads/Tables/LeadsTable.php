@@ -2,20 +2,14 @@
 
 namespace App\Filament\Resources\Leads\Tables;
 
+use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
-use App\Models\User;
-use App\Services\LeadService;
-use DomainException;
-use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Notifications\Notification;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Auth\Access\AuthorizationException;
 
 class LeadsTable
 {
@@ -116,52 +110,11 @@ class LeadsTable
                     ->native(false),
             ])
             ->recordActions(array_values(array_filter([
-                $isAttachedResource ? static::makeReturnToPrimaryAction() : null,
+                $isAttachedResource ? AttachedLeadResource::makeReturnToPrimaryAction() : null,
                 ViewAction::make(),
                 EditAction::make(),
             ])))
             ->defaultSort('created_at', 'desc')
             ->toolbarActions([]);
-    }
-
-    private static function makeReturnToPrimaryAction(): Action
-    {
-        return Action::make('return_to_primary')
-            ->label('Върни')
-            ->icon(Heroicon::OutlinedArrowUturnLeft)
-            ->color('gray')
-            ->requiresConfirmation()
-            ->modalHeading('Връщане към основния служител')
-            ->modalDescription('Заявката ще бъде махната от "Закачени към мен" и ще остане само при основния служител.')
-            ->visible(function (Lead $record): bool {
-                $user = auth()->user();
-
-                return $user instanceof User
-                    && $user->isAdmin()
-                    && $record->additional_user_id === $user->id;
-            })
-            ->action(function (Lead $record): void {
-                $user = auth()->user();
-
-                if (! $user instanceof User) {
-                    return;
-                }
-
-                try {
-                    app(LeadService::class)->returnAttachedLeadToPrimary($record, $user);
-                } catch (AuthorizationException|DomainException $exception) {
-                    Notification::make()
-                        ->title($exception->getMessage())
-                        ->danger()
-                        ->send();
-
-                    return;
-                }
-
-                Notification::make()
-                    ->title('Заявката е върната към основния служител.')
-                    ->success()
-                    ->send();
-            });
     }
 }

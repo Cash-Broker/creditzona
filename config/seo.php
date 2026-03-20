@@ -70,7 +70,7 @@ return [
             'robots' => 'index,follow',
             'og_type' => 'website',
             'breadcrumbs' => [],
-            'preload_images' => ['/images/formBG.jpg'],
+            'preload_images' => ['/images/bg-image2.jpg'],
             'sitemap' => true,
         ],
         'about' => [

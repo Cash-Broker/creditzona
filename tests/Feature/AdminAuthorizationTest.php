@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
+use App\Filament\Resources\AttachedLeads\Pages\EditAttachedLead;
+use App\Filament\Resources\AttachedLeads\Pages\ViewAttachedLead;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
 use App\Models\User;
@@ -10,6 +12,7 @@ use App\Policies\LeadPolicy;
 use App\Services\LeadService;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminAuthorizationTest extends TestCase
@@ -217,6 +220,38 @@ class AdminAuthorizationTest extends TestCase
 
         $this->assertNull($lead->additional_user_id);
         $this->assertSame([], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
+    }
+
+    public function test_attached_lead_pages_expose_edit_then_return_actions_for_admin(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'phone' => '0888555555',
+            'email' => 'actions@example.com',
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $renata->id,
+        ]));
+
+        $this->actingAs($renata);
+
+        Livewire::test(ViewAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->assertActionExists('edit');
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->assertActionExists('return_to_primary');
     }
 
     /**

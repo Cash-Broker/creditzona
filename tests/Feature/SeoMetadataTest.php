@@ -32,6 +32,11 @@ class SeoMetadataTest extends TestCase
             '<meta name="robots" content="index,follow">',
             false,
         );
+        $response->assertSee('favicon.ico?v=', false);
+        $response->assertSee('favicon.svg?v=', false);
+        $response->assertSee('favicon-96x96.png?v=', false);
+        $response->assertSee('apple-touch-icon.png?v=', false);
+        $response->assertSee('site.webmanifest?v=', false);
         $response->assertSee(
             '"@type": "FinancialService"',
             false,
