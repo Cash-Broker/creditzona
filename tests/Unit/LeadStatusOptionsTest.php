@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
+use Filament\Support\Colors\Color;
 use PHPUnit\Framework\TestCase;
 
 class LeadStatusOptionsTest extends TestCase
@@ -31,13 +32,14 @@ class LeadStatusOptionsTest extends TestCase
 
     public function test_lead_status_badge_colors_match_admin_mapping(): void
     {
-        $this->assertSame([
-            'warning' => 'new',
-            'gray' => ['sms', 'email'],
-            'info' => 'in_progress',
-            'success' => ['processed', 'approved'],
-            'danger' => 'rejected',
-        ], LeadResource::getStatusBadgeColors());
+        $this->assertSame('warning', LeadResource::getStatusBadgeColor('new'));
+        $this->assertSame(Color::Zinc, LeadResource::getStatusBadgeColor('sms'));
+        $this->assertSame(Color::Zinc, LeadResource::getStatusBadgeColor('email'));
+        $this->assertSame('info', LeadResource::getStatusBadgeColor('in_progress'));
+        $this->assertSame('success', LeadResource::getStatusBadgeColor('processed'));
+        $this->assertSame('success', LeadResource::getStatusBadgeColor('approved'));
+        $this->assertSame('danger', LeadResource::getStatusBadgeColor('rejected'));
+        $this->assertSame('gray', LeadResource::getStatusBadgeColor('unknown'));
     }
 
     public function test_marital_status_options_are_exposed_for_admin_ui(): void

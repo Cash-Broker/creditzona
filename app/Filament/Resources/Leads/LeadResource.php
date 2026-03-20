@@ -14,6 +14,7 @@ use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
@@ -95,15 +96,16 @@ class LeadResource extends Resource
         return static::getStatusOptions()[$state] ?? ($state ?: 'Няма');
     }
 
-    public static function getStatusBadgeColors(): array
+    public static function getStatusBadgeColor(?string $state): string|array
     {
-        return [
-            'warning' => 'new',
-            'gray' => ['sms', 'email'],
-            'info' => 'in_progress',
-            'success' => ['processed', 'approved'],
-            'danger' => 'rejected',
-        ];
+        return match ($state) {
+            'new' => 'warning',
+            'sms', 'email' => Color::Zinc,
+            'in_progress' => 'info',
+            'processed', 'approved' => 'success',
+            'rejected' => 'danger',
+            default => 'gray',
+        };
     }
 
     public static function getMaritalStatusOptions(): array

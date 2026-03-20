@@ -21,7 +21,7 @@ class LeadsTable
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
-                    ->colors(LeadResource::getStatusBadgeColors())
+                    ->color(fn (?string $state): string|array => LeadResource::getStatusBadgeColor($state))
                     ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state))
                     ->searchable(),
                 TextColumn::make('full_name')
