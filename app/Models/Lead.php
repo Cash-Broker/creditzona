@@ -347,6 +347,24 @@ class Lead extends Model implements HasRichContent
         });
     }
 
+    public function scopeVisibleToUser(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $builder) use ($user): void {
+            $builder
+                ->where('assigned_user_id', $user->id)
+                ->orWhere('additional_user_id', $user->id);
+        });
+    }
+
+    public function scopeAttachedToUser(Builder $query, User $user): Builder
+    {
+        return $query->where('additional_user_id', $user->id);
+    }
+
     protected function setUpRichContent(): void
     {
         $this->registerRichContent('internal_notes')

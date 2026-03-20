@@ -171,14 +171,6 @@ class LeadResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        if ($user->isAdmin()) {
-            return $query;
-        }
-
-        return $query->where(function (Builder $query) use ($user): void {
-            $query
-                ->where('assigned_user_id', $user->id)
-                ->orWhere('additional_user_id', $user->id);
-        });
+        return $query->visibleToUser($user);
     }
 }

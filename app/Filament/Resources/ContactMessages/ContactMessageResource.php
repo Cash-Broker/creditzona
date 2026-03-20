@@ -24,7 +24,7 @@ class ContactMessageResource extends Resource
 
     protected static ?string $navigationLabel = 'Контактни съобщения';
 
-    protected static ?int $navigationSort = 11;
+    protected static ?int $navigationSort = 12;
 
     protected static ?string $modelLabel = 'контактно съобщение';
 

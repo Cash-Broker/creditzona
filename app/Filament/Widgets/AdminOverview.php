@@ -80,10 +80,6 @@ class AdminOverview extends StatsOverviewWidget
             return $query;
         }
 
-        return $query->where(function (Builder $builder) use ($user): void {
-            $builder
-                ->where('assigned_user_id', $user->id)
-                ->orWhere('additional_user_id', $user->id);
-        });
+        return $query->visibleToUser($user);
     }
 }

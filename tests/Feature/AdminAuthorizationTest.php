@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
 use App\Models\User;
@@ -124,6 +125,66 @@ class AdminAuthorizationTest extends TestCase
             $collaboratingLead->id,
             $unrelatedLead->id,
         ], $adminVisibleLeadIds);
+    }
+
+    public function test_attached_lead_resource_query_is_scoped_only_to_additional_assignments_for_current_user(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $attachedToAnna = Lead::query()->create($this->leadData([
+            'phone' => '0888111111',
+            'assigned_user_id' => $elena->id,
+            'additional_user_id' => $anna->id,
+        ]));
+
+        Lead::query()->create($this->leadData([
+            'phone' => '0888222222',
+            'email' => 'second@example.com',
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+        ]));
+
+        $attachedToRenata = Lead::query()->create($this->leadData([
+            'phone' => '0888333333',
+            'email' => 'third@example.com',
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $renata->id,
+        ]));
+
+        $this->actingAs($anna);
+
+        $operatorAttachedLeadIds = AttachedLeadResource::getEloquentQuery()
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([
+            $attachedToAnna->id,
+        ], $operatorAttachedLeadIds);
+
+        $this->actingAs($renata);
+
+        $adminAttachedLeadIds = AttachedLeadResource::getEloquentQuery()
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([
+            $attachedToRenata->id,
+        ], $adminAttachedLeadIds);
     }
 
     /**
