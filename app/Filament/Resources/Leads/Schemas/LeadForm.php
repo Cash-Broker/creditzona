@@ -29,12 +29,6 @@ class LeadForm
                 Section::make('Основни данни')
                     ->columns(3)
                     ->schema([
-                        Select::make('status')
-                            ->label('Статус')
-                            ->options(LeadResource::getStatusOptions())
-                            ->required()
-                            ->default('new')
-                            ->native(false),
                         Select::make('credit_type')
                             ->label('Тип кредит')
                             ->options(LeadResource::getCreditTypeOptions())
@@ -47,6 +41,13 @@ class LeadForm
                                     $set('property_location', null);
                                 }
                             }),
+                        Select::make('status')
+                            ->label('Статус')
+                            ->options(LeadResource::getStatusOptions())
+                            ->required()
+                            ->default('new')
+                            ->live()
+                            ->native(false),
                         Select::make('assigned_user_id')
                             ->label('Основен служител')
                             ->options(LeadResource::getPrimaryAssignmentOptions())

@@ -185,6 +185,34 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
         }
     }
 
+    public function test_status_field_is_live_in_admin_form(): void
+    {
+        $component = new class extends Component implements HasForms
+        {
+            use InteractsWithForms;
+
+            public ?array $data = [];
+
+            public function form(Schema $schema): Schema
+            {
+                return LeadForm::configure($schema)
+                    ->model(Lead::class)
+                    ->statePath('data');
+            }
+
+            public function render(): string
+            {
+                return '';
+            }
+        };
+
+        $fields = $component
+            ->form(Schema::make($component))
+            ->getFlatFields(withHidden: true);
+
+        $this->assertTrue($fields['status']->isLive());
+    }
+
     /**
      * @return array<string, mixed>
      */

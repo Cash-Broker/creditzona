@@ -18,6 +18,12 @@ class LeadsTable
         return $table
             ->poll('5s')
             ->columns([
+                TextColumn::make('credit_type')
+                    ->label('Тип кредит')
+                    ->badge()
+                    ->color('primary')
+                    ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state))
+                    ->sortable(),
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -30,12 +36,6 @@ class LeadsTable
                     ])
                     ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state))
                     ->searchable(),
-                TextColumn::make('credit_type')
-                    ->label('Тип кредит')
-                    ->badge()
-                    ->color('primary')
-                    ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state))
-                    ->sortable(),
                 TextColumn::make('full_name')
                     ->label('Кандидат')
                     ->state(fn (Lead $record): string => trim(implode(' ', array_filter([

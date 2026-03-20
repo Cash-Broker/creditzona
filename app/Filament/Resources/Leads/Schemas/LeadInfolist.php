@@ -20,6 +20,11 @@ class LeadInfolist
                 Section::make('Основни данни')
                     ->columns(3)
                     ->schema([
+                        TextEntry::make('credit_type')
+                            ->label('Тип кредит')
+                            ->badge()
+                            ->color('primary')
+                            ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state)),
                         TextEntry::make('status')
                             ->label('Статус')
                             ->badge()
@@ -31,11 +36,6 @@ class LeadInfolist
                                 'danger' => 'rejected',
                             ])
                             ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state)),
-                        TextEntry::make('credit_type')
-                            ->label('Тип кредит')
-                            ->badge()
-                            ->color('primary')
-                            ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state)),
                         TextEntry::make('amount')
                             ->label('Сума')
                             ->numeric(0, locale: 'bg')
