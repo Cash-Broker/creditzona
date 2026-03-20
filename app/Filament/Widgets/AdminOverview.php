@@ -11,6 +11,7 @@ use App\Models\ContactMessage;
 use App\Models\Faq;
 use App\Models\Lead;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -48,12 +49,20 @@ class AdminOverview extends StatsOverviewWidget
             return [$leadStat];
         }
 
+        $todayLeads = Lead::query()
+            ->whereBetween('created_at', $this->getTodayLeadRange())
+            ->count();
         $messages = ContactMessage::count();
         $publishedBlogs = Blog::query()->where('is_published', true)->count();
         $publishedFaqs = Faq::query()->where('is_published', true)->count();
 
         return [
             $leadStat,
+            Stat::make('Получени заявки днес', $todayLeads)
+                ->description('Занулява се всеки ден в 00:00 ч.')
+                ->icon(Heroicon::OutlinedCalendarDays)
+                ->color($todayLeads > 0 ? 'success' : 'gray')
+                ->url(LeadResource::getUrl()),
             Stat::make('Контактни съобщения', $messages)
                 ->description('Получени през сайта')
                 ->icon(Heroicon::OutlinedChatBubbleLeftRight)
@@ -69,6 +78,19 @@ class AdminOverview extends StatsOverviewWidget
                 ->icon(Heroicon::OutlinedQuestionMarkCircle)
                 ->color('primary')
                 ->url(FaqResource::getUrl()),
+        ];
+    }
+
+    /**
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    private function getTodayLeadRange(): array
+    {
+        $todayInSofia = CarbonImmutable::now('Europe/Sofia');
+
+        return [
+            $todayInSofia->startOfDay()->utc(),
+            $todayInSofia->endOfDay()->utc(),
         ];
     }
 

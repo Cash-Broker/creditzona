@@ -6,6 +6,7 @@ use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\AttachedLeads\Pages\EditAttachedLead;
 use App\Filament\Resources\AttachedLeads\Pages\ViewAttachedLead;
 use App\Filament\Resources\Leads\LeadResource;
+use App\Filament\Resources\ReturnedLeadArchives\ReturnedLeadArchiveResource;
 use App\Models\Lead;
 use App\Models\User;
 use App\Policies\LeadPolicy;
@@ -220,6 +221,56 @@ class AdminAuthorizationTest extends TestCase
 
         $this->assertNull($lead->additional_user_id);
         $this->assertSame([], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
+    }
+
+    public function test_returned_lead_archive_resource_is_scoped_to_the_user_who_returned_the_lead(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $iskra = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'iskra@creditzona.test',
+        ]);
+
+        $returnedByAnna = Lead::query()->create($this->leadData([
+            'phone' => '0888666661',
+            'email' => 'archive-1@example.com',
+            'assigned_user_id' => $elena->id,
+            'additional_user_id' => $anna->id,
+        ]));
+
+        $returnedByIskra = Lead::query()->create($this->leadData([
+            'phone' => '0888666662',
+            'email' => 'archive-2@example.com',
+            'assigned_user_id' => $elena->id,
+            'additional_user_id' => $iskra->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($returnedByAnna, $anna);
+        app(LeadService::class)->returnAttachedLeadToPrimary($returnedByIskra, $iskra);
+
+        $this->actingAs($anna);
+
+        $this->assertSame([
+            $returnedByAnna->id,
+        ], ReturnedLeadArchiveResource::getEloquentQuery()->pluck('id')->all());
+
+        $policy = new LeadPolicy;
+
+        $returnedByAnna->refresh();
+        $returnedByIskra->refresh();
+
+        $this->assertTrue($policy->view($anna, $returnedByAnna));
+        $this->assertTrue($policy->update($anna, $returnedByAnna));
+        $this->assertFalse($policy->view($anna, $returnedByIskra));
     }
 
     public function test_attached_lead_pages_expose_edit_then_return_actions_for_admin(): void

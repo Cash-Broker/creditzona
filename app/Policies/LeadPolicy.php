@@ -68,6 +68,10 @@ class LeadPolicy
         }
 
         return $lead->assigned_user_id === $user->id
-            || $lead->additional_user_id === $user->id;
+            || $lead->additional_user_id === $user->id
+            || (
+                $lead->additional_user_id === null
+                && $lead->returned_additional_user_id === $user->id
+            );
     }
 }

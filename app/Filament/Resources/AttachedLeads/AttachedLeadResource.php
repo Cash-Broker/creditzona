@@ -91,7 +91,7 @@ class AttachedLeadResource extends Resource
                 $user = auth()->user();
 
                 return $user instanceof User
-                    && $user->isAdmin()
+                    && ($user->isAdmin() || $user->isOperator())
                     && $record->additional_user_id === $user->id;
             })
             ->action(function (Lead $record): void {

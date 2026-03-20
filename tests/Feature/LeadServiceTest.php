@@ -352,7 +352,34 @@ class LeadServiceTest extends TestCase
         $this->assertNull($lead->additional_user_id);
     }
 
-    public function test_returning_attached_lead_requires_current_additional_admin(): void
+    public function test_operator_can_return_attached_lead_to_primary_assignee_and_store_archive_state(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $elena);
+
+        $lead->refresh();
+
+        $this->assertSame($anna->id, $lead->assigned_user_id);
+        $this->assertNull($lead->additional_user_id);
+        $this->assertSame($elena->id, $lead->returned_additional_user_id);
+        $this->assertNotNull($lead->returned_to_primary_at);
+    }
+
+    public function test_returning_attached_lead_requires_current_additional_assignee(): void
     {
         $renata = User::factory()->create([
             'role' => User::ROLE_ADMIN,

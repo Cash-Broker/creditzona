@@ -60,6 +60,8 @@ class LeadService
                     'status' => 'new',
                     'assigned_user_id' => $assignedUserId,
                     'additional_user_id' => null,
+                    'returned_additional_user_id' => null,
+                    'returned_to_primary_at' => null,
                     'source' => $data['source'] ?? null,
                     'utm_source' => $data['utm_source'] ?? null,
                     'utm_campaign' => $data['utm_campaign'] ?? null,
@@ -104,7 +106,7 @@ class LeadService
 
     public function returnAttachedLeadToPrimary(Lead $lead, User $actor): Lead
     {
-        if (! $actor->isAdmin()) {
+        if (! ($actor->isAdmin() || $actor->isOperator())) {
             throw new AuthorizationException('Нямате достъп да върнете тази заявка.');
         }
 
@@ -118,6 +120,8 @@ class LeadService
 
         $lead->forceFill([
             'additional_user_id' => null,
+            'returned_additional_user_id' => $actor->id,
+            'returned_to_primary_at' => now(),
         ])->save();
 
         return $lead->refresh();

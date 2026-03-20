@@ -65,6 +65,8 @@ class Lead extends Model implements HasRichContent
         'status',
         'assigned_user_id',
         'additional_user_id',
+        'returned_additional_user_id',
+        'returned_to_primary_at',
         'source',
         'utm_source',
         'utm_campaign',
@@ -323,6 +325,7 @@ class Lead extends Model implements HasRichContent
             'document_file_names' => 'array',
             'privacy_consent_accepted' => 'boolean',
             'privacy_consent_accepted_at' => 'datetime',
+            'returned_to_primary_at' => 'datetime',
         ];
     }
 
@@ -365,6 +368,13 @@ class Lead extends Model implements HasRichContent
         return $query->where('additional_user_id', $user->id);
     }
 
+    public function scopeReturnedArchiveForUser(Builder $query, User $user): Builder
+    {
+        return $query
+            ->whereNull('additional_user_id')
+            ->where('returned_additional_user_id', $user->id);
+    }
+
     protected function setUpRichContent(): void
     {
         $this->registerRichContent('internal_notes')
@@ -380,6 +390,11 @@ class Lead extends Model implements HasRichContent
     public function additionalUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'additional_user_id');
+    }
+
+    public function returnedAdditionalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'returned_additional_user_id');
     }
 
     public function guarantors(): HasMany

@@ -8,6 +8,7 @@ use App\Models\ContactMessage;
 use App\Models\Faq;
 use App\Models\Lead;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,27 +17,41 @@ class AdminOverviewWidgetTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
+    }
+
     public function test_admin_overview_widget_shows_global_stats_to_admin(): void
     {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-03-20 10:00:00', 'UTC'));
+
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
         ]);
 
-        Lead::query()->create($this->leadData([
+        $todayLead = Lead::query()->create($this->leadData([
             'status' => 'new',
         ]));
-        Lead::query()->create($this->leadData([
+        $this->setLeadTimestamps($todayLead, '2026-03-20 08:00:00');
+
+        $todayLeadAroundMidnight = Lead::query()->create($this->leadData([
             'phone' => '0888000002',
             'normalized_phone' => '0888000002',
             'email' => 'second@example.com',
             'status' => 'new',
         ]));
-        Lead::query()->create($this->leadData([
+        $this->setLeadTimestamps($todayLeadAroundMidnight, '2026-03-19 22:30:00');
+
+        $yesterdayLead = Lead::query()->create($this->leadData([
             'phone' => '0888000003',
             'normalized_phone' => '0888000003',
             'email' => 'third@example.com',
             'status' => 'processed',
         ]));
+        $this->setLeadTimestamps($yesterdayLead, '2026-03-19 21:30:00');
 
         ContactMessage::query()->create([
             'full_name' => 'Иван Иванов',
@@ -62,16 +77,19 @@ class AdminOverviewWidgetTest extends TestCase
 
         $stats = $this->makeWidget()->exposedStats();
 
-        $this->assertCount(4, $stats);
+        $this->assertCount(5, $stats);
         $this->assertSame('Нови заявки', $stats[0]->getLabel());
         $this->assertSame(2, $stats[0]->getValue());
         $this->assertSame('Общо 3 заявки', $stats[0]->getDescription());
-        $this->assertSame('Контактни съобщения', $stats[1]->getLabel());
-        $this->assertSame(1, $stats[1]->getValue());
-        $this->assertSame('Публикувани статии', $stats[2]->getLabel());
+        $this->assertSame('Получени заявки днес', $stats[1]->getLabel());
+        $this->assertSame(2, $stats[1]->getValue());
+        $this->assertSame('Занулява се всеки ден в 00:00 ч.', $stats[1]->getDescription());
+        $this->assertSame('Контактни съобщения', $stats[2]->getLabel());
         $this->assertSame(1, $stats[2]->getValue());
-        $this->assertSame('Публикувани ЧЗВ', $stats[3]->getLabel());
+        $this->assertSame('Публикувани статии', $stats[3]->getLabel());
         $this->assertSame(1, $stats[3]->getValue());
+        $this->assertSame('Публикувани ЧЗВ', $stats[4]->getLabel());
+        $this->assertSame(1, $stats[4]->getValue());
     }
 
     public function test_admin_overview_widget_shows_only_visible_leads_to_operator(): void
@@ -147,6 +165,14 @@ class AdminOverviewWidgetTest extends TestCase
         };
     }
 
+    private function setLeadTimestamps(Lead $lead, string $createdAtUtc): void
+    {
+        $lead->forceFill([
+            'created_at' => CarbonImmutable::parse($createdAtUtc, 'UTC'),
+            'updated_at' => CarbonImmutable::parse($createdAtUtc, 'UTC'),
+        ])->saveQuietly();
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -178,6 +204,8 @@ class AdminOverviewWidgetTest extends TestCase
             'status' => 'new',
             'assigned_user_id' => null,
             'additional_user_id' => null,
+            'returned_additional_user_id' => null,
+            'returned_to_primary_at' => null,
             'source' => null,
             'utm_source' => null,
             'utm_campaign' => null,

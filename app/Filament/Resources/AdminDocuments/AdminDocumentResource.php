@@ -29,7 +29,7 @@ class AdminDocumentResource extends Resource
 
     protected static ?string $navigationLabel = 'Файлово хранилище';
 
-    protected static ?int $navigationSort = 13;
+    protected static ?int $navigationSort = 14;
 
     protected static ?string $modelLabel = 'файл';
 
