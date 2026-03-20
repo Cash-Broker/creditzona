@@ -21,13 +21,7 @@ class LeadsTable
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
-                    ->colors([
-                        'warning' => 'new',
-                        'success' => ['sms', 'processed', 'approved'],
-                        'info' => 'email',
-                        'primary' => 'in_progress',
-                        'danger' => 'rejected',
-                    ])
+                    ->colors(LeadResource::getStatusBadgeColors())
                     ->formatStateUsing(fn (?string $state): string => LeadResource::getStatusLabel($state))
                     ->searchable(),
                 TextColumn::make('full_name')

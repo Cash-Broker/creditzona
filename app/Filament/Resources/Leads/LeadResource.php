@@ -95,6 +95,18 @@ class LeadResource extends Resource
         return static::getStatusOptions()[$state] ?? ($state ?: 'Няма');
     }
 
+    public static function getStatusBadgeColors(): array
+    {
+        return [
+            'warning' => 'new',
+            'gray' => 'sms',
+            'info' => 'email',
+            'primary' => 'in_progress',
+            'success' => ['processed', 'approved'],
+            'danger' => 'rejected',
+        ];
+    }
+
     public static function getMaritalStatusOptions(): array
     {
         return Lead::getMaritalStatusOptions();

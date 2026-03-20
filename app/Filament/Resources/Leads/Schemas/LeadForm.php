@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Leads\Schemas;
 
 use App\Filament\Resources\Leads\LeadResource;
+use App\Filament\Resources\Leads\Widgets\LeadCommunicationWidget;
 use App\Models\AdminDocument;
 use App\Models\Lead;
 use App\Rules\CyrillicText;
@@ -13,6 +14,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Livewire as LivewireComponent;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -22,7 +24,7 @@ use Illuminate\Support\Facades\Storage;
 
 class LeadForm
 {
-    public static function configure(Schema $schema): Schema
+    public static function configure(Schema $schema, bool $includeCommunicationWidget = false): Schema
     {
         return $schema
             ->components([
@@ -194,6 +196,8 @@ class LeadForm
                             ->required(fn (Get $get): bool => static::requiresApplicantPropertyData($get))
                             ->nullable(fn (Get $get): bool => ! static::requiresApplicantPropertyData($get)),
                     ]),
+                static::communicationSection()
+                    ->visible($includeCommunicationWidget),
                 Section::make('Поръчители')
                     ->schema([
                         Repeater::make('guarantors')
@@ -430,6 +434,17 @@ class LeadForm
                         ->columnSpanFull(),
                 ]),
         ];
+    }
+
+    private static function communicationSection(): Section
+    {
+        return Section::make('Комуникация')
+            ->schema([
+                LivewireComponent::make(LeadCommunicationWidget::class)
+                    ->key('attached-lead-communication-widget')
+                    ->columnSpanFull(),
+            ])
+            ->columnSpanFull();
     }
 
     private static function requiresFullApplication(?string $status): bool

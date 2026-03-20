@@ -29,6 +29,18 @@ class LeadStatusOptionsTest extends TestCase
         $this->assertSame('Имейл', LeadResource::getStatusLabel('email'));
     }
 
+    public function test_lead_status_badge_colors_match_admin_mapping(): void
+    {
+        $this->assertSame([
+            'warning' => 'new',
+            'gray' => 'sms',
+            'info' => 'email',
+            'primary' => 'in_progress',
+            'success' => ['processed', 'approved'],
+            'danger' => 'rejected',
+        ], LeadResource::getStatusBadgeColors());
+    }
+
     public function test_marital_status_options_are_exposed_for_admin_ui(): void
     {
         $this->assertSame([

@@ -64,7 +64,7 @@ class AttachedLeadResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return LeadForm::configure($schema);
+        return LeadForm::configure($schema, includeCommunicationWidget: true);
     }
 
     public static function infolist(Schema $schema): Schema
