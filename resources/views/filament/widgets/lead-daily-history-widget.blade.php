@@ -1,4 +1,8 @@
 <x-filament-widgets::widget>
+    @php
+        $hasActiveFilters = filled($this->filters['start_date'] ?? null) || filled($this->filters['end_date'] ?? null);
+    @endphp
+
     <x-filament::section
         heading="История на получените заявки"
         description="Дневна справка по реално постъпилите заявки. Видима е само за администратор."
@@ -16,18 +20,36 @@
         </x-slot>
 
         <div class="overflow-hidden rounded-[1.5rem] border border-gray-200 bg-white shadow-sm">
+            <div class="border-b border-gray-200 bg-gray-50 px-6 py-5">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                    <div class="grid flex-1 gap-4 md:grid-cols-2">
+                        {{ $this->form }}
+                    </div>
+
+                    @if ($hasActiveFilters)
+                        <div class="flex justify-start xl:justify-end">
+                            <x-filament::button color="gray" size="sm" wire:click="resetFilters">
+                                Изчисти филтъра
+                            </x-filament::button>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             @if ($rows->isEmpty())
                 <div class="px-6 py-12 text-center">
                     <div class="text-sm font-semibold text-gray-900">
-                        Още няма записани заявки
+                        {{ $hasActiveFilters ? 'Няма заявки за избрания период' : 'Още няма записани заявки' }}
                     </div>
 
                     <div class="mt-2 text-sm text-gray-500">
-                        Когато започнат да влизат заявки, тук автоматично ще се пази дневната история.
+                        {{ $hasActiveFilters
+                            ? 'Променете датите или изчистете филтъра, за да видите наличната история.'
+                            : 'Когато започнат да влизат заявки, тук автоматично ще се пази дневната история.' }}
                     </div>
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="max-h-[34rem] overflow-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>

@@ -26,7 +26,7 @@
                     :is="headingTag"
                     class="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-[-0.03em] text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.35)] sm:text-4xl lg:text-5xl"
                 >
-                    Когато другите ви виждат риск,
+                    Когато другите виждат риск,
                     <span class="text-accent-soft">ние търсим решение</span>
                 </component>
 
@@ -65,7 +65,7 @@
 <script setup>
 import LeadFormCompact from "./LeadFormCompact.vue";
 
-const backgroundImage = "/images/bg-image2.jpg";
+const backgroundImage = "/images/bg-image.png";
 
 defineProps({
     initialCreditType: {

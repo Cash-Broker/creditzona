@@ -85,6 +85,44 @@ class LeadDailyHistoryWidgetTest extends TestCase
         $this->assertFalse($rows[1]['is_today']);
     }
 
+    public function test_daily_history_widget_can_filter_rows_by_date_range(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-03-20 10:00:00', 'UTC'));
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $todayLead = Lead::query()->create($this->leadData([
+            'phone' => '0888000001',
+            'normalized_phone' => '0888000001',
+            'email' => 'today@example.com',
+        ]));
+        $this->setLeadTimestamps($todayLead, '2026-03-20 08:00:00');
+
+        $yesterdayLead = Lead::query()->create($this->leadData([
+            'phone' => '0888000002',
+            'normalized_phone' => '0888000002',
+            'email' => 'yesterday@example.com',
+        ]));
+        $this->setLeadTimestamps($yesterdayLead, '2026-03-19 08:00:00');
+
+        $this->actingAs($admin);
+
+        $widget = $this->makeWidget();
+        $widget->filters = [
+            'start_date' => '2026-03-20',
+            'end_date' => '2026-03-20',
+        ];
+
+        /** @var Collection<int, array<string, mixed>> $rows */
+        $rows = $widget->exposedDailyHistoryRows();
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('2026-03-20', $rows[0]['date_key']);
+        $this->assertSame(1, $rows[0]['total_leads']);
+    }
+
     private function makeWidget(): object
     {
         return new class extends LeadDailyHistoryWidget

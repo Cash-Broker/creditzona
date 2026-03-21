@@ -17,11 +17,11 @@ class SeoMetadataTest extends TestCase
 
         $response->assertOk();
         $response->assertSee(
-            '<title>Кредитен консултант и консултация за кредити в Пловдив | Кредит Зона</title>',
+            '<title>Кредитни консултации онлайн и в Пловдив | Кредит Зона</title>',
             false,
         );
         $response->assertSee(
-            '<meta name="description" content="Получете ясна консултация за кредити в Пловдив с анализ на ситуацията, реалистични насоки и ясен план за следващите стъпки.">',
+            '<meta name="description" content="Получете кредитна консултация онлайн или в Пловдив с анализ на ситуацията, реалистични насоки и ясен план за следващите стъпки.">',
             false,
         );
         $response->assertSee(
