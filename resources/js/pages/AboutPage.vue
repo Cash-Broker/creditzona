@@ -371,7 +371,7 @@ const teamMembers = [
         position: "Юрисконсулт",
         phone: "0883222251",
         phoneHref: "0883222251",
-        email: "stefanova.kreditzona@abv.bg",
+        email: "elena@creditzona.bg",
         image: "/about/elena.jpg",
     },
     {
