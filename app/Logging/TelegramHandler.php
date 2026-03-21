@@ -25,6 +25,7 @@ class TelegramHandler extends AbstractProcessingHandler
         $payload = [
             'chat_id' => $this->chatId,
             'text' => $this->messageBuilder->build($record),
+            'parse_mode' => 'HTML',
             'disable_web_page_preview' => true,
         ];
 

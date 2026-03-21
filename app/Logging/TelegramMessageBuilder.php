@@ -57,20 +57,33 @@ class TelegramMessageBuilder
     {
         $lines = [
             sprintf(
-                '%s | %s | %s',
-                $this->sanitizeText($this->appName),
-                $this->sanitizeText($this->environment),
+                '<b>%s</b> | <b>%s</b>',
+                $this->escape($this->appName),
                 $record->level->getName(),
             ),
-            'Съобщение: '.$this->sanitizeText($record->message),
+            sprintf('<b>Среда:</b> <code>%s</code>', $this->escape($this->environment)),
+            sprintf(
+                '<b>Съобщение:</b> %s',
+                $this->escape($this->sanitizeText($record->message)),
+            ),
         ];
 
         $exception = $this->extractException($record->context);
 
         if ($exception !== null) {
-            $lines[] = 'Изключение: '.$exception::class;
-            $lines[] = 'Грешка: '.$this->sanitizeText($exception->getMessage());
-            $lines[] = 'Файл: '.$exception->getFile().':'.$exception->getLine();
+            $lines[] = sprintf(
+                '<b>Изключение:</b> <code>%s</code>',
+                $this->escape($exception::class),
+            );
+            $lines[] = sprintf(
+                '<b>Детайл:</b> %s',
+                $this->escape($this->sanitizeText($exception->getMessage())),
+            );
+            $lines[] = sprintf(
+                '<b>Файл:</b> <code>%s:%s</code>',
+                $this->escape($exception->getFile()),
+                $exception->getLine(),
+            );
         }
 
         if ($requestSummary = $this->buildRequestSummary()) {
@@ -85,8 +98,8 @@ class TelegramMessageBuilder
         unset($context['exception']);
 
         if ($context !== []) {
-            $lines[] = 'Контекст:';
-            $lines[] = $this->encodeJson($context);
+            $lines[] = '<b>Контекст:</b>';
+            $lines[] = '<pre>'.$this->escape($this->encodeJson($context)).'</pre>';
         }
 
         return Str::limit(implode("\n", $lines), 3900, '...');
@@ -119,14 +132,17 @@ class TelegramMessageBuilder
 
         $lines = [
             sprintf(
-                'Заявка: %s %s',
-                $request->method(),
-                $request->path() === '/' ? '/' : '/'.ltrim($request->path(), '/'),
+                '<b>Заявка:</b> <code>%s %s</code>',
+                $this->escape($request->method()),
+                $this->escape($request->path() === '/' ? '/' : '/'.ltrim($request->path(), '/')),
             ),
         ];
 
         if (filled($request->route()?->getName())) {
-            $lines[] = 'Route: '.$request->route()?->getName();
+            $lines[] = sprintf(
+                '<b>Route:</b> <code>%s</code>',
+                $this->escape((string) $request->route()?->getName()),
+            );
         }
 
         return $lines;
@@ -147,10 +163,15 @@ class TelegramMessageBuilder
             return [];
         }
 
-        $lines = ['Потребител ID: '.$user->getKey()];
+        $lines = [
+            sprintf('<b>Потребител ID:</b> <code>%s</code>', $user->getKey()),
+        ];
 
         if (filled(data_get($user, 'role'))) {
-            $lines[] = 'Роля: '.$this->sanitizeText((string) data_get($user, 'role'));
+            $lines[] = sprintf(
+                '<b>Роля:</b> <code>%s</code>',
+                $this->escape((string) data_get($user, 'role')),
+            );
         }
 
         return $lines;
@@ -247,5 +268,10 @@ class TelegramMessageBuilder
             $value,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
         );
+    }
+
+    private function escape(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 }

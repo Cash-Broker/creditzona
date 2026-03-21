@@ -37,14 +37,17 @@ class TelegramLoggingTest extends TestCase
             return $request->url() === 'https://api.telegram.org/bottest-bot-token/sendMessage'
                 && $request['chat_id'] === '123456'
                 && $request['message_thread_id'] === '77'
-                && str_contains($text, 'CreditZona | production | ERROR')
+                && $request['parse_mode'] === 'HTML'
+                && str_contains($text, '<b>CreditZona</b> | <b>ERROR</b>')
+                && str_contains($text, '<b>Среда:</b> <code>production</code>')
                 && str_contains($text, 'Lead submission failed for [скрит имейл]')
-                && str_contains($text, '"lead_id": 42')
-                && str_contains($text, '"egn": "[скрити лични данни]"')
-                && str_contains($text, '"phone": "[скрити лични данни]"')
-                && str_contains($text, '"email": "[скрити лични данни]"')
-                && str_contains($text, '"documents": "[скрити лични данни]"')
-                && str_contains($text, '"message": "[скрити лични данни]"')
+                && str_contains($text, '<b>Контекст:</b>')
+                && str_contains($text, '&quot;lead_id&quot;: 42')
+                && str_contains($text, '&quot;egn&quot;: &quot;[скрити лични данни]&quot;')
+                && str_contains($text, '&quot;phone&quot;: &quot;[скрити лични данни]&quot;')
+                && str_contains($text, '&quot;email&quot;: &quot;[скрити лични данни]&quot;')
+                && str_contains($text, '&quot;documents&quot;: &quot;[скрити лични данни]&quot;')
+                && str_contains($text, '&quot;message&quot;: &quot;[скрити лични данни]&quot;')
                 && ! str_contains($text, '1234567890')
                 && ! str_contains($text, '0899000000')
                 && ! str_contains($text, 'ivan@example.com')
