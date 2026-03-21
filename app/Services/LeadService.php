@@ -146,7 +146,7 @@ class LeadService
 
         $historicalLead = Lead::query()
             ->forNormalizedPhone($data['normalized_phone'])
-            ->where('created_at', '<', now()->subDays(14))
+            ->where('created_at', '<=', now()->subDays(14))
             ->whereIn('assigned_user_id', $eligibleUserIds)
             ->latest('created_at')
             ->first(['assigned_user_id']);

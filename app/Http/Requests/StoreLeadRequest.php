@@ -70,13 +70,10 @@ class StoreLeadRequest extends FormRequest
                         return;
                     }
 
-                    $hasRecentLead = Lead::query()
-                        ->forNormalizedPhone($value)
-                        ->where('created_at', '>=', now()->subDays(14))
-                        ->exists();
+                    $recentLead = $this->findRecentLeadByPhone($value);
 
-                    if ($hasRecentLead) {
-                        $fail('Вече има подадена заявка с този телефонен номер през последните 14 дни.');
+                    if ($recentLead !== null) {
+                        $fail($this->duplicateLeadMessage($recentLead));
                     }
                 },
             ],
@@ -224,5 +221,24 @@ class StoreLeadRequest extends FormRequest
     private function isConsumerWithGuarantorLead(): bool
     {
         return $this->input('credit_type') === Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR;
+    }
+
+    private function findRecentLeadByPhone(string $phone): ?Lead
+    {
+        return Lead::query()
+            ->forNormalizedPhone($phone)
+            ->where('created_at', '>', now()->subDays(14))
+            ->latest('created_at')
+            ->first(['id', 'created_at']);
+    }
+
+    private function duplicateLeadMessage(Lead $lead): string
+    {
+        $eligibleAt = $lead->created_at->copy()->addDays(14);
+        $remainingSeconds = max(1, $eligibleAt->getTimestamp() - now()->getTimestamp());
+        $remainingDays = (int) ceil($remainingSeconds / 86400);
+        $dayLabel = $remainingDays === 1 ? 'ден' : 'дни';
+
+        return "Вече има подадена заявка с този телефонен номер. Може да кандидатствате отново след {$remainingDays} {$dayLabel}.";
     }
 }

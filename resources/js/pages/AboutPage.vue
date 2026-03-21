@@ -371,7 +371,7 @@ const teamMembers = [
         position: "Юрисконсулт",
         phone: "0883222251",
         phoneHref: "0883222251",
-        email: "stefanova.kreditzona@abv.bg", 
+        email: "stefanova.kreditzona@abv.bg",
         image: "/about/elena.jpg",
     },
     {
@@ -388,7 +388,7 @@ const teamMembers = [
         phone: "0882030010",
         phoneHref: "0882030010",
         email: "krasimira@creditzona.bg",
-        image: "",
+        image: "/images/logo/logo-placeholder.png",
     },
 ];
 

@@ -372,6 +372,7 @@ class LeadSubmissionTest extends TestCase
             'first_name' => 'Петър',
             'last_name' => 'Петров',
             'phone' => '0888123456',
+            'normalized_phone' => '0888123456',
             'email' => 'petar@example.com',
             'city' => 'София',
             'amount' => 12000,
@@ -384,14 +385,44 @@ class LeadSubmissionTest extends TestCase
 
         $response
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Вече има подадена заявка с този телефонен номер през последните 14 дни.')
+            ->assertJsonPath('message', 'Вече има подадена заявка с този телефонен номер. Може да кандидатствате отново след 1 ден.')
             ->assertJsonValidationErrors(['phone'])
             ->assertJsonPath(
                 'errors.phone.0',
-                'Вече има подадена заявка с този телефонен номер през последните 14 дни.',
+                'Вече има подадена заявка с този телефонен номер. Може да кандидатствате отново след 1 ден.',
             );
 
         $this->assertDatabaseCount('leads', 1);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_recent_lead_message_includes_precise_remaining_days(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888123456',
+            'normalized_phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+            'created_at' => now()->subDays(12),
+            'updated_at' => now()->subDays(12),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload());
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath(
+                'errors.phone.0',
+                'Вече има подадена заявка с този телефонен номер. Може да кандидатствате отново след 2 дни.',
+            );
 
         Carbon::setTestNow();
     }
@@ -405,12 +436,44 @@ class LeadSubmissionTest extends TestCase
             'first_name' => 'Петър',
             'last_name' => 'Петров',
             'phone' => '0888123456',
+            'normalized_phone' => '0888123456',
             'email' => 'petar@example.com',
             'city' => 'София',
             'amount' => 12000,
             'status' => 'new',
             'created_at' => now()->subDays(15),
             'updated_at' => now()->subDays(15),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload());
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Благодарим! Ще се свържем с вас до 48ч.',
+            ]);
+
+        $this->assertDatabaseCount('leads', 2);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_lead_with_same_phone_exactly_fourteen_days_old_allows_new_submission(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888123456',
+            'normalized_phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'София',
+            'amount' => 12000,
+            'status' => 'new',
+            'created_at' => now()->subDays(14),
+            'updated_at' => now()->subDays(14),
         ]);
 
         $response = $this->postJson('/leads', $this->validPayload());
@@ -467,7 +530,7 @@ class LeadSubmissionTest extends TestCase
             ->assertJsonValidationErrors(['phone'])
             ->assertJsonPath(
                 'errors.phone.0',
-                'Вече има подадена заявка с този телефонен номер през последните 14 дни.',
+                'Вече има подадена заявка с този телефонен номер. Може да кандидатствате отново след 1 ден.',
             );
 
         Carbon::setTestNow();
