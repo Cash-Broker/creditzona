@@ -1,9 +1,27 @@
 <?php
 
+use App\Logging\CreateTelegramLogger;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
+
+$stackChannels = array_values(array_filter(array_map(
+    static fn (string $channel): string => trim($channel),
+    explode(',', (string) env('LOG_STACK', 'single')),
+)));
+
+if ($stackChannels === []) {
+    $stackChannels = ['single'];
+}
+
+if (
+    filled(env('TELEGRAM_LOG_BOT_TOKEN'))
+    && filled(env('TELEGRAM_LOG_CHAT_ID'))
+    && ! in_array('telegram', $stackChannels, true)
+) {
+    $stackChannels[] = 'telegram';
+}
 
 return [
 
@@ -54,7 +72,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => $stackChannels,
             'ignore_exceptions' => false,
         ],
 
@@ -121,6 +139,18 @@ return [
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,
+        ],
+
+        'telegram' => [
+            'driver' => 'custom',
+            'via' => CreateTelegramLogger::class,
+            'name' => env('APP_NAME', 'Laravel'),
+            'bot_token' => env('TELEGRAM_LOG_BOT_TOKEN'),
+            'chat_id' => env('TELEGRAM_LOG_CHAT_ID'),
+            'message_thread_id' => env('TELEGRAM_LOG_THREAD_ID'),
+            'level' => env('TELEGRAM_LOG_LEVEL', 'error'),
+            'app_name' => env('APP_NAME', 'Laravel'),
+            'environment' => env('APP_ENV', 'production'),
         ],
 
         'emergency' => [
