@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
+use App\Models\User;
+use DomainException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -21,6 +24,23 @@ class ContactMessageService
         $this->sendNotificationEmail($contactMessage);
 
         return $contactMessage;
+    }
+
+    public function assignToOperator(ContactMessage $contactMessage, User $operator, User $actor): ContactMessage
+    {
+        if (! $actor->isAdmin()) {
+            throw new AuthorizationException('Нямате достъп да закачите това съобщение.');
+        }
+
+        if (! $operator->isOperator()) {
+            throw new DomainException('Контактните съобщения могат да се закачат само към оператор.');
+        }
+
+        $contactMessage->forceFill([
+            'assigned_user_id' => $operator->id,
+        ])->save();
+
+        return $contactMessage->refresh()->loadMissing('assignedUser');
     }
 
     private function sendNotificationEmail(ContactMessage $contactMessage): void

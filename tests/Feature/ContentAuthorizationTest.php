@@ -44,11 +44,16 @@ class ContentAuthorizationTest extends TestCase
             'is_published' => true,
         ]);
 
+        $assignedOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
         $contactMessage = ContactMessage::query()->create([
             'full_name' => 'Иван Иванов',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'message' => 'Тестово съобщение.',
+            'assigned_user_id' => $assignedOperator->id,
         ]);
 
         $blogPolicy = new BlogPolicy;
@@ -67,13 +72,15 @@ class ContentAuthorizationTest extends TestCase
         $this->assertTrue($faqPolicy->update($admin, $faq));
         $this->assertTrue($contactMessagePolicy->viewAny($admin));
         $this->assertTrue($contactMessagePolicy->view($admin, $contactMessage));
+        $this->assertTrue($contactMessagePolicy->update($admin, $contactMessage));
 
         $this->assertFalse($blogPolicy->viewAny($operator));
         $this->assertFalse($blogPolicy->update($operator, $blog));
         $this->assertFalse($faqPolicy->viewAny($operator));
         $this->assertFalse($faqPolicy->update($operator, $faq));
-        $this->assertFalse($contactMessagePolicy->viewAny($operator));
-        $this->assertFalse($contactMessagePolicy->view($operator, $contactMessage));
+        $this->assertTrue($contactMessagePolicy->viewAny($assignedOperator));
+        $this->assertTrue($contactMessagePolicy->view($assignedOperator, $contactMessage));
+        $this->assertFalse($contactMessagePolicy->update($assignedOperator, $contactMessage));
 
         $this->assertFalse($blogPolicy->viewAny($nonStaff));
         $this->assertFalse($faqPolicy->viewAny($nonStaff));

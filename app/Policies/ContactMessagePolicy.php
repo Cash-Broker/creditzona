@@ -9,12 +9,12 @@ class ContactMessagePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isOperator();
     }
 
     public function view(User $user, ContactMessage $contactMessage): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $contactMessage->assigned_user_id === $user->id;
     }
 
     public function create(User $user): bool
@@ -24,7 +24,7 @@ class ContactMessagePolicy
 
     public function update(User $user, ContactMessage $contactMessage): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 
     public function delete(User $user, ContactMessage $contactMessage): bool

@@ -2,13 +2,14 @@
 
 namespace App\Filament\Resources\ContactMessages\Tables;
 
+use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class ContactMessagesTable
 {
-    public static function configure(Table $table): Table
+    public static function configure(Table $table, bool $isAttachedResource = false): Table
     {
         return $table
             ->columns([
@@ -21,6 +22,11 @@ class ContactMessagesTable
                 TextColumn::make('email')
                     ->label('Имейл')
                     ->searchable(),
+                TextColumn::make('assignedUser.name')
+                    ->label('Оператор')
+                    ->placeholder('Няма')
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('message')
                     ->label('Съобщение')
                     ->limit(60)
@@ -34,9 +40,10 @@ class ContactMessagesTable
             ->filters([
                 //
             ])
-            ->recordActions([
+            ->recordActions(array_values(array_filter([
+                $isAttachedResource ? null : ContactMessageResource::makeAssignAction(),
                 ViewAction::make(),
-            ])
+            ])))
             ->defaultSort('created_at', 'desc')
             ->toolbarActions([]);
     }

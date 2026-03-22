@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ContactMessage extends Model
 {
@@ -16,5 +18,25 @@ class ContactMessage extends Model
         'phone',
         'email',
         'message',
+        'assigned_user_id',
     ];
+
+    public function scopeVisibleToUser(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where('assigned_user_id', $user->id);
+    }
+
+    public function scopeAttachedToUser(Builder $query, User $user): Builder
+    {
+        return $query->where('assigned_user_id', $user->id);
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
 }

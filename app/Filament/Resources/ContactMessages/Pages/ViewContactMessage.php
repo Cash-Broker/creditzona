@@ -11,6 +11,8 @@ class ViewContactMessage extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            ContactMessageResource::makeAssignAction(),
+        ];
     }
 }

@@ -21,6 +21,9 @@ class ContactMessageInfolist
                             ->label('Телефон'),
                         TextEntry::make('email')
                             ->label('Имейл'),
+                        TextEntry::make('assignedUser.name')
+                            ->label('Оператор')
+                            ->placeholder('Няма'),
                         TextEntry::make('created_at')
                             ->label('Получено на')
                             ->dateTime('d.m.Y H:i', 'Europe/Sofia'),

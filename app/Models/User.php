@@ -92,6 +92,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(LeadMessage::class);
     }
 
+    public function assignedContactMessages(): HasMany
+    {
+        return $this->hasMany(ContactMessage::class, 'assigned_user_id');
+    }
+
     public function scopeEligibleForLeadPrimaryAssignment(Builder $query): Builder
     {
         return $query
