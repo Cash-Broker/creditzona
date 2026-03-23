@@ -422,6 +422,7 @@ class LeadForm
                 ->schema([
                     RichEditor::make('internal_notes')
                         ->label('Бележка')
+                        ->dehydrateStateUsing(static fn (?string $state): ?string => static::normalizeRichTextState($state))
                         ->toolbarButtons([
                             ['bold', 'italic', 'underline', 'strike', 'link'],
                             ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
@@ -482,7 +483,31 @@ class LeadForm
             return false;
         }
 
+        if (is_string($value)) {
+            return static::extractVisibleText($value) !== '';
+        }
+
         return filled($value);
+    }
+
+    private static function normalizeRichTextState(?string $state): ?string
+    {
+        return static::extractVisibleText($state) === ''
+            ? null
+            : $state;
+    }
+
+    private static function extractVisibleText(?string $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $text = strip_tags($value);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\x{00A0}/u', ' ', $text) ?? $text;
+
+        return trim($text);
     }
 
     private static function applicantPhoneExclusivityRule(Get $get): Closure

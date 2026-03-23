@@ -27,13 +27,13 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $lead = Lead::query()->create([
             'credit_type' => 'consumer',
-            'first_name' => 'Ivan',
-            'last_name' => 'Ivanov',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
-            'city' => 'Plovdiv',
+            'city' => 'Пловдив',
             'amount' => 10000,
-            'status' => 'processed',
+            'status' => 'sms',
             'assigned_user_id' => $operator->id,
             'additional_user_id' => $admin->id,
         ]);
@@ -46,5 +46,64 @@ class AttachedLeadEditActionsTest extends TestCase
             ->assertSee('Запази')
             ->assertSee('Отказ')
             ->assertSee('Върни');
+    }
+
+    public function test_edit_attached_lead_save_prunes_effectively_empty_guarantor_rows(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $operator->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->fillForm([
+                'guarantors' => [[
+                    'status' => null,
+                    'amount' => null,
+                    'first_name' => null,
+                    'middle_name' => null,
+                    'last_name' => null,
+                    'egn' => null,
+                    'phone' => null,
+                    'email' => null,
+                    'city' => null,
+                    'workplace' => null,
+                    'job_title' => null,
+                    'salary' => null,
+                    'marital_status' => null,
+                    'children_under_18' => null,
+                    'salary_bank' => null,
+                    'credit_bank' => null,
+                    'documents' => [],
+                    'document_file_names' => [],
+                    'internal_notes' => '<p></p>',
+                ]],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseCount('lead_guarantors', 0);
     }
 }
