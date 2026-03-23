@@ -106,4 +106,57 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $this->assertDatabaseCount('lead_guarantors', 0);
     }
+
+    public function test_edit_attached_lead_save_allows_guarantor_without_status(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $operator->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->fillForm([
+                'guarantors' => [[
+                    'status' => null,
+                    'first_name' => 'Антон',
+                    'last_name' => 'Колев',
+                    'phone' => '0876997981',
+                    'documents' => [],
+                    'document_file_names' => [],
+                    'internal_notes' => null,
+                ]],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('lead_guarantors', [
+            'lead_id' => $lead->id,
+            'first_name' => 'Антон',
+            'last_name' => 'Колев',
+            'phone' => '0876997981',
+            'status' => null,
+        ]);
+    }
 }
