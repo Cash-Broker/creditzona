@@ -10,9 +10,10 @@ use App\Rules\CyrillicText;
 use App\Rules\ExclusiveLeadParticipantPhone;
 use Closure;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Livewire as LivewireComponent;
 use Filament\Schemas\Components\Section;
@@ -24,19 +25,128 @@ use Illuminate\Support\Facades\Storage;
 
 class LeadForm
 {
+    public static function mutateSubmittedData(array $data): array
+    {
+        if (array_key_exists('full_name', $data)) {
+            [$firstName, $middleName, $lastName] = static::splitFullName($data['full_name'] ?? null);
+
+            $data['first_name'] = $firstName;
+            $data['middle_name'] = $middleName;
+            $data['last_name'] = $lastName;
+
+            unset($data['full_name']);
+        }
+
+        return $data;
+    }
+
     public static function configure(Schema $schema, bool $includeCommunicationWidget = false): Schema
     {
         return $schema
             ->components([
-                Section::make('Основни данни')
-                    ->columns(3)
+                Section::make('Данни за клиента')
+                    ->columnSpanFull()
+                    ->columns(6)
                     ->schema([
+                        Select::make('assigned_user_id')
+                            ->label('Основен служител')
+                            ->options(LeadResource::getPrimaryAssignmentOptions())
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->native(false)
+                            ->different('additional_user_id')
+                            ->disableOptionWhen(fn (mixed $value, Get $get): bool => (string) $get('additional_user_id') === (string) $value)
+                            ->columnStart(3)
+                            ->columnSpan(2),
+                        Select::make('additional_user_id')
+                            ->label('Допълнителен служител')
+                            ->options(LeadResource::getAdditionalAssignmentOptions())
+                            ->searchable()
+                            ->preload()
+                            ->native(false)
+                            ->placeholder('Няма')
+                            ->different('assigned_user_id')
+                            ->disableOptionWhen(fn (mixed $value, Get $get): bool => (string) $get('assigned_user_id') === (string) $value)
+                            ->columnSpan(2),
+                        TextInput::make('full_name')
+                            ->label('Имена')
+                            ->required()
+                            ->maxLength(180)
+                            ->afterStateHydrated(function (TextInput $component, ?Lead $record): void {
+                                $component->state(static::composeFullName(
+                                    $record?->first_name,
+                                    $record?->middle_name,
+                                    $record?->last_name,
+                                ));
+                            })
+                            ->helperText('Въведете имената на кирилица.')
+                            ->rule(static fn (): Closure => static::fullNameRule())
+                            ->columnSpan(4),
+                        TextInput::make('egn')
+                            ->label('ЕГН')
+                            ->required()
+                            ->autocomplete('off')
+                            ->stripCharacters([' ', '-'])
+                            ->rule('digits:10')
+                            ->minLength(10)
+                            ->maxLength(10)
+                            ->columnSpan(2),
+                        Select::make('marital_status')
+                            ->label('Семейно положение')
+                            ->options(LeadResource::getMaritalStatusOptions())
+                            ->nullable()
+                            ->native(false)
+                            ->columnSpan(2),
+                        TextInput::make('city')
+                            ->label('Адрес')
+                            ->nullable()
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Адресът'))
+                            ->helperText('Не използвайте латински букви.')
+                            ->columnSpan(4),
+                        TextInput::make('phone')
+                            ->label('Телефон')
+                            ->tel()
+                            ->nullable()
+                            ->rule(static fn (Get $get): Closure => static::applicantPhoneExclusivityRule($get))
+                            ->maxLength(30)
+                            ->columnSpan(2),
+                        TextInput::make('email')
+                            ->label('Имейл')
+                            ->email()
+                            ->nullable()
+                            ->maxLength(120)
+                            ->columnSpan(4),
+                        TextInput::make('workplace')
+                            ->label('Работодател')
+                            ->nullable()
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Местоработата'))
+                            ->helperText('Не използвайте латински букви.')
+                            ->columnSpan(3),
+                        TextInput::make('job_title')
+                            ->label('Длъжност')
+                            ->nullable()
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Длъжността'))
+                            ->helperText('Не използвайте латински букви.')
+                            ->columnSpan(3),
+                        TextInput::make('salary')
+                            ->label('Месечен доход')
+                            ->nullable()
+                            ->numeric()
+                            ->integer()
+                            ->minValue(0)
+                            ->suffix('€')
+                            ->columnSpan(2),
                         Select::make('credit_type')
                             ->label('Тип кредит')
                             ->options(LeadResource::getCreditTypeOptions())
                             ->required()
                             ->native(false)
                             ->live()
+                            ->columnSpan(2)
                             ->afterStateUpdated(function (Set $set, ?string $state): void {
                                 if ($state !== Lead::CREDIT_TYPE_MORTGAGE) {
                                     $set('property_type', null);
@@ -49,25 +159,8 @@ class LeadForm
                             ->required()
                             ->default('new')
                             ->live()
-                            ->native(false),
-                        Select::make('assigned_user_id')
-                            ->label('Основен служител')
-                            ->options(LeadResource::getPrimaryAssignmentOptions())
-                            ->required()
-                            ->searchable()
-                            ->preload()
                             ->native(false)
-                            ->different('additional_user_id')
-                            ->disableOptionWhen(fn (mixed $value, Get $get): bool => (string) $get('additional_user_id') === (string) $value),
-                        Select::make('additional_user_id')
-                            ->label('Допълнителен служител')
-                            ->options(LeadResource::getAdditionalAssignmentOptions())
-                            ->searchable()
-                            ->preload()
-                            ->native(false)
-                            ->placeholder('Няма')
-                            ->different('assigned_user_id')
-                            ->disableOptionWhen(fn (mixed $value, Get $get): bool => (string) $get('assigned_user_id') === (string) $value),
+                            ->columnSpan(2),
                         TextInput::make('amount')
                             ->label('Сума')
                             ->required()
@@ -75,153 +168,31 @@ class LeadForm
                             ->integer()
                             ->minValue(5000)
                             ->maxValue(50000)
-                            ->suffix('€'),
-                        TextInput::make('first_name')
-                            ->label('Име')
-                            ->required()
-                            ->maxLength(60)
-                            ->rule(CyrillicText::lettersOnly('Името'))
-                            ->helperText('Пишете само на кирилица.'),
-                        TextInput::make('middle_name')
-                            ->label('Презиме')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
-                            ->maxLength(60)
-                            ->rule(CyrillicText::lettersOnly('Презимето'))
-                            ->helperText('Пишете само на кирилица.'),
-                        TextInput::make('last_name')
-                            ->label('Фамилия')
-                            ->required()
-                            ->maxLength(60)
-                            ->rule(CyrillicText::lettersOnly('Фамилията'))
-                            ->helperText('Пишете само на кирилица.'),
-                        TextInput::make('egn')
-                            ->label('ЕГН')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
-                            ->password()
-                            ->revealable()
-                            ->autocomplete('off')
-                            ->stripCharacters([' ', '-'])
-                            ->rule('digits:10')
-                            ->minLength(10)
-                            ->maxLength(10),
-                        TextInput::make('phone')
-                            ->label('Телефон')
-                            ->tel()
-                            ->required()
-                            ->rule(static fn (Get $get): Closure => static::applicantPhoneExclusivityRule($get))
-                            ->maxLength(30),
-                        TextInput::make('email')
-                            ->label('Имейл')
-                            ->email()
-                            ->required()
-                            ->maxLength(120),
-                        TextInput::make('city')
-                            ->label('Град')
-                            ->required()
-                            ->maxLength(120)
-                            ->rule(CyrillicText::withoutLatin('Градът'))
-                            ->helperText('Не използвайте латински букви.'),
-                    ]),
-                Section::make('Допълнителна информация')
-                    ->columns(3)
-                    ->schema([
-                        TextInput::make('workplace')
-                            ->label('Месторабота')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
-                            ->maxLength(120)
-                            ->rule(CyrillicText::withoutLatin('Местоработата'))
-                            ->helperText('Не използвайте латински букви.'),
-                        TextInput::make('job_title')
-                            ->label('Длъжност')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
-                            ->maxLength(120)
-                            ->rule(CyrillicText::withoutLatin('Длъжността'))
-                            ->helperText('Не използвайте латински букви.'),
-                        TextInput::make('salary')
-                            ->label('Заплата')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
+                            ->suffix('€')
+                            ->columnSpan(2),
+                        TextInput::make('children_under_18')
+                            ->label('Деца под 18')
+                            ->nullable()
                             ->numeric()
                             ->integer()
                             ->minValue(0)
-                            ->suffix('€'),
-                        Select::make('marital_status')
-                            ->label('Семейно положение')
-                            ->options(LeadResource::getMaritalStatusOptions())
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
-                            ->native(false),
-                        TextInput::make('children_under_18')
-                            ->label('Деца под 18')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
-                            ->numeric()
-                            ->integer()
-                            ->minValue(0),
+                            ->columnSpan(2),
                         TextInput::make('salary_bank')
                             ->label('Банка, в която влиза заплатата')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
+                            ->nullable()
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Банката за заплатата'))
-                            ->helperText('Не използвайте латински букви.'),
+                            ->helperText('Не използвайте латински букви.')
+                            ->columnSpan(4),
                         TextInput::make('credit_bank')
                             ->label('Банка по кредита')
-                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
-                            ->nullable(fn (Get $get): bool => ! static::requiresFullApplication($get('status')))
+                            ->nullable()
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Банката по кредита'))
-                            ->helperText('Не използвайте латински букви.'),
-                    ]),
-                Section::make('Данни за имота')
-                    ->columns(2)
-                    ->schema([
-                        Select::make('property_type')
-                            ->label('Тип имот')
-                            ->options(LeadResource::getPropertyTypeOptions())
-                            ->native(false)
-                            ->visible(fn (Get $get): bool => $get('credit_type') === Lead::CREDIT_TYPE_MORTGAGE)
-                            ->required(fn (Get $get): bool => static::requiresApplicantPropertyData($get))
-                            ->nullable(fn (Get $get): bool => ! static::requiresApplicantPropertyData($get)),
-                        TextInput::make('property_location')
-                            ->label('Местоположение на имота')
-                            ->maxLength(120)
-                            ->rule(CyrillicText::withoutLatin('Местоположението на имота'))
                             ->helperText('Не използвайте латински букви.')
-                            ->visible(fn (Get $get): bool => $get('credit_type') === Lead::CREDIT_TYPE_MORTGAGE)
-                            ->required(fn (Get $get): bool => static::requiresApplicantPropertyData($get))
-                            ->nullable(fn (Get $get): bool => ! static::requiresApplicantPropertyData($get)),
-                    ]),
-                static::communicationSection()
-                    ->visible($includeCommunicationWidget),
-                Section::make('Поръчители')
-                    ->schema([
-                        Repeater::make('guarantors')
-                            ->label('Поръчители')
-                            ->relationship('guarantors')
-                            ->defaultItems(0)
-                            ->addActionLabel('Добави поръчител')
-                            ->reorderable(false)
-                            ->collapsible()
-                            ->collapsed()
-                            ->mutateRelationshipDataBeforeCreateUsing(static fn (array $data): ?array => static::pruneBlankGuarantor($data))
-                            ->itemLabel(fn (array $state): string => trim(implode(' ', array_filter([
-                                $state['first_name'] ?? null,
-                                $state['middle_name'] ?? null,
-                                $state['last_name'] ?? null,
-                            ]))) ?: 'Нов поръчител')
-                            ->grid(1)
-                            ->schema(static::guarantorSchema())
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('Документи към клиента')
-                    ->schema([
+                            ->columnSpan(4),
                         FileUpload::make('documents')
-                            ->label('Прикачени файлове')
+                            ->label('Документи към клиента')
                             ->disk('local')
                             ->visibility('private')
                             ->directory(fn (Lead $record): string => "lead-documents/{$record->getKey()}")
@@ -240,29 +211,72 @@ class LeadForm
                             ->appendFiles()
                             ->downloadable()
                             ->openable()
+                            ->panelLayout('integrated')
                             ->maxFiles(15)
                             ->maxSize(10240)
-                            ->helperText('Допустими са PDF, DOC, DOCX, XLS, XLSX, JPG, PNG и WEBP до 10 MB на файл.')
+                            ->helperText('PDF, DOC, DOCX, XLS, XLSX, JPG, PNG и WEBP до 10 MB.')
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 Storage::disk('local')->delete($file);
                             })
-                            ->columnSpanFull(),
+                            ->columnSpan(2),
+                        Textarea::make('internal_notes')
+                            ->label('Вътрешна бележка')
+                            ->rows(8)
+                            ->autosize()
+                            ->afterStateHydrated(function (Textarea $component, mixed $state): void {
+                                $component->state(static::normalizeLegacyNoteForTextarea(
+                                    is_string($state) ? $state : null,
+                                ));
+                            })
+                            ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
+                            ->columnSpan(4),
                     ]),
-                Section::make('Вътрешна бележка')
+                Section::make('Поръчители')
+                    ->columnSpanFull()
                     ->schema([
-                        RichEditor::make('internal_notes')
-                            ->label('Бележка')
-                            ->toolbarButtons([
-                                ['bold', 'italic', 'underline', 'strike', 'link'],
-                                ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
-                                ['attachFiles'],
-                                ['undo', 'redo'],
-                            ])
-                            ->fileAttachmentsDisk('local')
-                            ->fileAttachmentsVisibility('private')
-                            ->fileAttachmentsDirectory(fn (Lead $record): string => "lead-notes/{$record->getKey()}")
+                        Repeater::make('guarantors')
+                            ->label('Поръчители')
+                            ->relationship('guarantors')
+                            ->defaultItems(0)
+                            ->addActionLabel('Добави поръчител')
+                            ->reorderable(false)
+                            ->collapsible()
+                            ->collapsed()
+                            ->mutateRelationshipDataBeforeFillUsing(static fn (array $data): array => static::mutateGuarantorRelationshipDataForFill($data))
+                            ->mutateRelationshipDataBeforeCreateUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
+                            ->mutateRelationshipDataBeforeSaveUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
+                            ->itemLabel(fn (array $state): string => trim(
+                                ($state['full_name'] ?? '') !== ''
+                                    ? (string) $state['full_name']
+                                    : static::composeFullName(
+                                        $state['first_name'] ?? null,
+                                        $state['middle_name'] ?? null,
+                                        $state['last_name'] ?? null,
+                                    ),
+                            ) ?: 'Нов поръчител')
+                            ->grid(1)
+                            ->schema(static::guarantorSchema())
                             ->columnSpanFull(),
                     ]),
+                Section::make('Данни за имота')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->visible(fn (Get $get): bool => $get('credit_type') === Lead::CREDIT_TYPE_MORTGAGE)
+                    ->schema([
+                        Select::make('property_type')
+                            ->label('Тип имот')
+                            ->options(LeadResource::getPropertyTypeOptions())
+                            ->native(false)
+                            ->nullable(),
+                        TextInput::make('property_location')
+                            ->label('Местоположение на имота')
+                            ->maxLength(120)
+                            ->rule(CyrillicText::withoutLatin('Местоположението на имота'))
+                            ->helperText('Не използвайте латински букви.')
+                            ->nullable(),
+                    ]),
+                static::communicationSection()
+                    ->visible($includeCommunicationWidget),
             ]);
     }
 
@@ -272,14 +286,16 @@ class LeadForm
     private static function guarantorSchema(): array
     {
         return [
-            Section::make('Основни данни на поръчителя')
-                ->columns(3)
+            Section::make('Данни за поръчителя')
+                ->columns(6)
+                ->extraAttributes(static::guarantorSectionAttributes())
                 ->schema([
                     Select::make('status')
                         ->label('Статус')
                         ->options(LeadResource::getGuarantorStatusOptions())
                         ->nullable()
-                        ->native(false),
+                        ->native(false)
+                        ->columnSpan(2),
                     TextInput::make('amount')
                         ->label('Сума')
                         ->nullable()
@@ -287,120 +303,98 @@ class LeadForm
                         ->integer()
                         ->minValue(5000)
                         ->maxValue(50000)
-                        ->suffix('€'),
-                    TextInput::make('first_name')
-                        ->label('Име')
-                        ->nullable()
-                        ->maxLength(60)
-                        ->rule(CyrillicText::lettersOnly('Името на поръчителя'))
-                        ->helperText('Пишете само на кирилица.'),
-                    TextInput::make('middle_name')
-                        ->label('Презиме')
-                        ->nullable()
-                        ->maxLength(60)
-                        ->rule(CyrillicText::lettersOnly('Презимето на поръчителя'))
-                        ->helperText('Пишете само на кирилица.'),
-                    TextInput::make('last_name')
-                        ->label('Фамилия')
-                        ->nullable()
-                        ->maxLength(60)
-                        ->rule(CyrillicText::lettersOnly('Фамилията на поръчителя'))
-                        ->helperText('Пишете само на кирилица.'),
+                        ->suffix('€')
+                        ->columnSpan(2),
+                    Hidden::make('first_name'),
+                    Hidden::make('middle_name'),
+                    Hidden::make('last_name'),
+                    TextInput::make('full_name')
+                        ->label('Имена')
+                        ->required(fn (Get $get): bool => static::guarantorRequiresIdentityFields($get))
+                        ->maxLength(180)
+                        ->rule(CyrillicText::withoutLatin('Имената на поръчителя'))
+                        ->helperText('Въведете имената на кирилица.')
+                        ->columnSpan(4),
                     TextInput::make('egn')
                         ->label('ЕГН')
-                        ->nullable()
-                        ->password()
-                        ->revealable()
+                        ->required(fn (Get $get): bool => static::guarantorRequiresIdentityFields($get))
                         ->autocomplete('off')
                         ->stripCharacters([' ', '-'])
                         ->rule('digits:10')
                         ->minLength(10)
-                        ->maxLength(10),
+                        ->maxLength(10)
+                        ->columnSpan(2),
+                    Select::make('marital_status')
+                        ->label('Семейно положение')
+                        ->options(LeadResource::getMaritalStatusOptions())
+                        ->nullable()
+                        ->native(false)
+                        ->columnSpan(2),
                     TextInput::make('phone')
                         ->label('Телефон')
                         ->tel()
                         ->nullable()
                         ->rule(static fn (Get $get): Closure => static::guarantorPhoneExclusivityRule($get))
-                        ->maxLength(30),
+                        ->maxLength(30)
+                        ->columnSpan(2),
+                    TextInput::make('city')
+                        ->label('Адрес')
+                        ->nullable()
+                        ->maxLength(120)
+                        ->rule(CyrillicText::withoutLatin('Адресът на поръчителя'))
+                        ->helperText('Не използвайте латински букви.')
+                        ->columnSpan(4),
                     TextInput::make('email')
                         ->label('Имейл')
                         ->email()
                         ->nullable()
-                        ->maxLength(120),
-                    TextInput::make('city')
-                        ->label('Град')
-                        ->nullable()
                         ->maxLength(120)
-                        ->rule(CyrillicText::withoutLatin('Градът на поръчителя'))
-                        ->helperText('Не използвайте латински букви.'),
-                ]),
-            Section::make('Допълнителна информация за поръчителя')
-                ->columns(3)
-                ->schema([
+                        ->columnSpan(4),
                     TextInput::make('workplace')
-                        ->label('Месторабота')
+                        ->label('Работодател')
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Местоработата на поръчителя'))
-                        ->helperText('Не използвайте латински букви.'),
+                        ->helperText('Не използвайте латински букви.')
+                        ->columnSpan(3),
                     TextInput::make('job_title')
                         ->label('Длъжност')
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Длъжността на поръчителя'))
-                        ->helperText('Не използвайте латински букви.'),
+                        ->helperText('Не използвайте латински букви.')
+                        ->columnSpan(3),
                     TextInput::make('salary')
-                        ->label('Заплата')
+                        ->label('Месечен доход')
                         ->nullable()
                         ->numeric()
                         ->integer()
                         ->minValue(0)
-                        ->suffix('€'),
-                    Select::make('marital_status')
-                        ->label('Семейно положение')
-                        ->options(LeadResource::getMaritalStatusOptions())
-                        ->nullable()
-                        ->native(false),
+                        ->suffix('€')
+                        ->columnSpan(2),
                     TextInput::make('children_under_18')
                         ->label('Деца под 18')
                         ->nullable()
                         ->numeric()
                         ->integer()
-                        ->minValue(0),
+                        ->minValue(0)
+                        ->columnSpan(2),
                     TextInput::make('salary_bank')
                         ->label('Банка, в която влиза заплатата')
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Банката за заплатата на поръчителя'))
-                        ->helperText('Не използвайте латински букви.'),
+                        ->helperText('Не използвайте латински букви.')
+                        ->columnSpan(4),
                     TextInput::make('credit_bank')
                         ->label('Банка по кредита')
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Банката по кредита на поръчителя'))
-                        ->helperText('Не използвайте латински букви.'),
-                ]),
-            Section::make('Данни за имота на поръчителя')
-                ->columns(2)
-                ->schema([
-                    Select::make('property_type')
-                        ->label('Тип имот')
-                        ->options(LeadResource::getPropertyTypeOptions())
-                        ->native(false)
-                        ->visible(fn (Get $get): bool => static::guarantorHasPropertyData($get))
-                        ->nullable(),
-                    TextInput::make('property_location')
-                        ->label('Местоположение на имота')
-                        ->nullable()
-                        ->maxLength(120)
-                        ->rule(CyrillicText::withoutLatin('Местоположението на имота на поръчителя'))
                         ->helperText('Не използвайте латински букви.')
-                        ->visible(fn (Get $get): bool => static::guarantorHasPropertyData($get)),
-                ]),
-            Section::make('Документи към поръчителя')
-                ->schema([
+                        ->columnSpan(4),
                     FileUpload::make('documents')
-                        ->label('Прикачени файлове')
+                        ->label('Документи към поръчителя')
                         ->disk('local')
                         ->visibility('private')
                         ->directory('lead-guarantor-documents')
@@ -410,29 +404,46 @@ class LeadForm
                         ->appendFiles()
                         ->downloadable()
                         ->openable()
+                        ->panelLayout('integrated')
                         ->maxFiles(15)
                         ->maxSize(10240)
-                        ->helperText('Допустими са PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, WEBP и GIF до 10 MB на файл.')
+                        ->helperText('PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, WEBP и GIF до 10 MB.')
                         ->deleteUploadedFileUsing(static function (string $file): void {
                             Storage::disk('local')->delete($file);
                         })
-                        ->columnSpanFull(),
+                        ->columnSpan(2),
                 ]),
             Section::make('Вътрешна бележка за поръчителя')
+                ->extraAttributes(static::guarantorSectionAttributes())
                 ->schema([
-                    RichEditor::make('internal_notes')
+                    Textarea::make('internal_notes')
                         ->label('Бележка')
-                        ->dehydrateStateUsing(static fn (?string $state): ?string => static::normalizeRichTextState($state))
-                        ->toolbarButtons([
-                            ['bold', 'italic', 'underline', 'strike', 'link'],
-                            ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
-                            ['attachFiles'],
-                            ['undo', 'redo'],
-                        ])
-                        ->fileAttachmentsDisk('local')
-                        ->fileAttachmentsVisibility('private')
-                        ->fileAttachmentsDirectory('lead-guarantor-notes')
+                        ->rows(8)
+                        ->autosize()
+                        ->afterStateHydrated(function (Textarea $component, mixed $state): void {
+                            $component->state(static::normalizeLegacyNoteForTextarea(
+                                is_string($state) ? $state : null,
+                            ));
+                        })
+                        ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
                         ->columnSpanFull(),
+                ]),
+            Section::make('Данни за имота на поръчителя')
+                ->columns(2)
+                ->extraAttributes(static::guarantorSectionAttributes())
+                ->visible(fn (Get $get): bool => static::guarantorHasPropertyData($get))
+                ->schema([
+                    Select::make('property_type')
+                        ->label('Тип имот')
+                        ->options(LeadResource::getPropertyTypeOptions())
+                        ->native(false)
+                        ->nullable(),
+                    TextInput::make('property_location')
+                        ->label('Местоположение на имота')
+                        ->nullable()
+                        ->maxLength(120)
+                        ->rule(CyrillicText::withoutLatin('Местоположението на имота на поръчителя'))
+                        ->helperText('Не използвайте латински букви.'),
                 ]),
         ];
     }
@@ -453,15 +464,44 @@ class LeadForm
         return ! in_array($status, ['sms', 'email', 'rejected'], true);
     }
 
-    private static function requiresApplicantPropertyData(Get $get): bool
-    {
-        return static::requiresFullApplication($get('status'))
-            && $get('credit_type') === Lead::CREDIT_TYPE_MORTGAGE;
-    }
-
     private static function guarantorHasPropertyData(Get $get): bool
     {
         return $get('../../credit_type') === Lead::CREDIT_TYPE_MORTGAGE;
+    }
+
+    private static function guarantorRequiresIdentityFields(Get $get): bool
+    {
+        return static::hasMeaningfulGuarantorData([
+            $get('status'),
+            $get('amount'),
+            $get('full_name'),
+            $get('first_name'),
+            $get('middle_name'),
+            $get('last_name'),
+            $get('egn'),
+            $get('phone'),
+            $get('email'),
+            $get('city'),
+            $get('workplace'),
+            $get('job_title'),
+            $get('salary'),
+            $get('marital_status'),
+            $get('children_under_18'),
+            $get('salary_bank'),
+            $get('credit_bank'),
+            $get('property_type'),
+            $get('property_location'),
+            $get('documents'),
+            $get('document_file_names'),
+            $get('internal_notes'),
+        ]);
+    }
+
+    private static function guarantorSectionAttributes(): array
+    {
+        return [
+            'class' => 'bg-white ring-2 ring-cyan-400 border-2 border-cyan-500 rounded-2xl shadow-lg shadow-cyan-100/80',
+        ];
     }
 
     private static function pruneBlankGuarantor(array $data): ?array
@@ -469,6 +509,32 @@ class LeadForm
         return static::hasMeaningfulGuarantorData(Arr::except($data, ['lead_id']))
             ? $data
             : null;
+    }
+
+    private static function mutateGuarantorRelationshipDataForFill(array $data): array
+    {
+        $data['full_name'] = static::composeFullName(
+            $data['first_name'] ?? null,
+            $data['middle_name'] ?? null,
+            $data['last_name'] ?? null,
+        );
+
+        return $data;
+    }
+
+    private static function mutateGuarantorRelationshipDataForSave(array $data): ?array
+    {
+        if (array_key_exists('full_name', $data)) {
+            [$firstName, $middleName, $lastName] = static::splitFullName($data['full_name'] ?? null);
+
+            $data['first_name'] = $firstName;
+            $data['middle_name'] = $middleName;
+            $data['last_name'] = $lastName;
+
+            unset($data['full_name']);
+        }
+
+        return static::pruneBlankGuarantor($data);
     }
 
     private static function hasMeaningfulGuarantorData(mixed $value): bool
@@ -497,6 +563,75 @@ class LeadForm
             : $state;
     }
 
+    private static function fullNameRule(): Closure
+    {
+        return static function (string $attribute, mixed $value, Closure $fail): void {
+            static::validateFullName($value, $fail);
+        };
+    }
+
+    private static function validateFullName(mixed $value, Closure $fail): void
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return;
+        }
+
+        $parts = static::extractNameParts($value);
+
+        if (count($parts) < 2) {
+            $fail('Моля, въведете поне име и фамилия.');
+
+            return;
+        }
+
+        $rule = CyrillicText::lettersOnly('Имената');
+
+        foreach ($parts as $part) {
+            $rule->validate('full_name', $part, $fail);
+        }
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string, 2: ?string}
+     */
+    private static function splitFullName(?string $value): array
+    {
+        $parts = static::extractNameParts($value);
+
+        if ($parts === []) {
+            return [null, null, null];
+        }
+
+        $firstName = array_shift($parts);
+        $lastName = array_pop($parts) ?? null;
+        $middleName = $parts !== [] ? implode(' ', $parts) : null;
+
+        return [$firstName, $middleName, $lastName];
+    }
+
+    private static function composeFullName(?string $firstName, ?string $middleName, ?string $lastName): string
+    {
+        return trim(implode(' ', array_filter([
+            $firstName,
+            $middleName,
+            $lastName,
+        ])));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function extractNameParts(?string $value): array
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim((string) $value)) ?? '';
+
+        if ($normalized === '') {
+            return [];
+        }
+
+        return array_values(array_filter(explode(' ', $normalized)));
+    }
+
     private static function extractVisibleText(?string $value): string
     {
         if ($value === null) {
@@ -508,6 +643,25 @@ class LeadForm
         $text = preg_replace('/\x{00A0}/u', ' ', $text) ?? $text;
 
         return trim($text);
+    }
+
+    private static function normalizeLegacyNoteForTextarea(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $text = preg_replace('/<br\s*\/?>/iu', "\n", $value) ?? $value;
+        $text = preg_replace('/<\/p>/iu', "\n\n", $text) ?? $text;
+        $text = preg_replace('/<\/div>/iu', "\n", $text) ?? $text;
+        $text = strip_tags($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\x{00A0}/u', ' ', $text) ?? $text;
+        $text = preg_replace("/\r\n|\r/u", "\n", $text) ?? $text;
+        $text = preg_replace("/\n{3,}/u", "\n\n", $text) ?? $text;
+        $text = trim($text);
+
+        return $text !== '' ? $text : null;
     }
 
     private static function applicantPhoneExclusivityRule(Get $get): Closure

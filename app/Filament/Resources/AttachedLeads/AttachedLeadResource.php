@@ -74,7 +74,7 @@ class AttachedLeadResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table, isAttachedResource: true);
+        return LeadsTable::configure($table, static::class, isAttachedResource: true);
     }
 
     public static function makeReturnToPrimaryAction(): Action

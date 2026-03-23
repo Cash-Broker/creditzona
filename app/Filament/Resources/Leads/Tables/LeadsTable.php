@@ -13,7 +13,10 @@ use Filament\Tables\Table;
 
 class LeadsTable
 {
-    public static function configure(Table $table, bool $isAttachedResource = false): Table
+    /**
+     * @param  class-string  $resourceClass
+     */
+    public static function configure(Table $table, string $resourceClass = LeadResource::class, bool $isAttachedResource = false): Table
     {
         return $table
             ->poll('5s')
@@ -108,6 +111,10 @@ class LeadsTable
                 ViewAction::make(),
                 EditAction::make(),
             ])))
+            ->recordUrl(
+                fn (Lead $record): string => $resourceClass::getUrl('view', ['record' => $record]),
+                shouldOpenInNewTab: true,
+            )
             ->defaultSort('created_at', 'desc')
             ->toolbarActions([]);
     }

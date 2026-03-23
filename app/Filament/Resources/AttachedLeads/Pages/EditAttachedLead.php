@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AttachedLeads\Pages;
 
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
+use App\Filament\Resources\Leads\Schemas\LeadForm;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Actions as SchemaActions;
@@ -17,6 +18,11 @@ class EditAttachedLead extends EditRecord
     protected function getHeaderActions(): array
     {
         return [];
+    }
+
+    public function saveAndRedirect(): void
+    {
+        $this->save(shouldRedirect: true);
     }
 
     public function getFormActionsContentComponent(): Component
@@ -45,6 +51,8 @@ class EditAttachedLead extends EditRecord
     protected function getSaveFormAction(): Action
     {
         return parent::getSaveFormAction()
+            ->submit(null)
+            ->action('saveAndRedirect')
             ->label('Запази');
     }
 
@@ -52,5 +60,15 @@ class EditAttachedLead extends EditRecord
     {
         return parent::getCancelFormAction()
             ->label('Отказ');
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return LeadForm::mutateSubmittedData($data);
+    }
+
+    protected function getRedirectUrl(): ?string
+    {
+        return AttachedLeadResource::getUrl('index');
     }
 }
