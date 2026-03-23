@@ -204,6 +204,51 @@ class AttachedLeadEditActionsTest extends TestCase
         $this->assertSame('9001010002', $guarantor?->egn);
     }
 
+    public function test_edit_attached_lead_save_prunes_guarantor_with_only_status_and_no_identity_fields(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010001',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $operator->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->fillForm([
+                'guarantors' => [[
+                    'status' => 'unsuitable',
+                    'documents' => [],
+                    'document_file_names' => [],
+                    'internal_notes' => null,
+                ]],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseCount('lead_guarantors', 0);
+    }
+
     public function test_edit_attached_lead_save_splits_guarantor_full_name_into_existing_name_columns(): void
     {
         $admin = User::factory()->create([

@@ -58,6 +58,26 @@ class LeadGuarantor extends Model implements HasRichContent
         return static::getStatusOptions()[$state] ?? ($state ?: 'Няма');
     }
 
+    public static function getVisualStateKey(?string $status): string
+    {
+        return match ($status) {
+            self::STATUS_SUITABLE => 'suitable',
+            self::STATUS_UNSUITABLE => 'unsuitable',
+            self::STATUS_DECLINED => 'declined',
+            default => 'attention',
+        };
+    }
+
+    public static function getSurfaceClasses(?string $status): string
+    {
+        return 'lead-guarantor-surface lead-guarantor-surface--'.static::getVisualStateKey($status);
+    }
+
+    public static function getItemLabelClasses(?string $status): string
+    {
+        return 'lead-guarantor-item-label lead-guarantor-item-label--'.static::getVisualStateKey($status);
+    }
+
     public static function maskEgn(?string $value): string
     {
         if (blank($value)) {

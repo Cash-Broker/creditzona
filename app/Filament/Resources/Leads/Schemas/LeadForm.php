@@ -6,6 +6,7 @@ use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\Leads\Widgets\LeadCommunicationWidget;
 use App\Models\AdminDocument;
 use App\Models\Lead;
+use App\Models\LeadGuarantor;
 use App\Rules\CyrillicText;
 use App\Rules\ExclusiveLeadParticipantPhone;
 use Closure;
@@ -22,6 +23,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class LeadForm
 {
@@ -85,7 +87,6 @@ class LeadForm
                             ->columnSpan(4),
                         TextInput::make('egn')
                             ->label('ЕГН')
-                            ->required()
                             ->autocomplete('off')
                             ->stripCharacters([' ', '-'])
                             ->rule('digits:10')
@@ -219,17 +220,6 @@ class LeadForm
                                 Storage::disk('local')->delete($file);
                             })
                             ->columnSpan(2),
-                        Textarea::make('internal_notes')
-                            ->label('Вътрешна бележка')
-                            ->rows(8)
-                            ->autosize()
-                            ->afterStateHydrated(function (Textarea $component, mixed $state): void {
-                                $component->state(static::normalizeLegacyNoteForTextarea(
-                                    is_string($state) ? $state : null,
-                                ));
-                            })
-                            ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
-                            ->columnSpan(4),
                     ]),
                 Section::make('Поръчители')
                     ->columnSpanFull()
@@ -245,17 +235,24 @@ class LeadForm
                             ->mutateRelationshipDataBeforeFillUsing(static fn (array $data): array => static::mutateGuarantorRelationshipDataForFill($data))
                             ->mutateRelationshipDataBeforeCreateUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
                             ->mutateRelationshipDataBeforeSaveUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
-                            ->itemLabel(fn (array $state): string => trim(
-                                ($state['full_name'] ?? '') !== ''
-                                    ? (string) $state['full_name']
-                                    : static::composeFullName(
-                                        $state['first_name'] ?? null,
-                                        $state['middle_name'] ?? null,
-                                        $state['last_name'] ?? null,
-                                    ),
-                            ) ?: 'Нов поръчител')
+                            ->itemLabel(fn (array $state): HtmlString => static::guarantorItemLabel($state))
                             ->grid(1)
                             ->schema(static::guarantorSchema())
+                            ->columnSpanFull(),
+                    ]),
+                Section::make('Вътрешна бележка')
+                    ->columnSpanFull()
+                    ->schema([
+                        Textarea::make('internal_notes')
+                            ->label('Вътрешна бележка')
+                            ->rows(8)
+                            ->autosize()
+                            ->afterStateHydrated(function (Textarea $component, mixed $state): void {
+                                $component->state(static::normalizeLegacyNoteForTextarea(
+                                    is_string($state) ? $state : null,
+                                ));
+                            })
+                            ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
                             ->columnSpanFull(),
                     ]),
                 Section::make('Данни за имота')
@@ -288,7 +285,6 @@ class LeadForm
         return [
             Section::make('Данни за поръчителя')
                 ->columns(6)
-                ->extraAttributes(static::guarantorSectionAttributes())
                 ->schema([
                     Select::make('status')
                         ->label('Статус')
@@ -317,7 +313,6 @@ class LeadForm
                         ->columnSpan(4),
                     TextInput::make('egn')
                         ->label('ЕГН')
-                        ->required(fn (Get $get): bool => static::guarantorRequiresIdentityFields($get))
                         ->autocomplete('off')
                         ->stripCharacters([' ', '-'])
                         ->rule('digits:10')
@@ -414,7 +409,6 @@ class LeadForm
                         ->columnSpan(2),
                 ]),
             Section::make('Вътрешна бележка за поръчителя')
-                ->extraAttributes(static::guarantorSectionAttributes())
                 ->schema([
                     Textarea::make('internal_notes')
                         ->label('Бележка')
@@ -430,7 +424,6 @@ class LeadForm
                 ]),
             Section::make('Данни за имота на поръчителя')
                 ->columns(2)
-                ->extraAttributes(static::guarantorSectionAttributes())
                 ->visible(fn (Get $get): bool => static::guarantorHasPropertyData($get))
                 ->schema([
                     Select::make('property_type')
@@ -472,7 +465,6 @@ class LeadForm
     private static function guarantorRequiresIdentityFields(Get $get): bool
     {
         return static::hasMeaningfulGuarantorData([
-            $get('status'),
             $get('amount'),
             $get('full_name'),
             $get('first_name'),
@@ -497,16 +489,32 @@ class LeadForm
         ]);
     }
 
-    private static function guarantorSectionAttributes(): array
+    private static function guarantorItemLabel(array $state): HtmlString
     {
-        return [
-            'class' => 'bg-white ring-2 ring-cyan-400 border-2 border-cyan-500 rounded-2xl shadow-lg shadow-cyan-100/80',
-        ];
+        $name = trim(
+            ($state['full_name'] ?? '') !== ''
+                ? (string) $state['full_name']
+                : static::composeFullName(
+                    $state['first_name'] ?? null,
+                    $state['middle_name'] ?? null,
+                    $state['last_name'] ?? null,
+                ),
+        );
+
+        $status = $state['status'] ?? null;
+        $statusLabel = LeadGuarantor::getStatusLabel($status);
+        $label = $name !== '' ? "{$statusLabel} • {$name}" : $statusLabel;
+
+        return new HtmlString(sprintf(
+            '<span class="%s">%s</span>',
+            e(LeadGuarantor::getItemLabelClasses($status)),
+            e($label !== '' ? $label : 'Нов поръчител'),
+        ));
     }
 
     private static function pruneBlankGuarantor(array $data): ?array
     {
-        return static::hasMeaningfulGuarantorData(Arr::except($data, ['lead_id']))
+        return static::hasMeaningfulGuarantorData(Arr::except($data, ['lead_id', 'status']))
             ? $data
             : null;
     }

@@ -47,7 +47,7 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
         $this->assertTrue($fields['full_name']->isRequired());
 
         $this->assertArrayHasKey('egn', $fields);
-        $this->assertTrue($fields['egn']->isRequired());
+        $this->assertFalse($fields['egn']->isRequired());
 
         foreach ([
             'workplace',
@@ -102,7 +102,7 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
         $this->assertTrue($fields['full_name']->isRequired());
 
         $this->assertArrayHasKey('egn', $fields);
-        $this->assertTrue($fields['egn']->isRequired());
+        $this->assertFalse($fields['egn']->isRequired());
 
         foreach ([
             'email',
@@ -183,7 +183,7 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
             $fields = $form->getFlatFields(withHidden: true);
 
             $this->assertTrue($fields['full_name']->isRequired(), "Expected [full_name] to stay required for status [{$status}].");
-            $this->assertTrue($fields['egn']->isRequired(), "Expected [egn] to stay required for status [{$status}].");
+            $this->assertFalse($fields['egn']->isRequired(), "Expected [egn] to stay optional for status [{$status}].");
 
             foreach ([
                 'workplace',

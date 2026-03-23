@@ -17,3 +17,188 @@
 .fi-simple-main {
     background-color: #ffffff;
 }
+
+.lead-guarantor-surface {
+    border: 2px solid #f59e0b;
+    border-radius: 1.25rem;
+    background:
+        linear-gradient(135deg, rgba(255, 247, 237, 0.98), rgba(254, 243, 199, 0.96));
+    box-shadow: 0 20px 45px rgba(245, 158, 11, 0.18);
+    overflow: hidden;
+}
+
+.lead-guarantor-surface .fi-section-header,
+.lead-guarantor-surface .fi-section-content-ctn,
+.lead-guarantor-surface .fi-section-footer {
+    background: transparent;
+}
+
+.lead-guarantor-surface .fi-section-header {
+    border-bottom: 1px solid rgba(180, 83, 9, 0.18);
+}
+
+.lead-guarantor-surface .fi-section-header-heading,
+.lead-guarantor-surface .fi-fo-field-label,
+.lead-guarantor-surface .fi-section-header-description,
+ .lead-guarantor-surface .fi-input-wrp-label,
+ .lead-guarantor-surface .fi-in-entry-label,
+ .lead-guarantor-surface .fi-in-entry-content {
+    color: #7c2d12;
+}
+
+.lead-guarantor-surface .fi-input,
+.lead-guarantor-surface .fi-input-wrp,
+.lead-guarantor-surface .fi-select-input,
+.lead-guarantor-surface .fi-select-input-btn,
+.lead-guarantor-surface textarea,
+.lead-guarantor-surface select {
+    background-color: rgba(255, 255, 255, 0.94);
+    border-color: rgba(180, 83, 9, 0.28);
+}
+
+.lead-guarantor-surface .fi-input:focus,
+.lead-guarantor-surface .fi-input-wrp:focus-within,
+.lead-guarantor-surface .fi-select-input:focus,
+.lead-guarantor-surface .fi-select-input-btn:focus,
+.lead-guarantor-surface textarea:focus,
+.lead-guarantor-surface select:focus {
+    border-color: rgba(217, 119, 6, 0.7);
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.18);
+}
+
+.lead-guarantor-surface .fi-fo-field-helper-text {
+    color: rgba(124, 45, 18, 0.9);
+}
+
+.lead-guarantor-item-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.lead-guarantor-item-label--attention {
+    color: #9a3412;
+    background-color: rgba(255, 237, 213, 0.98);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.lead-guarantor-surface--suitable {
+    border-color: #16a34a;
+    background:
+        linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(220, 252, 231, 0.96));
+    box-shadow: 0 20px 45px rgba(22, 163, 74, 0.18);
+}
+
+.lead-guarantor-surface--suitable .fi-section-header {
+    border-bottom-color: rgba(22, 101, 52, 0.16);
+}
+
+.lead-guarantor-surface--suitable .fi-section-header-heading,
+.lead-guarantor-surface--suitable .fi-fo-field-label,
+.lead-guarantor-surface--suitable .fi-section-header-description,
+.lead-guarantor-surface--suitable .fi-input-wrp-label,
+ .lead-guarantor-surface--suitable .fi-fo-field-helper-text,
+ .lead-guarantor-surface--suitable .fi-in-entry-label,
+ .lead-guarantor-surface--suitable .fi-in-entry-content {
+    color: #166534;
+}
+
+.lead-guarantor-surface--suitable .fi-input,
+.lead-guarantor-surface--suitable .fi-input-wrp,
+.lead-guarantor-surface--suitable .fi-select-input,
+.lead-guarantor-surface--suitable .fi-select-input-btn,
+.lead-guarantor-surface--suitable textarea,
+.lead-guarantor-surface--suitable select {
+    background-color: rgba(255, 255, 255, 0.96);
+    border-color: rgba(22, 163, 74, 0.28);
+}
+
+.lead-guarantor-surface--suitable .fi-input:focus,
+.lead-guarantor-surface--suitable .fi-input-wrp:focus-within,
+.lead-guarantor-surface--suitable .fi-select-input:focus,
+.lead-guarantor-surface--suitable .fi-select-input-btn:focus,
+.lead-guarantor-surface--suitable textarea:focus,
+.lead-guarantor-surface--suitable select:focus {
+    border-color: rgba(22, 163, 74, 0.65);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.lead-guarantor-item-label--suitable {
+    color: #166534;
+    background-color: rgba(220, 252, 231, 0.98);
+    border-color: rgba(34, 197, 94, 0.32);
+}
+
+.lead-guarantor-surface--unsuitable,
+.lead-guarantor-surface--declined {
+    border-color: #dc2626;
+    background:
+        linear-gradient(135deg, rgba(254, 242, 242, 0.98), rgba(254, 226, 226, 0.96));
+    box-shadow: 0 20px 45px rgba(220, 38, 38, 0.16);
+}
+
+.lead-guarantor-surface--unsuitable .fi-section-header,
+.lead-guarantor-surface--declined .fi-section-header {
+    border-bottom-color: rgba(153, 27, 27, 0.16);
+}
+
+.lead-guarantor-surface--unsuitable .fi-section-header-heading,
+.lead-guarantor-surface--unsuitable .fi-fo-field-label,
+.lead-guarantor-surface--unsuitable .fi-section-header-description,
+.lead-guarantor-surface--unsuitable .fi-input-wrp-label,
+.lead-guarantor-surface--unsuitable .fi-fo-field-helper-text,
+ .lead-guarantor-surface--unsuitable .fi-in-entry-label,
+ .lead-guarantor-surface--unsuitable .fi-in-entry-content,
+.lead-guarantor-surface--declined .fi-section-header-heading,
+.lead-guarantor-surface--declined .fi-fo-field-label,
+.lead-guarantor-surface--declined .fi-section-header-description,
+.lead-guarantor-surface--declined .fi-input-wrp-label,
+ .lead-guarantor-surface--declined .fi-fo-field-helper-text,
+ .lead-guarantor-surface--declined .fi-in-entry-label,
+ .lead-guarantor-surface--declined .fi-in-entry-content {
+    color: #991b1b;
+}
+
+.lead-guarantor-surface--unsuitable .fi-input,
+.lead-guarantor-surface--unsuitable .fi-input-wrp,
+.lead-guarantor-surface--unsuitable .fi-select-input,
+.lead-guarantor-surface--unsuitable .fi-select-input-btn,
+.lead-guarantor-surface--unsuitable textarea,
+.lead-guarantor-surface--unsuitable select,
+.lead-guarantor-surface--declined .fi-input,
+.lead-guarantor-surface--declined .fi-input-wrp,
+.lead-guarantor-surface--declined .fi-select-input,
+.lead-guarantor-surface--declined .fi-select-input-btn,
+.lead-guarantor-surface--declined textarea,
+.lead-guarantor-surface--declined select {
+    background-color: rgba(255, 255, 255, 0.96);
+    border-color: rgba(220, 38, 38, 0.24);
+}
+
+.lead-guarantor-surface--unsuitable .fi-input:focus,
+.lead-guarantor-surface--unsuitable .fi-input-wrp:focus-within,
+.lead-guarantor-surface--unsuitable .fi-select-input:focus,
+.lead-guarantor-surface--unsuitable .fi-select-input-btn:focus,
+.lead-guarantor-surface--unsuitable textarea:focus,
+.lead-guarantor-surface--unsuitable select:focus,
+.lead-guarantor-surface--declined .fi-input:focus,
+.lead-guarantor-surface--declined .fi-input-wrp:focus-within,
+.lead-guarantor-surface--declined .fi-select-input:focus,
+.lead-guarantor-surface--declined .fi-select-input-btn:focus,
+.lead-guarantor-surface--declined textarea:focus,
+.lead-guarantor-surface--declined select:focus {
+    border-color: rgba(220, 38, 38, 0.6);
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.16);
+}
+
+.lead-guarantor-item-label--unsuitable,
+.lead-guarantor-item-label--declined {
+    color: #991b1b;
+    background-color: rgba(254, 226, 226, 0.98);
+    border-color: rgba(248, 113, 113, 0.32);
+}
