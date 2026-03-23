@@ -16,8 +16,12 @@ class LeadsTable
     /**
      * @param  class-string  $resourceClass
      */
-    public static function configure(Table $table, string $resourceClass = LeadResource::class, bool $isAttachedResource = false): Table
-    {
+    public static function configure(
+        Table $table,
+        string $resourceClass = LeadResource::class,
+        bool $isAttachedResource = false,
+        bool $showReturnedMeta = false,
+    ): Table {
         return $table
             ->poll('5s')
             ->columns([
@@ -45,15 +49,34 @@ class LeadsTable
                     ->sortable()
                     ->placeholder('Няма')
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('returnedAdditionalUser.name')
+                    ->label('Върната от')
+                    ->sortable()
+                    ->placeholder('Няма')
+                    ->visible($showReturnedMeta),
+                TextColumn::make('returned_to_primary_at')
+                    ->label('Върната на')
+                    ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                    ->sortable()
+                    ->visible($showReturnedMeta),
                 TextColumn::make('phone')
                     ->label('Телефон')
                     ->searchable(),
-                TextColumn::make('email')
-                    ->label('Имейл')
-                    ->searchable(),
-                TextColumn::make('city')
-                    ->label('Град')
-                    ->searchable(),
+                TextColumn::make('internal_notes')
+                    ->label('Бележка')
+                    ->state(function (Lead $record): ?string {
+                        $note = trim(strip_tags((string) ($record->internal_notes ?? '')));
+
+                        if ($note === '') {
+                            return null;
+                        }
+
+                        return preg_replace('/\s+/u', ' ', $note) ?: $note;
+                    })
+                    ->placeholder('Няма')
+                    ->searchable()
+                    ->wrap()
+                    ->grow(),
                 TextColumn::make('workplace')
                     ->label('Месторабота')
                     ->searchable()

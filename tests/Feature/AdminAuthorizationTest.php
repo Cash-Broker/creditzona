@@ -7,6 +7,7 @@ use App\Filament\Resources\AttachedLeads\Pages\EditAttachedLead;
 use App\Filament\Resources\AttachedLeads\Pages\ViewAttachedLead;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\ReturnedLeadArchives\ReturnedLeadArchiveResource;
+use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
 use App\Models\Lead;
 use App\Models\User;
 use App\Policies\LeadPolicy;
@@ -271,6 +272,53 @@ class AdminAuthorizationTest extends TestCase
         $this->assertTrue($policy->view($anna, $returnedByAnna));
         $this->assertTrue($policy->update($anna, $returnedByAnna));
         $this->assertFalse($policy->view($anna, $returnedByIskra));
+    }
+
+    public function test_returned_to_me_resource_is_scoped_to_primary_assignee_of_returned_leads(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $iskra = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'iskra@creditzona.test',
+        ]);
+
+        $returnedToAnna = Lead::query()->create($this->leadData([
+            'phone' => '0888777771',
+            'email' => 'returned-to-anna@example.com',
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        $returnedToIskra = Lead::query()->create($this->leadData([
+            'phone' => '0888777772',
+            'email' => 'returned-to-iskra@example.com',
+            'assigned_user_id' => $iskra->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($returnedToAnna, $elena);
+        $returnedToAnna->refresh();
+
+        $returnedToIskra->forceFill([
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $elena->id,
+            'returned_to_primary_at' => now(),
+        ])->save();
+
+        $this->actingAs($anna);
+
+        $this->assertSame([
+            $returnedToAnna->id,
+        ], ReturnedToMeLeadResource::getEloquentQuery()->pluck('id')->all());
     }
 
     public function test_attached_lead_pages_expose_edit_then_return_actions_for_admin(): void

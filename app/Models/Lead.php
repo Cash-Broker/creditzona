@@ -375,6 +375,15 @@ class Lead extends Model implements HasRichContent
             ->where('returned_additional_user_id', $user->id);
     }
 
+    public function scopeReturnedToPrimaryUser(Builder $query, User $user): Builder
+    {
+        return $query
+            ->where('assigned_user_id', $user->id)
+            ->whereNull('additional_user_id')
+            ->whereNotNull('returned_additional_user_id')
+            ->whereNotNull('returned_to_primary_at');
+    }
+
     protected function setUpRichContent(): void
     {
         $this->registerRichContent('internal_notes')

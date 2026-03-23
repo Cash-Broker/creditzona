@@ -10,6 +10,7 @@ use DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -37,6 +38,71 @@ class LeadServiceTest extends TestCase
 
         $this->assertSame($operator->id, $lead->assigned_user_id);
         $this->assertTrue($lead->assignedUser->is($operator));
+    }
+
+    public function test_create_lead_stores_database_notification_for_assigned_operator(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        $notification = DB::table('notifications')
+            ->where('notifiable_type', User::class)
+            ->where('notifiable_id', $operator->id)
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($notification);
+        $payload = json_decode((string) $notification->data, true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('Имате нова заявка към вас', $payload['title']);
+        $this->assertStringContainsString($lead->first_name, $payload['body']);
+    }
+
+    public function test_send_additional_assignment_notification_stores_database_notification_for_selected_operator(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $primary = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $additional = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $primary->id,
+            'additional_user_id' => $additional->id,
+        ]));
+
+        app(LeadService::class)->sendAdditionalAssignmentNotification(
+            $lead->fresh(),
+            null,
+            $admin,
+        );
+
+        $notification = DB::table('notifications')
+            ->where('notifiable_type', User::class)
+            ->where('notifiable_id', $additional->id)
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($notification);
+        $payload = json_decode((string) $notification->data, true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('Имате нова заявка към вас', $payload['title']);
+        $this->assertStringContainsString($admin->name, $payload['body']);
     }
 
     public function test_create_lead_defaults_assignment_to_null(): void
@@ -377,6 +443,38 @@ class LeadServiceTest extends TestCase
         $this->assertNull($lead->additional_user_id);
         $this->assertSame($elena->id, $lead->returned_additional_user_id);
         $this->assertNotNull($lead->returned_to_primary_at);
+    }
+
+    public function test_returning_attached_lead_stores_database_notification_for_primary_assignee(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $elena);
+
+        $notification = DB::table('notifications')
+            ->where('notifiable_type', User::class)
+            ->where('notifiable_id', $anna->id)
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($notification);
+        $payload = json_decode((string) $notification->data, true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('Имате върната заявка към вас', $payload['title']);
+        $this->assertStringContainsString($elena->name, $payload['body']);
     }
 
     public function test_returning_attached_lead_requires_current_additional_assignee(): void

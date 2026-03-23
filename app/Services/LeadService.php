@@ -7,10 +7,12 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Support\Phone\PhoneNormalizer;
 use DomainException;
+use Filament\Notifications\Notification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class LeadService
@@ -100,6 +102,7 @@ class LeadService
         }
 
         $this->sendConfirmationEmail($lead);
+        $this->sendAssignedLeadNotification($lead);
 
         return $lead;
     }
@@ -124,7 +127,41 @@ class LeadService
             'returned_to_primary_at' => now(),
         ])->save();
 
-        return $lead->refresh();
+        $lead = $lead->refresh();
+
+        $this->sendReturnedLeadNotification($lead, $actor);
+
+        return $lead;
+    }
+
+    public function sendAdditionalAssignmentNotification(
+        Lead $lead,
+        ?int $previousAdditionalUserId = null,
+        ?User $actor = null,
+    ): void {
+        if (! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        if ($lead->additional_user_id === null || $lead->additional_user_id === $previousAdditionalUserId) {
+            return;
+        }
+
+        $lead->loadMissing('additionalUser');
+
+        $additionalAssignee = $lead->additionalUser;
+
+        if (! $additionalAssignee instanceof User) {
+            return;
+        }
+
+        $notification = Notification::make()
+            ->title('Имате нова заявка към вас')
+            ->body($this->formatAdditionalAssignmentNotificationBody($lead, $additionalAssignee, $actor))
+            ->warning()
+            ->persistent();
+
+        $additionalAssignee->notifyNow($notification->toDatabase(), ['database']);
     }
 
     private function resolveAssignedUserId(array $data): ?int
@@ -216,5 +253,90 @@ class LeadService
                 'error' => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function sendAssignedLeadNotification(Lead $lead): void
+    {
+        if (! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        $assignee = $lead->assignedUser;
+
+        if (! $assignee instanceof User) {
+            return;
+        }
+
+        $notification = Notification::make()
+            ->title('Имате нова заявка към вас')
+            ->body(sprintf(
+                '%s • %s €',
+                $this->formatLeadDisplayName($lead),
+                number_format((float) $lead->amount, 0, ',', ' '),
+            ))
+            ->warning()
+            ->persistent();
+
+        $assignee->notifyNow($notification->toDatabase(), ['database']);
+    }
+
+    private function sendReturnedLeadNotification(Lead $lead, User $actor): void
+    {
+        if (! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        $primaryAssignee = $lead->assignedUser;
+
+        if (! $primaryAssignee instanceof User) {
+            return;
+        }
+
+        if ($primaryAssignee->is($actor)) {
+            return;
+        }
+
+        $notification = Notification::make()
+            ->title('Имате върната заявка към вас')
+            ->body(sprintf(
+                '%s върна заявката на %s.',
+                $actor->name,
+                $this->formatLeadDisplayName($lead),
+            ))
+            ->info()
+            ->persistent();
+
+        $primaryAssignee->notifyNow($notification->toDatabase(), ['database']);
+    }
+
+    private function formatAdditionalAssignmentNotificationBody(
+        Lead $lead,
+        User $additionalAssignee,
+        ?User $actor = null,
+    ): string {
+        if ($actor instanceof User && ! $additionalAssignee->is($actor)) {
+            return sprintf(
+                '%s ви закачи заявката на %s.',
+                $actor->name,
+                $this->formatLeadDisplayName($lead),
+            );
+        }
+
+        return sprintf(
+            '%s • %s €',
+            $this->formatLeadDisplayName($lead),
+            number_format((float) $lead->amount, 0, ',', ' '),
+        );
+    }
+
+    private function formatLeadDisplayName(Lead $lead): string
+    {
+        $displayName = trim(implode(' ', array_filter([
+            $lead->first_name,
+            $lead->middle_name,
+            $lead->last_name,
+        ])));
+
+        return $displayName !== '' ? $displayName : 'клиента';
     }
 }

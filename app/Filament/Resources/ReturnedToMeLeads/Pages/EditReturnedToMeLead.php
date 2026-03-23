@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Filament\Resources\Leads\Pages;
+namespace App\Filament\Resources\ReturnedToMeLeads\Pages;
 
-use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
+use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
 use App\Models\User;
 use App\Services\LeadService;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
-class EditLead extends EditRecord
+class EditReturnedToMeLead extends EditRecord
 {
-    protected static string $resource = LeadResource::class;
+    protected static string $resource = ReturnedToMeLeadResource::class;
 
     protected ?int $previousAdditionalUserId = null;
 
@@ -62,6 +62,6 @@ class EditLead extends EditRecord
 
     protected function getRedirectUrl(): ?string
     {
-        return LeadResource::getUrl('index');
+        return ReturnedToMeLeadResource::getUrl('index');
     }
 }

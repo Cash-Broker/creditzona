@@ -6,6 +6,7 @@ use App\Filament\Resources\Blogs\BlogResource;
 use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Resources\Faqs\FaqResource;
 use App\Filament\Resources\Leads\LeadResource;
+use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
 use App\Models\Blog;
 use App\Models\ContactMessage;
 use App\Models\Faq;
@@ -38,6 +39,9 @@ class AdminOverview extends StatsOverviewWidget
         $newLeads = (clone $leadQuery)
             ->where('status', 'new')
             ->count();
+        $returnedToMeLeads = Lead::query()
+            ->returnedToPrimaryUser($user)
+            ->count();
 
         $leadStat = Stat::make($user->isAdmin() ? 'Нови заявки' : 'Моите заявки', $newLeads)
             ->description($user->isAdmin() ? "Общо {$totalLeads} заявки" : "Общо {$totalLeads} ваши заявки")
@@ -45,8 +49,14 @@ class AdminOverview extends StatsOverviewWidget
             ->color($newLeads > 0 ? 'warning' : 'gray')
             ->url(LeadResource::getUrl());
 
+        $returnedToMeStat = Stat::make('Върнати към мен', $returnedToMeLeads)
+            ->description('Върнати от допълнителен служител')
+            ->icon(Heroicon::OutlinedArrowPathRoundedSquare)
+            ->color($returnedToMeLeads > 0 ? 'info' : 'gray')
+            ->url(ReturnedToMeLeadResource::getUrl());
+
         if (! $user->isAdmin()) {
-            return [$leadStat];
+            return [$leadStat, $returnedToMeStat];
         }
 
         $todayLeads = Lead::query()
@@ -58,6 +68,7 @@ class AdminOverview extends StatsOverviewWidget
 
         return [
             $leadStat,
+            $returnedToMeStat,
             Stat::make('Получени заявки днес', $todayLeads)
                 ->description('Занулява се всеки ден в 00:00 ч.')
                 ->icon(Heroicon::OutlinedCalendarDays)

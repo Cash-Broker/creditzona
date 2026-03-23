@@ -55,6 +55,19 @@ class LeadResource extends Resource
         ])));
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        return (string) static::getEloquentQuery()
+            ->where('status', 'new')
+            ->count();
+    }
+
     public static function getCreditTypeOptions(): array
     {
         return Lead::getCreditTypeOptions();

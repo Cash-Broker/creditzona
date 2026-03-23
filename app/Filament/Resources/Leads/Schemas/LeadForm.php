@@ -92,6 +92,7 @@ class LeadForm
                             ->rule('digits:10')
                             ->minLength(10)
                             ->maxLength(10)
+                            ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
                             ->columnSpan(2),
                         Select::make('marital_status')
                             ->label('Семейно положение')

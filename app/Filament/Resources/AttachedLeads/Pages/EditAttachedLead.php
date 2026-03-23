@@ -4,6 +4,8 @@ namespace App\Filament\Resources\AttachedLeads\Pages;
 
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
+use App\Models\User;
+use App\Services\LeadService;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Actions as SchemaActions;
@@ -14,6 +16,15 @@ use Filament\Support\Enums\Alignment;
 class EditAttachedLead extends EditRecord
 {
     protected static string $resource = AttachedLeadResource::class;
+
+    protected ?int $previousAdditionalUserId = null;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $this->previousAdditionalUserId = $this->getRecord()->additional_user_id;
+    }
 
     protected function getHeaderActions(): array
     {
@@ -65,6 +76,19 @@ class EditAttachedLead extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         return LeadForm::mutateSubmittedData($data);
+    }
+
+    protected function afterSave(): void
+    {
+        $actor = auth()->user();
+
+        app(LeadService::class)->sendAdditionalAssignmentNotification(
+            $this->getRecord()->refresh(),
+            $this->previousAdditionalUserId,
+            $actor instanceof User ? $actor : null,
+        );
+
+        $this->previousAdditionalUserId = $this->getRecord()->additional_user_id;
     }
 
     protected function getRedirectUrl(): ?string
