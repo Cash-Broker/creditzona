@@ -303,8 +303,9 @@ class AdminAuthorizationTest extends TestCase
         Livewire::test(EditAttachedLead::class, [
             'record' => (string) $lead->getKey(),
         ])
-            ->assertActionExists('return_to_primary')
-            ->assertSee('Комуникация');
+            ->assertSee('Комуникация')
+            ->assertSee('Запази')
+            ->assertSee('Върни');
     }
 
     /**
