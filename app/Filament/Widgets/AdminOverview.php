@@ -64,7 +64,7 @@ class AdminOverview extends StatsOverviewWidget
         $todayLeads = Lead::query()
             ->whereBetween('created_at', $this->getTodayLeadRange())
             ->count();
-        $messages = ContactMessage::count();
+        $messages = ContactMessage::query()->active()->count();
         $publishedBlogs = Blog::query()->where('is_published', true)->count();
         $publishedFaqs = Faq::query()->where('is_published', true)->count();
 

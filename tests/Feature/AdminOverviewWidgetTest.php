@@ -60,6 +60,15 @@ class AdminOverviewWidgetTest extends TestCase
             'message' => 'Тестово съобщение',
         ]);
 
+        ContactMessage::query()->create([
+            'full_name' => 'Мария Петрова',
+            'phone' => '0888123000',
+            'email' => 'archived@example.com',
+            'message' => 'Архивирано съобщение',
+            'archived_by_user_id' => $admin->id,
+            'archived_at' => now(),
+        ]);
+
         Blog::query()->create([
             'title' => 'Първа статия',
             'slug' => 'parva-statiya',
