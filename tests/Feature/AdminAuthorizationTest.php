@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Resources\AttachedLeadArchives\AttachedLeadArchiveResource;
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\AttachedLeads\Pages\EditAttachedLead;
 use App\Filament\Resources\AttachedLeads\Pages\ViewAttachedLead;
@@ -226,7 +225,57 @@ class AdminAuthorizationTest extends TestCase
         $this->assertSame([], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
     }
 
-    public function test_archived_attached_lead_disappears_from_attached_resource_query(): void
+    public function test_returned_lead_archive_resource_is_scoped_to_the_user_who_returned_the_lead(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $returnedByRenata = Lead::query()->create($this->leadData([
+            'phone' => '0888666661',
+            'email' => 'archive-1@example.com',
+            'assigned_user_id' => $elena->id,
+            'additional_user_id' => $renata->id,
+        ]));
+
+        $returnedByAnna = Lead::query()->create($this->leadData([
+            'phone' => '0888666662',
+            'email' => 'archive-2@example.com',
+            'assigned_user_id' => $elena->id,
+            'additional_user_id' => $anna->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($returnedByRenata, $renata);
+        app(LeadService::class)->returnAttachedLeadToPrimary($returnedByAnna, $anna);
+
+        $this->actingAs($renata);
+
+        $this->assertSame([
+            $returnedByRenata->id,
+        ], ReturnedLeadArchiveResource::getEloquentQuery()->pluck('id')->all());
+
+        $policy = new LeadPolicy;
+
+        $returnedByRenata->refresh();
+        $returnedByAnna->refresh();
+
+        $this->assertTrue($policy->view($renata, $returnedByRenata));
+        $this->assertTrue($policy->update($renata, $returnedByRenata));
+        $this->assertTrue($policy->view($renata, $returnedByAnna));
+    }
+
+    public function test_returned_resources_are_split_between_admin_archive_and_operator_return_lists(): void
     {
         $renata = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -238,123 +287,37 @@ class AdminAuthorizationTest extends TestCase
             'email' => 'anna@creditzona.test',
         ]);
 
-        $lead = Lead::query()->create($this->leadData([
-            'phone' => '0888444445',
-            'email' => 'archived@example.com',
-            'assigned_user_id' => $anna->id,
-            'additional_user_id' => $renata->id,
+        $adminReturnedLead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $renata->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $renata->id,
+            'returned_to_primary_at' => now(),
         ]));
 
         $this->actingAs($renata);
 
-        $this->assertSame([$lead->id], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertTrue(ReturnedLeadArchiveResource::canViewAny());
+        $this->assertFalse(ReturnedToMeLeadResource::canViewAny());
+        $this->assertFalse(ReturnedToMeLeadArchiveResource::canViewAny());
+        $this->assertTrue(ReturnedLeadArchiveResource::canView($adminReturnedLead));
+        $this->assertFalse(ReturnedToMeLeadResource::canView($adminReturnedLead));
+        $this->assertFalse(ReturnedToMeLeadArchiveResource::canView($adminReturnedLead));
 
-        app(LeadService::class)->archiveAttachedLead($lead, $renata);
-
-        $lead->refresh();
-
-        $this->assertNull($lead->additional_user_id);
-        $this->assertSame([], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
-    }
-
-    public function test_attached_lead_archive_resource_is_scoped_to_the_user_who_archived_the_lead(): void
-    {
-        $anna = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
-        ]);
-
-        $elena = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'elena@creditzona.test',
-        ]);
-
-        $iskra = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'iskra@creditzona.test',
-        ]);
-
-        $archivedByAnna = Lead::query()->create($this->leadData([
-            'phone' => '0888666671',
-            'email' => 'attached-archive-1@example.com',
-            'assigned_user_id' => $elena->id,
-            'additional_user_id' => $anna->id,
+        $operatorReturnedLead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $renata->id,
+            'returned_to_primary_at' => now(),
+            'returned_to_primary_archived_user_id' => $anna->id,
+            'returned_to_primary_archived_at' => now(),
         ]));
-
-        $archivedByIskra = Lead::query()->create($this->leadData([
-            'phone' => '0888666672',
-            'email' => 'attached-archive-2@example.com',
-            'assigned_user_id' => $elena->id,
-            'additional_user_id' => $iskra->id,
-        ]));
-
-        app(LeadService::class)->archiveAttachedLead($archivedByAnna, $anna);
-        app(LeadService::class)->archiveAttachedLead($archivedByIskra, $iskra);
 
         $this->actingAs($anna);
 
-        $this->assertSame([
-            $archivedByAnna->id,
-        ], AttachedLeadArchiveResource::getEloquentQuery()->pluck('id')->all());
-
-        $policy = new LeadPolicy;
-
-        $archivedByAnna->refresh();
-        $archivedByIskra->refresh();
-
-        $this->assertTrue($policy->view($anna, $archivedByAnna));
-        $this->assertTrue($policy->update($anna, $archivedByAnna));
-        $this->assertFalse($policy->view($anna, $archivedByIskra));
-    }
-
-    public function test_returned_lead_archive_resource_is_scoped_to_the_user_who_returned_the_lead(): void
-    {
-        $anna = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
-        ]);
-
-        $elena = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'elena@creditzona.test',
-        ]);
-
-        $iskra = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'iskra@creditzona.test',
-        ]);
-
-        $returnedByAnna = Lead::query()->create($this->leadData([
-            'phone' => '0888666661',
-            'email' => 'archive-1@example.com',
-            'assigned_user_id' => $elena->id,
-            'additional_user_id' => $anna->id,
-        ]));
-
-        $returnedByIskra = Lead::query()->create($this->leadData([
-            'phone' => '0888666662',
-            'email' => 'archive-2@example.com',
-            'assigned_user_id' => $elena->id,
-            'additional_user_id' => $iskra->id,
-        ]));
-
-        app(LeadService::class)->returnAttachedLeadToPrimary($returnedByAnna, $anna);
-        app(LeadService::class)->returnAttachedLeadToPrimary($returnedByIskra, $iskra);
-
-        $this->actingAs($anna);
-
-        $this->assertSame([
-            $returnedByAnna->id,
-        ], ReturnedLeadArchiveResource::getEloquentQuery()->pluck('id')->all());
-
-        $policy = new LeadPolicy;
-
-        $returnedByAnna->refresh();
-        $returnedByIskra->refresh();
-
-        $this->assertTrue($policy->view($anna, $returnedByAnna));
-        $this->assertTrue($policy->update($anna, $returnedByAnna));
-        $this->assertFalse($policy->view($anna, $returnedByIskra));
+        $this->assertFalse(ReturnedLeadArchiveResource::canViewAny());
+        $this->assertTrue(ReturnedToMeLeadArchiveResource::canViewAny());
+        $this->assertFalse(ReturnedLeadArchiveResource::canView($operatorReturnedLead));
+        $this->assertTrue(ReturnedToMeLeadArchiveResource::canView($operatorReturnedLead));
     }
 
     public function test_returned_to_me_resource_is_scoped_to_primary_assignee_of_returned_leads(): void
@@ -481,6 +444,36 @@ class AdminAuthorizationTest extends TestCase
         ], ReturnedToMeLeadArchiveResource::getEloquentQuery()->pluck('id')->all());
     }
 
+    public function test_returned_to_me_archive_resource_hides_reassigned_active_lead(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $elena->id,
+            'returned_to_primary_at' => now(),
+        ]));
+
+        app(LeadService::class)->archiveReturnedToPrimaryLead($lead, $anna);
+
+        $lead->forceFill([
+            'additional_user_id' => $elena->id,
+        ])->save();
+
+        $this->actingAs($anna);
+
+        $this->assertSame([], ReturnedToMeLeadArchiveResource::getEloquentQuery()->pluck('id')->all());
+    }
+
     public function test_attached_lead_pages_expose_edit_then_return_actions_for_admin(): void
     {
         $renata = User::factory()->create([
@@ -511,7 +504,7 @@ class AdminAuthorizationTest extends TestCase
         Livewire::test(EditAttachedLead::class, [
             'record' => (string) $lead->getKey(),
         ])
-            ->assertSee('Комуникация')
+            ->assertDontSee('Комуникация')
             ->assertSee('Запази')
             ->assertSee('Запази и върни')
             ->assertSee('Отказ');

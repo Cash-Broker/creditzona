@@ -105,6 +105,41 @@ class ContactMessageResource extends Resource
             });
     }
 
+    public static function makeArchiveAction(): Action
+    {
+        return Action::make('archive_contact_message')
+            ->label('Архив')
+            ->icon(Heroicon::OutlinedArchiveBox)
+            ->color('gray')
+            ->requiresConfirmation()
+            ->modalHeading('Архивиране на съобщение')
+            ->modalDescription('Съобщението ще бъде преместено в "Архив на съобщения".')
+            ->visible(fn (): bool => auth()->user() instanceof User && auth()->user()->isAdmin())
+            ->action(function (ContactMessage $record): void {
+                $actor = auth()->user();
+
+                if (! $actor instanceof User) {
+                    return;
+                }
+
+                try {
+                    app(ContactMessageService::class)->archiveMessage($record, $actor);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Съобщението е архивирано.')
+                    ->success()
+                    ->send();
+            });
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return ContactMessageInfolist::configure($schema);
@@ -141,7 +176,10 @@ class ContactMessageResource extends Resource
     {
         $user = auth()->user();
 
-        return $user instanceof User && $user->isAdmin();
+        return $user instanceof User
+            && $user->isAdmin()
+            && $record instanceof ContactMessage
+            && $record->archived_at === null;
     }
 
     public static function canEdit($record): bool
@@ -160,6 +198,6 @@ class ContactMessageResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query;
+        return $query->active();
     }
 }

@@ -26,12 +26,20 @@
                     :is="headingTag"
                     class="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-[-0.03em] text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.35)] sm:text-4xl lg:text-5xl"
                 >
-                    Когато другите отказват заради риск, ние намираме работещо
+                    Когато другите виждат риск, ние намираме работещо
                     решение
                     <span class="mt-2 block text-accent-soft"
                         >за хора с откази, запори и лошо ЦКР</span
                     >
                 </component>
+
+                <p
+                    class="mx-auto mt-4 max-w-3xl text-sm font-medium leading-7 text-white/92 sm:text-base"
+                >
+                    Понякога е нужен само един човек, който да повярва в теб,
+                    за да се намери решение. С правилния поръчител можем да
+                    стигнем до одобрение дори при по-трудни случаи.
+                </p>
 
                 <div
                     class="mt-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-1.5 text-xs font-semibold text-accent-ink shadow-sm"

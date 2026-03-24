@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\AttachedLeads\Pages;
 
-use App\Filament\Resources\AttachedLeadArchives\AttachedLeadArchiveResource;
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
 use App\Models\User;
@@ -23,6 +22,13 @@ class EditAttachedLead extends EditRecord
     protected static string $resource = AttachedLeadResource::class;
 
     protected ?int $previousAdditionalUserId = null;
+
+    protected ?string $leadNoteDraft = null;
+
+    /**
+     * @var array<int, array{id: int|null, fingerprint: string, note: string}>
+     */
+    protected array $guarantorNoteDrafts = [];
 
     public function mount(int|string $record): void
     {
@@ -70,35 +76,6 @@ class EditAttachedLead extends EditRecord
         $this->redirect(AttachedLeadResource::getUrl('index'));
     }
 
-    public function saveAndArchive(): void
-    {
-        $this->save(shouldRedirect: false, shouldSendSavedNotification: false);
-
-        $user = auth()->user();
-
-        if (! $user instanceof User) {
-            return;
-        }
-
-        try {
-            app(LeadService::class)->archiveAttachedLead($this->getRecord()->refresh(), $user);
-        } catch (AuthorizationException|DomainException $exception) {
-            Notification::make()
-                ->title($exception->getMessage())
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        Notification::make()
-            ->title('Заявката е запазена и архивирана.')
-            ->success()
-            ->send();
-
-        $this->redirect(AttachedLeadArchiveResource::getUrl('index'));
-    }
-
     public function getFormActionsContentComponent(): Component
     {
         return Grid::make([
@@ -108,7 +85,6 @@ class EditAttachedLead extends EditRecord
             ->schema([
                 SchemaActions::make([
                     $this->getSaveAndReturnFormAction(),
-                    $this->getSaveAndArchiveFormAction(),
                     $this->getCancelFormAction(),
                 ])
                     ->alignment(Alignment::Start),
@@ -143,18 +119,6 @@ class EditAttachedLead extends EditRecord
             ->action('saveAndReturn');
     }
 
-    protected function getSaveAndArchiveFormAction(): Action
-    {
-        return Action::make('save_and_archive')
-            ->label('Запази и архивирай')
-            ->icon(Heroicon::OutlinedArchiveBox)
-            ->color('info')
-            ->requiresConfirmation()
-            ->modalHeading('Запази и архивирай')
-            ->modalDescription('Промените ще бъдат запазени и заявката ще бъде преместена в "Архивирани към мен".')
-            ->action('saveAndArchive');
-    }
-
     protected function getCancelFormAction(): Action
     {
         return parent::getCancelFormAction()
@@ -166,17 +130,37 @@ class EditAttachedLead extends EditRecord
         return LeadForm::mutateSubmittedData($data);
     }
 
+    protected function beforeSave(): void
+    {
+        $rawState = $this->form->getRawState();
+
+        $this->leadNoteDraft = is_array($rawState)
+            ? LeadForm::captureLeadNoteDraft($rawState)
+            : null;
+
+        $this->guarantorNoteDrafts = is_array($rawState)
+            ? LeadForm::captureGuarantorNoteDrafts($rawState)
+            : [];
+    }
+
     protected function afterSave(): void
     {
+        $record = $this->getRecord()->refresh();
+
+        LeadForm::persistLeadNoteDraft($record, $this->leadNoteDraft);
+        LeadForm::persistGuarantorNoteDrafts($record, $this->guarantorNoteDrafts);
+
         $actor = auth()->user();
 
         app(LeadService::class)->sendAdditionalAssignmentNotification(
-            $this->getRecord()->refresh(),
+            $record->refresh(),
             $this->previousAdditionalUserId,
             $actor instanceof User ? $actor : null,
         );
 
-        $this->previousAdditionalUserId = $this->getRecord()->additional_user_id;
+        $this->previousAdditionalUserId = $record->additional_user_id;
+        $this->leadNoteDraft = null;
+        $this->guarantorNoteDrafts = [];
     }
 
     protected function getRedirectUrl(): ?string

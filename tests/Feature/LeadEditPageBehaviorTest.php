@@ -16,7 +16,7 @@ class LeadEditPageBehaviorTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_edit_lead_page_shows_communication_and_redirects_to_listing_after_save(): void
+    public function test_edit_lead_page_redirects_to_listing_after_save_without_communication_widget(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -46,7 +46,7 @@ class LeadEditPageBehaviorTest extends TestCase
         Livewire::test(EditLead::class, [
             'record' => (string) $lead->getKey(),
         ])
-            ->assertSee('Комуникация')
+            ->assertDontSee('Комуникация')
             ->call('save')
             ->assertHasNoFormErrors()
             ->assertRedirect(LeadResource::getUrl('index'));
@@ -83,6 +83,51 @@ class LeadEditPageBehaviorTest extends TestCase
             'record' => (string) $lead->getKey(),
         ])
             ->assertDontSee('Комуникация');
+    }
+
+    public function test_edit_lead_page_appends_new_client_note_to_history(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+            'name' => 'Рената',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010001',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'new',
+            'assigned_user_id' => $operator->id,
+            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->fillForm([
+                'lead_existing_internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+                'lead_new_internal_note' => 'Втора бележка',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $lead->refresh();
+
+        $this->assertStringContainsString('Първа бележка', (string) $lead->internal_notes);
+        $this->assertStringContainsString('Рената: Втора бележка', (string) $lead->internal_notes);
     }
 
     public function test_edit_lead_page_notifies_new_additional_assignee_after_save(): void

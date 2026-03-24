@@ -7,6 +7,7 @@ use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
 use App\Models\Lead;
 use App\Services\LeadService;
+use App\Support\Notes\NoteHistory;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -123,21 +124,30 @@ class LeadsTable
                     ->label('Телефон')
                     ->searchable(),
 
-                TextColumn::make('internal_notes')
-                    ->label('Бележка')
-                    ->state(function (Lead $record): ?string {
-                        $note = trim(strip_tags((string) ($record->internal_notes ?? '')));
+                TextColumn::make('latest_internal_note')
+                    ->label('Последно съобщение')
+                    ->state(fn (Lead $record): ?string => NoteHistory::latestPreview($record->internal_notes, 110))
+                    ->description(function (Lead $record): ?string {
+                        $entry = NoteHistory::latestEntry($record->internal_notes);
 
-                        if ($note === '') {
+                        if ($entry === null) {
                             return null;
                         }
 
-                        return preg_replace('/\s+/u', ' ', $note) ?: $note;
+                        return implode(' • ', array_values(array_filter([
+                            $entry['author'],
+                            $entry['timestamp'],
+                        ])));
+                    })
+                    ->tooltip(function (Lead $record): ?string {
+                        $entry = NoteHistory::latestEntry($record->internal_notes);
+
+                        return $entry['body'] ?? null;
                     })
                     ->placeholder('Няма')
-                    ->searchable()
-                    ->wrap()
-                    ->grow(),
+                    ->searchable(['internal_notes'])
+                    ->lineClamp(2)
+                    ->width('24rem'),
 
                 TextColumn::make('workplace')
                     ->label('Месторабота')
@@ -200,7 +210,6 @@ class LeadsTable
                     ->native(false),
             ])
             ->recordActions(array_values(array_filter([
-                $isAttachedResource ? AttachedLeadResource::makeArchiveAction() : null,
                 $isAttachedResource ? AttachedLeadResource::makeReturnToPrimaryAction() : null,
                 $isReturnedToMeResource ? ReturnedToMeLeadResource::makeArchiveAction() : null,
                 ViewAction::make(),

@@ -46,6 +46,16 @@ class AttachedLeadArchiveResource extends Resource
         return BaseLeadResource::getRecordTitle($record);
     }
 
+    public static function canViewAny(): bool
+    {
+        return false;
+    }
+
+    public static function canView($record): bool
+    {
+        return false;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $user = auth()->user();
@@ -59,7 +69,7 @@ class AttachedLeadArchiveResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return LeadForm::configure($schema, includeCommunicationWidget: true);
+        return LeadForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema

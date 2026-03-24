@@ -78,6 +78,26 @@ class LeadLaterMarkingTest extends TestCase
         $this->assertSame(FontWeight::SemiBold, $column->getWeight($state));
     }
 
+    public function test_leads_table_shows_only_latest_client_note_preview(): void
+    {
+        $table = LeadResource::table(Table::make(app(ListLeads::class)));
+
+        $lead = Lead::query()->create($this->leadData([
+            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка'."\n\n".'[24.03.2026 11:30] Рената: Втора бележка за клиента',
+        ]));
+
+        $column = $table->getColumn('latest_internal_note');
+
+        $this->assertNotNull($column);
+
+        $column->record($lead);
+        $stateCallback = $column->getGetStateUsingCallback();
+        $state = $stateCallback($lead);
+
+        $this->assertSame('Втора бележка за клиента', $state);
+        $this->assertSame('Рената • 24.03.2026 11:30', $column->getDescriptionBelow());
+    }
+
     /**
      * @return array<string, mixed>
      */

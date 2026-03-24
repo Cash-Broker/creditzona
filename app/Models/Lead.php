@@ -414,6 +414,7 @@ class Lead extends Model implements HasRichContent
     public function scopeReturnedToPrimaryArchiveForUser(Builder $query, User $user): Builder
     {
         return $query
+            ->whereNull('additional_user_id')
             ->where('returned_to_primary_archived_user_id', $user->id)
             ->whereNotNull('returned_to_primary_archived_at');
     }

@@ -46,6 +46,25 @@ class ReturnedToMeLeadArchiveResource extends Resource
         return BaseLeadResource::getRecordTitle($record);
     }
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User && $user->isOperator();
+    }
+
+    public static function canView($record): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User
+            && $user->isOperator()
+            && $record instanceof Lead
+            && $record->returned_to_primary_archived_user_id === $user->id
+            && $record->returned_to_primary_archived_at !== null
+            && $record->additional_user_id === null;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $user = auth()->user();
@@ -59,7 +78,7 @@ class ReturnedToMeLeadArchiveResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return LeadForm::configure($schema, includeCommunicationWidget: true);
+        return LeadForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema

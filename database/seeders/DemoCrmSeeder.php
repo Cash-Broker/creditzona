@@ -1,0 +1,16 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class DemoCrmSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->call([
+            DemoLeadsSeeder::class,
+            DemoContactMessagesSeeder::class,
+        ]);
+    }
+}

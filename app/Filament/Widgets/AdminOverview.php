@@ -22,6 +22,8 @@ class AdminOverview extends StatsOverviewWidget
 {
     protected static bool $isLazy = false;
 
+    protected ?string $pollingInterval = '5s';
+
     protected ?string $heading = 'Обзор';
 
     protected ?string $description = 'Бърз преглед на най-важното в административния панел.';
@@ -73,7 +75,6 @@ class AdminOverview extends StatsOverviewWidget
                 ->color($todayLeads > 0 ? 'success' : 'gray')
                 ->url(LeadResource::getUrl()),
             $leadStat,
-            $returnedToMeStat,
             Stat::make('Контактни съобщения', $messages)
                 ->description('Получени през сайта')
                 ->icon(Heroicon::OutlinedChatBubbleLeftRight)

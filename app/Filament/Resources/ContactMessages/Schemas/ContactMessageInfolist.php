@@ -24,8 +24,15 @@ class ContactMessageInfolist
                         TextEntry::make('assignedUser.name')
                             ->label('Оператор')
                             ->placeholder('Няма'),
+                        TextEntry::make('archivedByUser.name')
+                            ->label('Архивирано от')
+                            ->placeholder('Няма'),
                         TextEntry::make('created_at')
                             ->label('Получено на')
+                            ->dateTime('d.m.Y H:i', 'Europe/Sofia'),
+                        TextEntry::make('archived_at')
+                            ->label('Архивирано на')
+                            ->placeholder('Няма')
                             ->dateTime('d.m.Y H:i', 'Europe/Sofia'),
                         TextEntry::make('message')
                             ->label('Съобщение')

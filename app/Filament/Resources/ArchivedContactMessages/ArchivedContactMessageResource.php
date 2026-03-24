@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\AttachedContactMessages;
+namespace App\Filament\Resources\ArchivedContactMessages;
 
-use App\Filament\Resources\AttachedContactMessages\Pages\ListAttachedContactMessages;
-use App\Filament\Resources\AttachedContactMessages\Pages\ViewAttachedContactMessage;
+use App\Filament\Resources\ArchivedContactMessages\Pages\ListArchivedContactMessages;
+use App\Filament\Resources\ArchivedContactMessages\Pages\ViewArchivedContactMessage;
 use App\Filament\Resources\ContactMessages\Schemas\ContactMessageInfolist;
 use App\Filament\Resources\ContactMessages\Tables\ContactMessagesTable;
 use App\Models\ContactMessage;
@@ -16,21 +16,21 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class AttachedContactMessageResource extends Resource
+class ArchivedContactMessageResource extends Resource
 {
     protected static ?string $model = ContactMessage::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChatBubbleLeftRight;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArchiveBox;
 
     protected static string|UnitEnum|null $navigationGroup = 'Заявки и контакти';
 
-    protected static ?string $navigationLabel = 'Съобщения към мен';
+    protected static ?string $navigationLabel = 'Архив на съобщения';
 
-    protected static ?int $navigationSort = 14;
+    protected static ?int $navigationSort = 15;
 
-    protected static ?string $modelLabel = 'съобщение към мен';
+    protected static ?string $modelLabel = 'архивирано контактно съобщение';
 
-    protected static ?string $pluralModelLabel = 'съобщения към мен';
+    protected static ?string $pluralModelLabel = 'архив на съобщения';
 
     protected static bool $hasTitleCaseModelLabel = false;
 
@@ -40,7 +40,7 @@ class AttachedContactMessageResource extends Resource
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isOperator()) {
+        if (! $user instanceof User || ! $user->isAdmin()) {
             return null;
         }
 
@@ -54,14 +54,14 @@ class AttachedContactMessageResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return ContactMessagesTable::configure($table, isAttachedResource: true);
+        return ContactMessagesTable::configure($table, isArchiveResource: true);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListAttachedContactMessages::route('/'),
-            'view' => ViewAttachedContactMessage::route('/{record}'),
+            'index' => ListArchivedContactMessages::route('/'),
+            'view' => ViewArchivedContactMessage::route('/{record}'),
         ];
     }
 
@@ -69,7 +69,7 @@ class AttachedContactMessageResource extends Resource
     {
         $user = auth()->user();
 
-        return $user instanceof User && $user->isOperator();
+        return $user instanceof User && $user->isAdmin();
     }
 
     public static function canView($record): bool
@@ -77,10 +77,9 @@ class AttachedContactMessageResource extends Resource
         $user = auth()->user();
 
         return $user instanceof User
-            && $user->isOperator()
+            && $user->isAdmin()
             && $record instanceof ContactMessage
-            && $record->assigned_user_id === $user->id
-            && $record->archived_at === null;
+            && $record->archived_at !== null;
     }
 
     public static function getEloquentQuery(): Builder
@@ -88,10 +87,10 @@ class AttachedContactMessageResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isOperator()) {
+        if (! $user instanceof User || ! $user->isAdmin()) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->attachedToUser($user);
+        return $query->archived()->with(['assignedUser', 'archivedByUser']);
     }
 }

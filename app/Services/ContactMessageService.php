@@ -36,11 +36,33 @@ class ContactMessageService
             throw new DomainException('Контактните съобщения могат да се закачат само към оператор.');
         }
 
+        if ($contactMessage->archived_at !== null) {
+            throw new DomainException('Архивирано съобщение не може да бъде закачано повторно.');
+        }
+
         $contactMessage->forceFill([
             'assigned_user_id' => $operator->id,
         ])->save();
 
         return $contactMessage->refresh()->loadMissing('assignedUser');
+    }
+
+    public function archiveMessage(ContactMessage $contactMessage, User $actor): ContactMessage
+    {
+        if (! $actor->isAdmin()) {
+            throw new AuthorizationException('Нямате достъп да архивирате това съобщение.');
+        }
+
+        if ($contactMessage->archived_at !== null) {
+            throw new DomainException('Съобщението вече е архивирано.');
+        }
+
+        $contactMessage->forceFill([
+            'archived_by_user_id' => $actor->id,
+            'archived_at' => now(),
+        ])->save();
+
+        return $contactMessage->refresh()->loadMissing(['assignedUser', 'archivedByUser']);
     }
 
     private function sendNotificationEmail(ContactMessage $contactMessage): void

@@ -161,7 +161,7 @@ class LeadResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return LeadForm::configure($schema, includeCommunicationWidget: true);
+        return LeadForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema

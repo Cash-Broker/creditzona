@@ -46,7 +46,9 @@ class AdminLeadAlerts extends Component
         }
 
         $this->attachedCount = Lead::query()->attachedToUser($user)->count();
-        $this->returnedToMeCount = Lead::query()->returnedToPrimaryUser($user)->count();
+        $this->returnedToMeCount = $user->isOperator()
+            ? Lead::query()->returnedToPrimaryUser($user)->count()
+            : 0;
 
         $this->dispatch(
             'lead-navigation-counts-updated',

@@ -13,6 +13,7 @@ class ViewContactMessage extends ViewRecord
     {
         return [
             ContactMessageResource::makeAssignAction(),
+            ContactMessageResource::makeArchiveAction(),
         ];
     }
 }

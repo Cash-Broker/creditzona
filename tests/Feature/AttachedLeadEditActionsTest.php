@@ -46,7 +46,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'record' => (string) $lead->getKey(),
         ])
             ->assertSee('Запази и върни')
-            ->assertSee('Запази и архивирай')
+            ->assertDontSee('Запази и архивирай')
             ->assertSee('Запази')
             ->assertSee('Отказ');
     }
@@ -134,52 +134,6 @@ class AttachedLeadEditActionsTest extends TestCase
         $this->assertNotNull($lead->returned_to_primary_at);
     }
 
-    public function test_edit_attached_lead_save_and_archive_saves_changes_and_moves_lead_to_attached_archive(): void
-    {
-        $admin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
-            'email' => 'renata@creditzona.test',
-        ]);
-
-        $operator = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
-        ]);
-
-        $lead = Lead::query()->create([
-            'credit_type' => 'consumer',
-            'first_name' => 'Иван',
-            'last_name' => 'Иванов',
-            'egn' => '9001010001',
-            'phone' => '0888123456',
-            'email' => 'ivan@example.com',
-            'city' => 'Пловдив',
-            'amount' => 10000,
-            'status' => 'processed',
-            'assigned_user_id' => $operator->id,
-            'additional_user_id' => $admin->id,
-        ]);
-
-        $this->actingAs($admin);
-
-        Livewire::test(EditAttachedLead::class, [
-            'record' => (string) $lead->getKey(),
-        ])
-            ->fillForm([
-                'full_name' => 'Мария Иванова',
-            ])
-            ->call('saveAndArchive')
-            ->assertHasNoFormErrors();
-
-        $lead->refresh();
-
-        $this->assertSame('Мария', $lead->first_name);
-        $this->assertSame('Иванова', $lead->last_name);
-        $this->assertNull($lead->additional_user_id);
-        $this->assertSame($admin->id, $lead->archived_additional_user_id);
-        $this->assertNotNull($lead->attached_archived_at);
-    }
-
     public function test_edit_attached_lead_save_prunes_effectively_empty_guarantor_rows(): void
     {
         $admin = User::factory()->create([
@@ -231,7 +185,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'credit_bank' => null,
                     'documents' => [],
                     'document_file_names' => [],
-                    'internal_notes' => '<p></p>',
+                    'new_internal_note' => '<p></p>',
                 ]],
             ])
             ->call('save')
@@ -279,7 +233,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'phone' => '0876997981',
                     'documents' => [],
                     'document_file_names' => [],
-                    'internal_notes' => null,
+                    'new_internal_note' => null,
                 ]],
             ])
             ->call('save')
@@ -334,7 +288,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'status' => 'unsuitable',
                     'documents' => [],
                     'document_file_names' => [],
-                    'internal_notes' => null,
+                    'new_internal_note' => null,
                 ]],
             ])
             ->call('save')
@@ -382,7 +336,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'phone' => '0876997981',
                     'documents' => [],
                     'document_file_names' => [],
-                    'internal_notes' => null,
+                    'new_internal_note' => null,
                 ]],
             ])
             ->call('save')
@@ -399,6 +353,67 @@ class AttachedLeadEditActionsTest extends TestCase
         $guarantor = $lead->fresh()->guarantors()->first();
 
         $this->assertSame('9001010003', $guarantor?->egn);
+    }
+
+    public function test_edit_attached_lead_save_appends_new_guarantor_note_to_history(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+            'name' => 'Рената',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010001',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $operator->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $guarantor = $lead->guarantors()->create([
+            'first_name' => 'Мария',
+            'last_name' => 'Петрова',
+            'phone' => '0888000111',
+            'status' => null,
+            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->fillForm([
+                'guarantors' => [[
+                    'id' => $guarantor->id,
+                    'status' => null,
+                    'full_name' => 'Мария Петрова',
+                    'phone' => '0888000111',
+                    'existing_internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+                    'new_internal_note' => 'Втора бележка',
+                    'documents' => [],
+                    'document_file_names' => [],
+                ]],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $guarantor->refresh();
+
+        $this->assertStringContainsString('Първа бележка', (string) $guarantor->internal_notes);
+        $this->assertStringContainsString('Рената: Втора бележка', (string) $guarantor->internal_notes);
     }
 
     public function test_edit_attached_lead_save_splits_full_name_into_existing_name_columns(): void

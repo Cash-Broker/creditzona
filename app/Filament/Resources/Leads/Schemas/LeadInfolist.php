@@ -173,6 +173,11 @@ class LeadInfolist
                                         TextEntry::make('credit_bank')
                                             ->label('Банка по кредита')
                                             ->placeholder('Няма'),
+                                        TextEntry::make('internal_notes')
+                                            ->label('История на съобщенията за поръчителя')
+                                            ->prose()
+                                            ->placeholder('Няма')
+                                            ->columnSpanFull(),
                                     ]),
                                 Section::make('Данни за имота на поръчителя')
                                     ->columns(2)
@@ -191,14 +196,6 @@ class LeadInfolist
                                             ->label('Прикачени файлове')
                                             ->view('filament.resources.leads.infolists.guarantor-document-downloads')
                                             ->state(fn (LeadGuarantor $record): array => $record->getDocumentDownloads())
-                                            ->columnSpanFull(),
-                                    ]),
-                                Section::make('Вътрешна бележка за поръчителя')
-                                    ->schema([
-                                        TextEntry::make('internal_notes')
-                                            ->label('Бележка')
-                                            ->prose()
-                                            ->placeholder('Няма')
                                             ->columnSpanFull(),
                                     ]),
                             ]),
@@ -237,10 +234,10 @@ class LeadInfolist
                             ))
                             ->columnSpanFull(),
                     ]),
-                Section::make('Вътрешна бележка')
+                Section::make('Съобщения за клиента')
                     ->schema([
                         TextEntry::make('internal_notes')
-                            ->label('Бележка')
+                            ->label('История на съобщенията за клиента')
                             ->prose()
                             ->placeholder('Няма')
                             ->columnSpanFull(),
