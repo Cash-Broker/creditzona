@@ -51,6 +51,11 @@ class ContactMessage extends Model
         return $query->active()->where('assigned_user_id', $user->id);
     }
 
+    public function scopeArchivedForUser(Builder $query, User $user): Builder
+    {
+        return $query->archived()->where('assigned_user_id', $user->id);
+    }
+
     public function archivedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by_user_id');

@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\ArchivedContactMessages\ArchivedContactMessageResource;
+use App\Filament\Resources\AttachedContactMessageArchives\AttachedContactMessageArchiveResource;
 use App\Filament\Resources\AttachedContactMessages\AttachedContactMessageResource;
 use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use App\Models\ContactMessage;
 use App\Models\User;
 use App\Services\ContactMessageService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -78,6 +80,50 @@ class ContactMessageArchiveTest extends TestCase
         $this->actingAs($operator);
 
         $this->assertSame([], AttachedContactMessageResource::getEloquentQuery()->pluck('id')->all());
+    }
+
+    public function test_operator_can_archive_own_attached_contact_message_into_personal_archive(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $message = ContactMessage::query()->create($this->contactMessageData([
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        app(ContactMessageService::class)->archiveMessage($message, $operator);
+
+        $message->refresh();
+
+        $this->assertSame($operator->id, $message->archived_by_user_id);
+        $this->assertNotNull($message->archived_at);
+
+        $this->actingAs($operator);
+
+        $this->assertSame([], AttachedContactMessageResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertSame([
+            $message->id,
+        ], AttachedContactMessageArchiveResource::getEloquentQuery()->pluck('id')->all());
+    }
+
+    public function test_operator_cannot_archive_contact_message_assigned_to_someone_else(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $message = ContactMessage::query()->create($this->contactMessageData([
+            'assigned_user_id' => $elena->id,
+        ]));
+
+        $this->expectException(AuthorizationException::class);
+
+        app(ContactMessageService::class)->archiveMessage($message, $anna);
     }
 
     /**

@@ -60,12 +60,12 @@ class ContactMessagesTable
             ])
             ->recordActions(array_values(array_filter([
                 (! $isAttachedResource && ! $isArchiveResource) ? ContactMessageResource::makeAssignAction() : null,
-                (! $isAttachedResource && ! $isArchiveResource) ? ContactMessageResource::makeArchiveAction() : null,
+                ! $isArchiveResource ? ContactMessageResource::makeArchiveAction() : null,
                 ViewAction::make(),
             ])))
             ->defaultSort('created_at', 'desc')
             ->toolbarActions(array_values(array_filter([
-                (! $isAttachedResource && ! $isArchiveResource) ? BulkAction::make('archive_messages')
+                ! $isArchiveResource ? BulkAction::make('archive_messages')
                     ->label('Архивирай избраните')
                     ->icon('heroicon-m-archive-box')
                     ->color('gray')

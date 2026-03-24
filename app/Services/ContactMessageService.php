@@ -49,7 +49,10 @@ class ContactMessageService
 
     public function archiveMessage(ContactMessage $contactMessage, User $actor): ContactMessage
     {
-        if (! $actor->isAdmin()) {
+        $canArchive = $actor->isAdmin()
+            || ($actor->isOperator() && $contactMessage->assigned_user_id === $actor->id);
+
+        if (! $canArchive) {
             throw new AuthorizationException('Нямате достъп да архивирате това съобщение.');
         }
 

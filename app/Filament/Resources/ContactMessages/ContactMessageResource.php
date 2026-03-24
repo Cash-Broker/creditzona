@@ -113,8 +113,13 @@ class ContactMessageResource extends Resource
             ->color('gray')
             ->requiresConfirmation()
             ->modalHeading('Архивиране на съобщение')
-            ->modalDescription('Съобщението ще бъде преместено в "Архив на съобщения".')
-            ->visible(fn (): bool => auth()->user() instanceof User && auth()->user()->isAdmin())
+            ->modalDescription('Съобщението ще бъде преместено в архива.')
+            ->visible(function (ContactMessage $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && ($user->isAdmin() || ($user->isOperator() && $record->assigned_user_id === $user->id));
+            })
             ->action(function (ContactMessage $record): void {
                 $actor = auth()->user();
 
