@@ -173,7 +173,7 @@ class Lead extends Model implements HasRichContent
     {
         return [
             self::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR => 'Финансиране с поръчител',
-            self::CREDIT_TYPE_MORTGAGE => 'Ипотечен кредит',
+            // self::CREDIT_TYPE_MORTGAGE => 'Ипотечен кредит',
         ];
     }
 

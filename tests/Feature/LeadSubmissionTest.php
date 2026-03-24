@@ -55,25 +55,20 @@ class LeadSubmissionTest extends TestCase
         Mail::assertNothingQueued();
     }
 
-    public function test_successful_mortgage_lead_submission(): void
+    public function test_public_submission_rejects_mortgage_credit_type(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
-            'credit_type' => 'mortgage',
+            'credit_type' => Lead::CREDIT_TYPE_MORTGAGE,
             'property_type' => 'house',
             'property_location' => 'София',
         ]));
 
         $response
-            ->assertOk()
-            ->assertJson([
-                'message' => 'Благодарим! Ще се свържем с вас до 48ч.',
-            ]);
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['credit_type']);
 
-        $this->assertDatabaseHas('leads', [
-            'credit_type' => 'mortgage',
-            'property_type' => 'house',
-            'property_location' => 'София',
-        ]);
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('lead_guarantors', 0);
     }
 
     public function test_successful_consumer_with_guarantor_submission_keeps_consumer_fields_and_stores_guarantor(): void
@@ -247,18 +242,17 @@ class LeadSubmissionTest extends TestCase
         $this->assertDatabaseCount('lead_guarantors', 0);
     }
 
-    public function test_mortgage_without_property_type_returns_validation_error(): void
+    public function test_public_submission_rejects_mortgage_even_without_property_type(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
-            'credit_type' => 'mortgage',
+            'credit_type' => Lead::CREDIT_TYPE_MORTGAGE,
             'property_type' => null,
             'property_location' => 'София',
         ]));
 
         $response
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['property_type'])
-            ->assertJsonPath('errors.property_type.0', 'Моля, изберете вид на имота.');
+            ->assertJsonValidationErrors(['credit_type']);
 
         $this->assertDatabaseCount('leads', 0);
     }
@@ -845,9 +839,6 @@ class LeadSubmissionTest extends TestCase
     public function test_submission_rejects_latin_letters_in_additional_fields_and_guarantors(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
-            'credit_type' => 'mortgage',
-            'property_type' => 'house',
-            'property_location' => 'Center 5',
             'workplace' => 'Office 1',
             'job_title' => 'Manager',
             'salary_bank' => 'Bank',
@@ -869,14 +860,12 @@ class LeadSubmissionTest extends TestCase
                 'workplace',
                 'job_title',
                 'salary_bank',
-                'property_location',
                 'guarantors.0.first_name',
                 'guarantors.0.last_name',
             ])
             ->assertJsonPath('errors.workplace.0', 'Местоработата не може да съдържа латински букви.')
             ->assertJsonPath('errors.job_title.0', 'Длъжността не може да съдържа латински букви.')
-            ->assertJsonPath('errors.salary_bank.0', 'Банката за заплатата не може да съдържа латински букви.')
-            ->assertJsonPath('errors.property_location.0', 'Местонахождението на имота не може да съдържа латински букви.');
+            ->assertJsonPath('errors.salary_bank.0', 'Банката за заплатата не може да съдържа латински букви.');
 
         $this->assertSame(
             'Името на поръчителя трябва да съдържа само букви на кирилица.',

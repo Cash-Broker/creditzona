@@ -127,7 +127,7 @@
                             <option value="consumer_with_guarantor">
                                 Финансиране с поръчител
                             </option>
-                            <option value="mortgage">Ипотечен кредит</option>
+                            <!-- <option value="mortgage">Ипотечен кредит</option> -->
                         </select>
 
                         <p v-if="getFieldError('credit_type')" class="field-error">

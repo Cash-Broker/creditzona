@@ -5,9 +5,10 @@ const amountDefault = 5500;
 const amountMax = 50000;
 const amountStep = 500;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const defaultCreditType = "consumer_with_guarantor";
 const allowedCreditTypes = new Set([
-    "consumer_with_guarantor",
-    "mortgage",
+    defaultCreditType,
+    // "mortgage",
 ]);
 const allowedPropertyTypes = new Set(["house", "apartment"]);
 const fieldsWithoutLatin = new Set([
@@ -18,11 +19,9 @@ const fieldsWithoutLatin = new Set([
 ]);
 
 function resolveInitialCreditType(initialCreditType = "") {
-    if (initialCreditType === "consumer") {
-        return "consumer_with_guarantor";
-    }
-
-    return allowedCreditTypes.has(initialCreditType) ? initialCreditType : "";
+    return allowedCreditTypes.has(initialCreditType)
+        ? initialCreditType
+        : defaultCreditType;
 }
 
 function createInitialForm(initialCreditType = "") {
