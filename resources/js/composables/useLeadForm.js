@@ -645,6 +645,7 @@ export function useLeadForm(options = {}) {
         formattedMinAmount,
         formattedMaxAmount,
         creditRangeStyle,
+        validateForm,
         handleBlur,
         handleInput,
         submitForm,

@@ -4,7 +4,7 @@
             <span
                 class="inline-flex items-center rounded-full border border-accent-soft-border bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-darkened"
             >
-                Потребителски кредит
+                Финансиране с поръчител
             </span>
 
             <h1 class="mt-4 text-4xl font-bold tracking-tight text-text">

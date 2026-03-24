@@ -10,51 +10,41 @@
                 aria-live="polite"
                 tabindex="-1"
             >
-                <div class="success-grid" aria-hidden="true"></div>
-                <div class="success-glow success-glow-primary"></div>
-                <div class="success-glow success-glow-secondary"></div>
-                <span
-                    class="success-spark success-spark-1"
-                    aria-hidden="true"
-                ></span>
-                <span
-                    class="success-spark success-spark-2"
-                    aria-hidden="true"
-                ></span>
-                <span
-                    class="success-spark success-spark-3"
-                    aria-hidden="true"
-                ></span>
+            <div class="success-grid" aria-hidden="true"></div>
+            <div class="success-glow success-glow-primary"></div>
+            <div class="success-glow success-glow-secondary"></div>
+            <span class="success-spark success-spark-1" aria-hidden="true"></span>
+            <span class="success-spark success-spark-2" aria-hidden="true"></span>
+            <span class="success-spark success-spark-3" aria-hidden="true"></span>
 
-                <div class="success-shell">
-                    <div class="success-pill">Успешно изпратено</div>
+            <div class="success-shell">
+                <div class="success-pill">Успешно изпратено</div>
 
-                    <div class="success-badge-wrap" aria-hidden="true">
-                        <span class="success-ring success-ring-outer"></span>
-                        <span class="success-ring success-ring-inner"></span>
+                <div class="success-badge-wrap" aria-hidden="true">
+                    <span class="success-ring success-ring-outer"></span>
+                    <span class="success-ring success-ring-inner"></span>
 
-                        <div class="success-badge">
-                            <font-awesome-icon icon="fa-solid fa-check" />
-                        </div>
+                    <div class="success-badge">
+                        <font-awesome-icon icon="fa-solid fa-check" />
                     </div>
-
-                    <div class="success-kicker">Кредитна заявка</div>
-                    <h3 class="success-title">Заявката е приета успешно</h3>
-                    <p class="success-text">
-                        Получихме данните ви и наш консултант ще се свърже с вас
-                        до 48ч.
-                    </p>
-
-                    <div class="success-meta" aria-hidden="true">
-                        <span class="success-chip">Безплатна консултация</span>
-                        <span class="success-chip">Обратна връзка до 48ч</span>
-                    </div>
-
-                    <p class="success-note">
-                        Очаквайте обаждане на посочения от вас телефон.
-                    </p>
                 </div>
+
+                <div class="success-kicker">Кредитна заявка</div>
+                <h3 class="success-title">Заявката е приета успешно</h3>
+                <p class="success-text">
+                    Получихме данните ви и наш консултант ще се свърже с вас до 48ч.
+                </p>
+
+                <div class="success-meta" aria-hidden="true">
+                    <span class="success-chip">Безплатна консултация</span>
+                    <span class="success-chip">Обратна връзка до 48ч</span>
+                </div>
+
+                <p class="success-note">
+                    Очаквайте обаждане на посочения от вас телефон.
+                </p>
             </div>
+        </div>
 
             <form
                 v-else
@@ -64,571 +54,505 @@
                 class="space-y-4"
                 novalidate
             >
-                <section
-                    class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
-                >
-                    <div class="text-center">
-                        <div
-                            class="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-subtle"
-                        >
-                            Желана сума
-                        </div>
-
-                        <div class="mt-2 amount-value">
-                            {{ formattedAmount }}
-                        </div>
-                    </div>
-
-                    <div class="mt-5 flex items-center gap-3 sm:gap-4">
-                        <span class="range-edge">{{ formattedMinAmount }}</span>
-
-                        <div class="range-control">
-                            <input
-                                id="loan-amount"
-                                v-model.number="form.amount"
-                                type="range"
-                                :min="amountMin"
-                                :max="amountMax"
-                                :step="amountStep"
-                                class="credit-range"
-                                :class="{
-                                    'input-error': getFieldError('amount'),
-                                }"
-                                :style="creditRangeStyle"
-                                aria-describedby="loan-amount-hint"
-                                @input="handleInput('amount')"
-                                @blur="handleBlur('amount')"
-                            />
-                        </div>
-
-                        <span class="range-edge">{{ formattedMaxAmount }}</span>
-                    </div>
-
-                    <p
-                        id="loan-amount-hint"
-                        class="mt-3 text-center text-xs text-text-subtle"
-                    >
-                        Плъзнете скалата, за да изберете подходяща сума.
-                    </p>
-
-                    <p
-                        v-if="getFieldError('amount')"
-                        class="field-error mt-3 text-center"
-                    >
-                        {{ getFieldError("amount") }}
-                    </p>
-                </section>
-
-                <section
-                    class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
-                >
+            <section
+                class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
+            >
+                <div class="text-center">
                     <div
-                        class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+                        class="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-subtle"
                     >
-                        <div class="field">
-                            <label class="field-label" for="credit-type"
-                                >Тип кредит</label
-                            >
-                            <select
-                                id="credit-type"
-                                v-model="form.credit_type"
-                                class="input"
-                                :class="{
-                                    'input-error': getFieldError('credit_type'),
-                                }"
-                                autocomplete="off"
-                                required
-                                :disabled="lockCreditType"
-                                @change="handleInput('credit_type')"
-                                @blur="handleBlur('credit_type')"
-                            >
-                                <option value="" disabled>Изберете</option>
-                                <option value="consumer_with_guarantor">
-                                    Потребителски кредит с поръчител
-                                </option>
-                                <option value="mortgage">
-                                    Ипотечен кредит
-                                </option>
-                            </select>
+                        Желана сума
+                    </div>
 
-                            <p
-                                v-if="getFieldError('credit_type')"
-                                class="field-error"
-                            >
-                                {{ getFieldError("credit_type") }}
-                            </p>
-                        </div>
+                    <div class="mt-2 amount-value">
+                        {{ formattedAmount }}
+                    </div>
+                </div>
 
-                        <div class="field">
-                            <label class="field-label" for="first-name"
-                                >Име</label
-                            >
-                            <input
-                                id="first-name"
-                                v-model="form.first_name"
-                                type="text"
-                                placeholder="Иван"
-                                class="input"
-                                :class="{
-                                    'input-error': getFieldError('first_name'),
-                                }"
-                                autocomplete="given-name"
-                                required
-                                @input="handleInput('first_name')"
-                                @blur="handleBlur('first_name')"
-                            />
+                <div class="mt-5 flex items-center gap-3 sm:gap-4">
+                    <span class="range-edge">{{ formattedMinAmount }}</span>
 
-                            <p
-                                v-if="getFieldError('first_name')"
-                                class="field-error"
-                            >
-                                {{ getFieldError("first_name") }}
-                            </p>
-                        </div>
-
-                        <div class="field">
-                            <label class="field-label" for="last-name"
-                                >Фамилия</label
-                            >
-                            <input
-                                id="last-name"
-                                v-model="form.last_name"
-                                type="text"
-                                placeholder="Иванов"
-                                class="input"
-                                :class="{
-                                    'input-error': getFieldError('last_name'),
-                                }"
-                                autocomplete="family-name"
-                                required
-                                @input="handleInput('last_name')"
-                                @blur="handleBlur('last_name')"
-                            />
-
-                            <p
-                                v-if="getFieldError('last_name')"
-                                class="field-error"
-                            >
-                                {{ getFieldError("last_name") }}
-                            </p>
-                        </div>
-
-                        <div class="field">
-                            <label class="field-label" for="phone"
-                                >Телефон</label
-                            >
-                            <input
-                                id="phone"
-                                v-model="form.phone"
-                                type="tel"
-                                placeholder="08XXXXXXXX"
-                                class="input"
-                                :class="{
-                                    'input-error':
-                                        getFieldError('phone') &&
-                                        getFieldError('phone') !== submitError,
-                                }"
-                                inputmode="tel"
-                                autocomplete="tel"
-                                required
-                                @input="handleInput('phone')"
-                                @blur="handleBlur('phone')"
-                            />
-
-                            <p
-                                v-if="
-                                    getFieldError('phone') &&
-                                    getFieldError('phone') !== submitError
-                                "
-                                class="field-error"
-                            >
-                                {{ getFieldError("phone") }}
-                            </p>
-                        </div>
-
-                        <div class="field">
-                            <label class="field-label" for="email">Имейл</label>
-                            <input
-                                id="email"
-                                v-model="form.email"
-                                type="email"
-                                placeholder="example@email.com"
-                                class="input"
-                                :class="{
-                                    'input-error': getFieldError('email'),
-                                }"
-                                autocomplete="email"
-                                required
-                                @input="handleInput('email')"
-                                @blur="handleBlur('email')"
-                            />
-
-                            <p
-                                v-if="getFieldError('email')"
-                                class="field-error"
-                            >
-                                {{ getFieldError("email") }}
-                            </p>
-                        </div>
-
+                    <div class="range-control">
                         <input
-                            v-model="form.website"
-                            type="text"
-                            tabindex="-1"
+                            id="loan-amount"
+                            v-model.number="form.amount"
+                            type="range"
+                            :min="amountMin"
+                            :max="amountMax"
+                            :step="amountStep"
+                            class="credit-range"
+                            :class="{ 'input-error': getFieldError('amount') }"
+                            :style="creditRangeStyle"
+                            aria-describedby="loan-amount-hint"
+                            @input="handleInput('amount')"
+                            @blur="handleBlur('amount')"
+                        />
+                    </div>
+
+                    <span class="range-edge">{{ formattedMaxAmount }}</span>
+                </div>
+
+                <p
+                    id="loan-amount-hint"
+                    class="mt-3 text-center text-xs text-text-subtle"
+                >
+                    Плъзнете скалата, за да изберете подходяща сума.
+                </p>
+
+                <p v-if="getFieldError('amount')" class="field-error mt-3 text-center">
+                    {{ getFieldError("amount") }}
+                </p>
+            </section>
+
+            <section
+                class="rounded-[30px] bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] ring-1 ring-white/70 backdrop-blur"
+            >
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="field">
+                        <label class="field-label" for="credit-type"
+                            >Тип кредит</label
+                        >
+                        <select
+                            id="credit-type"
+                            v-model="form.credit_type"
+                            class="input"
+                            :class="{ 'input-error': getFieldError('credit_type') }"
                             autocomplete="off"
-                            aria-hidden="true"
-                            class="hidden"
+                            required
+                            :disabled="lockCreditType"
+                            @change="handleInput('credit_type')"
+                            @blur="handleBlur('credit_type')"
+                        >
+                            <option value="" disabled>Изберете</option>
+                            <option value="consumer_with_guarantor">
+                                Финансиране с поръчител
+                            </option>
+                            <option value="mortgage">Ипотечен кредит</option>
+                        </select>
+
+                        <p v-if="getFieldError('credit_type')" class="field-error">
+                            {{ getFieldError("credit_type") }}
+                        </p>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="first-name">Име</label>
+                        <input
+                            id="first-name"
+                            v-model="form.first_name"
+                            type="text"
+                            placeholder="Иван"
+                            class="input"
+                            :class="{ 'input-error': getFieldError('first_name') }"
+                            autocomplete="given-name"
+                            required
+                            @input="handleInput('first_name')"
+                            @blur="handleBlur('first_name')"
                         />
 
-                        <input v-model="form.form_started_at" type="hidden" />
-
-                        <div class="field">
-                            <label class="field-label" for="city">Град</label>
-                            <input
-                                id="city"
-                                v-model="form.city"
-                                type="text"
-                                placeholder="Пловдив"
-                                class="input"
-                                :class="{
-                                    'input-error': getFieldError('city'),
-                                }"
-                                autocomplete="address-level2"
-                                required
-                                @input="handleInput('city')"
-                                @blur="handleBlur('city')"
-                            />
-
-                            <p v-if="getFieldError('city')" class="field-error">
-                                {{ getFieldError("city") }}
-                            </p>
-                        </div>
+                        <p v-if="getFieldError('first_name')" class="field-error">
+                            {{ getFieldError("first_name") }}
+                        </p>
                     </div>
 
-                    <p
-                        class="mt-4 rounded-2xl border border-accent-soft-border bg-accent-soft/70 px-4 py-3 text-sm font-medium text-text-muted"
+                    <div class="field">
+                        <label class="field-label" for="last-name">Фамилия</label>
+                        <input
+                            id="last-name"
+                            v-model="form.last_name"
+                            type="text"
+                            placeholder="Иванов"
+                            class="input"
+                            :class="{ 'input-error': getFieldError('last_name') }"
+                            autocomplete="family-name"
+                            required
+                            @input="handleInput('last_name')"
+                            @blur="handleBlur('last_name')"
+                        />
+
+                        <p v-if="getFieldError('last_name')" class="field-error">
+                            {{ getFieldError("last_name") }}
+                        </p>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="phone">Телефон</label>
+                        <input
+                            id="phone"
+                            v-model="form.phone"
+                            type="tel"
+                            placeholder="08XXXXXXXX"
+                            class="input"
+                            :class="{
+                                'input-error':
+                                    getFieldError('phone') &&
+                                    getFieldError('phone') !== submitError,
+                            }"
+                            inputmode="tel"
+                            autocomplete="tel"
+                            required
+                            @input="handleInput('phone')"
+                            @blur="handleBlur('phone')"
+                        />
+
+                        <p
+                            v-if="
+                                getFieldError('phone') &&
+                                getFieldError('phone') !== submitError
+                            "
+                            class="field-error"
+                        >
+                            {{ getFieldError("phone") }}
+                        </p>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="email">Имейл</label>
+                        <input
+                            id="email"
+                            v-model="form.email"
+                            type="email"
+                            placeholder="example@email.com"
+                            class="input"
+                            :class="{ 'input-error': getFieldError('email') }"
+                            autocomplete="email"
+                            required
+                            @input="handleInput('email')"
+                            @blur="handleBlur('email')"
+                        />
+
+                        <p v-if="getFieldError('email')" class="field-error">
+                            {{ getFieldError("email") }}
+                        </p>
+                    </div>
+
+                    <input
+                        v-model="form.website"
+                        type="text"
+                        tabindex="-1"
+                        autocomplete="off"
+                        aria-hidden="true"
+                        class="hidden"
+                    />
+
+                    <input
+                        v-model="form.form_started_at"
+                        type="hidden"
+                    />
+
+                    <div class="field">
+                        <label class="field-label" for="city">Град</label>
+                        <input
+                            id="city"
+                            v-model="form.city"
+                            type="text"
+                            placeholder="Пловдив"
+                            class="input"
+                            :class="{ 'input-error': getFieldError('city') }"
+                            autocomplete="address-level2"
+                            required
+                            @input="handleInput('city')"
+                            @blur="handleBlur('city')"
+                        />
+
+                        <p v-if="getFieldError('city')" class="field-error">
+                            {{ getFieldError("city") }}
+                        </p>
+                    </div>
+                </div>
+
+                <p
+                    class="mt-4 rounded-2xl border border-accent-soft-border bg-accent-soft/70 px-4 py-3 text-sm font-medium text-text-muted"
+                >
+                    <template v-if="isConsumerWithGuarantor">
+                        При това финансиране попълнете и данните на поръчителя отдолу.
+                    </template>
+                    <template v-else>
+                        Моля, попълвайте имената, града и местоположението само на
+                        кирилица.
+                    </template>
+                </p>
+
+                <transition name="fade-slide">
+                    <div
+                        v-if="isConsumerWithGuarantor"
+                        class="mt-4 rounded-[24px] border border-accent-soft-border bg-accent-soft/35 p-4"
                     >
-                        <template v-if="isConsumerWithGuarantor">
-                            При този тип кредит попълнете и данните на
-                            поръчителя отдолу.
-                        </template>
-                        <template v-else>
-                            Моля, попълвайте имената, града и местоположението
-                            само на кирилица.
-                        </template>
-                    </p>
-
-                    <transition name="fade-slide">
-                        <div
-                            v-if="isConsumerWithGuarantor"
-                            class="mt-4 rounded-[24px] border border-accent-soft-border bg-accent-soft/35 p-4"
-                        >
-                            <div class="mb-4">
-                                <div
-                                    class="text-sm font-extrabold text-accent-ink"
-                                >
-                                    Данни за поръчителя
-                                </div>
-                                <p
-                                    class="mt-1 text-xs font-medium text-text-subtle"
-                                >
-                                    Добавете две имена и телефон на поръчителя.
-                                </p>
+                        <div class="mb-3">
+                            <div class="text-sm font-extrabold text-accent-ink">
+                                Данни за поръчителя
                             </div>
-
-                            <div
-                                class="mb-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 shadow-sm"
-                            >
-                                <div class="flex items-start gap-3">
-                                    <div
-                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-extrabold text-amber-700"
-                                    >
-                                        !
-                                    </div>
-
-                                    <div>
-                                        <div
-                                            class="text-xs font-black uppercase tracking-[0.14em] text-amber-800"
-                                        >
-                                            Важно
-                                        </div>
-
-                                        <p
-                                            class="mt-1 text-sm font-extrabold leading-6 text-amber-900"
-                                        >
-                                            ПОРЪЧИТЕЛЯТ ТРЯБВА ДА ИМА СТАБИЛЕН
-                                            ДОХОД, ДОБРА КРЕДИТНА ИСТОРИЯ И ДА Е
-                                            БЕЗ ПРОСРОЧИЯ.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                                <div class="field">
-                                    <label
-                                        class="field-label"
-                                        for="guarantor-first-name"
-                                    >
-                                        Име на поръчител
-                                    </label>
-                                    <input
-                                        id="guarantor-first-name"
-                                        v-model="form.guarantor_first_name"
-                                        type="text"
-                                        placeholder="Мария"
-                                        class="input"
-                                        :class="{
-                                            'input-error': getFieldError(
-                                                'guarantor_first_name',
-                                            ),
-                                        }"
-                                        autocomplete="off"
-                                        required
-                                        @input="
-                                            handleInput('guarantor_first_name')
-                                        "
-                                        @blur="
-                                            handleBlur('guarantor_first_name')
-                                        "
-                                    />
-
-                                    <p
-                                        v-if="
-                                            getFieldError(
-                                                'guarantor_first_name',
-                                            )
-                                        "
-                                        class="field-error"
-                                    >
-                                        {{
-                                            getFieldError(
-                                                "guarantor_first_name",
-                                            )
-                                        }}
-                                    </p>
-                                </div>
-
-                                <div class="field">
-                                    <label
-                                        class="field-label"
-                                        for="guarantor-last-name"
-                                    >
-                                        Фамилия на поръчител
-                                    </label>
-                                    <input
-                                        id="guarantor-last-name"
-                                        v-model="form.guarantor_last_name"
-                                        type="text"
-                                        placeholder="Петрова"
-                                        class="input"
-                                        :class="{
-                                            'input-error': getFieldError(
-                                                'guarantor_last_name',
-                                            ),
-                                        }"
-                                        autocomplete="off"
-                                        required
-                                        @input="
-                                            handleInput('guarantor_last_name')
-                                        "
-                                        @blur="
-                                            handleBlur('guarantor_last_name')
-                                        "
-                                    />
-
-                                    <p
-                                        v-if="
-                                            getFieldError('guarantor_last_name')
-                                        "
-                                        class="field-error"
-                                    >
-                                        {{
-                                            getFieldError("guarantor_last_name")
-                                        }}
-                                    </p>
-                                </div>
-
-                                <div class="field">
-                                    <label
-                                        class="field-label"
-                                        for="guarantor-phone"
-                                    >
-                                        Телефон на поръчител
-                                    </label>
-                                    <input
-                                        id="guarantor-phone"
-                                        v-model="form.guarantor_phone"
-                                        type="tel"
-                                        placeholder="08XXXXXXXX"
-                                        class="input"
-                                        :class="{
-                                            'input-error':
-                                                getFieldError(
-                                                    'guarantor_phone',
-                                                ),
-                                        }"
-                                        inputmode="tel"
-                                        autocomplete="off"
-                                        required
-                                        @input="handleInput('guarantor_phone')"
-                                        @blur="handleBlur('guarantor_phone')"
-                                    />
-
-                                    <p
-                                        v-if="getFieldError('guarantor_phone')"
-                                        class="field-error"
-                                    >
-                                        {{ getFieldError("guarantor_phone") }}
-                                    </p>
-                                </div>
-                            </div>
+                            <p class="mt-1 text-xs font-medium text-text-subtle">
+                                Добавете две имена и телефон на поръчителя.
+                            </p>
                         </div>
-                    </transition>
 
-                    <transition name="fade-slide">
-                        <div
-                            v-if="isMortgage"
-                            class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2"
-                        >
+                        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                             <div class="field">
-                                <label class="field-label" for="property-type">
-                                    Вид имот
-                                </label>
-                                <select
-                                    id="property-type"
-                                    v-model="form.property_type"
-                                    class="input"
-                                    :class="{
-                                        'input-error':
-                                            getFieldError('property_type'),
-                                    }"
-                                    :required="isMortgage"
-                                    @change="handleInput('property_type')"
-                                    @blur="handleBlur('property_type')"
-                                >
-                                    <option value="" disabled>Изберете</option>
-                                    <option value="house">Къща</option>
-                                    <option value="apartment">
-                                        Апартамент
-                                    </option>
-                                </select>
-
-                                <p
-                                    v-if="getFieldError('property_type')"
-                                    class="field-error"
-                                >
-                                    {{ getFieldError("property_type") }}
-                                </p>
-                            </div>
-
-                            <div class="field">
-                                <label
-                                    class="field-label"
-                                    for="property-location"
-                                >
-                                    Местонахождение на имота
+                                <label class="field-label" for="guarantor-first-name">
+                                    Име на поръчител
                                 </label>
                                 <input
-                                    id="property-location"
-                                    v-model="form.property_location"
+                                    id="guarantor-first-name"
+                                    v-model="form.guarantor_first_name"
                                     type="text"
-                                    placeholder="Например: Пловдив"
+                                    placeholder="Мария"
                                     class="input"
                                     :class="{
-                                        'input-error':
-                                            getFieldError('property_location'),
+                                        'input-error': getFieldError('guarantor_first_name'),
                                     }"
-                                    :required="isMortgage"
-                                    @input="handleInput('property_location')"
-                                    @blur="handleBlur('property_location')"
+                                    autocomplete="off"
+                                    required
+                                    @input="handleInput('guarantor_first_name')"
+                                    @blur="handleBlur('guarantor_first_name')"
                                 />
 
                                 <p
-                                    v-if="getFieldError('property_location')"
+                                    v-if="getFieldError('guarantor_first_name')"
                                     class="field-error"
                                 >
-                                    {{ getFieldError("property_location") }}
+                                    {{ getFieldError("guarantor_first_name") }}
+                                </p>
+                            </div>
+
+                            <div class="field">
+                                <label class="field-label" for="guarantor-last-name">
+                                    Фамилия на поръчител
+                                </label>
+                                <input
+                                    id="guarantor-last-name"
+                                    v-model="form.guarantor_last_name"
+                                    type="text"
+                                    placeholder="Петрова"
+                                    class="input"
+                                    :class="{
+                                        'input-error': getFieldError('guarantor_last_name'),
+                                    }"
+                                    autocomplete="off"
+                                    required
+                                    @input="handleInput('guarantor_last_name')"
+                                    @blur="handleBlur('guarantor_last_name')"
+                                />
+
+                                <p
+                                    v-if="getFieldError('guarantor_last_name')"
+                                    class="field-error"
+                                >
+                                    {{ getFieldError("guarantor_last_name") }}
+                                </p>
+                            </div>
+
+                            <div class="field">
+                                <label class="field-label" for="guarantor-phone">
+                                    Телефон на поръчител
+                                </label>
+                                <input
+                                    id="guarantor-phone"
+                                    v-model="form.guarantor_phone"
+                                    type="tel"
+                                    placeholder="08XXXXXXXX"
+                                    class="input"
+                                    :class="{
+                                        'input-error': getFieldError('guarantor_phone'),
+                                    }"
+                                    inputmode="tel"
+                                    autocomplete="off"
+                                    required
+                                    @input="handleInput('guarantor_phone')"
+                                    @blur="handleBlur('guarantor_phone')"
+                                />
+
+                                <p
+                                    v-if="getFieldError('guarantor_phone')"
+                                    class="field-error"
+                                >
+                                    {{ getFieldError("guarantor_phone") }}
                                 </p>
                             </div>
                         </div>
-                    </transition>
+                    </div>
+                </transition>
 
+                <transition name="fade-slide">
                     <div
-                        class="consent-panel mt-5"
-                        :class="{
-                            'consent-panel-error':
-                                getFieldError('privacy_consent'),
-                        }"
+                        v-if="isMortgage"
+                        class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2"
                     >
-                        <label class="consent-check" for="privacy-consent">
+                        <div class="field">
+                            <label class="field-label" for="property-type">
+                                Вид имот
+                            </label>
+                            <select
+                                id="property-type"
+                                v-model="form.property_type"
+                                class="input"
+                                :class="{ 'input-error': getFieldError('property_type') }"
+                                :required="isMortgage"
+                                @change="handleInput('property_type')"
+                                @blur="handleBlur('property_type')"
+                            >
+                                <option value="" disabled>Изберете</option>
+                                <option value="house">Къща</option>
+                                <option value="apartment">Апартамент</option>
+                            </select>
+
+                            <p v-if="getFieldError('property_type')" class="field-error">
+                                {{ getFieldError("property_type") }}
+                            </p>
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="property-location">
+                                Местонахождение на имота
+                            </label>
                             <input
-                                id="privacy-consent"
-                                v-model="form.privacy_consent"
-                                type="checkbox"
-                                class="consent-checkbox"
-                                @change="handleInput('privacy_consent')"
-                                @blur="handleBlur('privacy_consent')"
+                                id="property-location"
+                                v-model="form.property_location"
+                                type="text"
+                                placeholder="Например: Пловдив"
+                                class="input"
+                                :class="{ 'input-error': getFieldError('property_location') }"
+                                :required="isMortgage"
+                                @input="handleInput('property_location')"
+                                @blur="handleBlur('property_location')"
                             />
 
-                            <span class="consent-copy">
-                                Съгласен/съгласна съм личните ми данни да бъдат
-                                обработвани за целите на кредитната консултация
-                                и запознат/а съм с документа
-                                <a
-                                    :href="leadConsentDocument.url"
-                                    class="consent-link"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    {{
-                                        false
-                                            ? "Подготвяме документа..."
-                                            : leadConsentDocument.name
-                                    }}
-                                </a>
-                                .
-                            </span>
-                        </label>
-
-                        <p class="consent-note">
-                            За да изпратите заявката, трябва първо да отбележите
-                            това съгласие.
-                        </p>
-
-                        <p
-                            v-if="getFieldError('privacy_consent')"
-                            class="field-error mt-3"
-                        >
-                            {{ getFieldError("privacy_consent") }}
-                        </p>
-                    </div>
-
-                    <div class="mt-5">
-                        <button
-                            type="submit"
-                            :disabled="loading || !form.privacy_consent"
-                            :aria-busy="loading ? 'true' : 'false'"
-                            class="cta-button"
-                        >
-                            <font-awesome-icon icon="fa-solid fa-paper-plane" />
-                            <span v-if="!loading"
-                                >Направи безплатна консултация</span
+                            <p
+                                v-if="getFieldError('property_location')"
+                                class="field-error"
                             >
-                            <span v-else>Изпращане...</span>
-                        </button>
-
-                        <p class="cta-note">Ще се свържем с вас до 48ч</p>
+                                {{ getFieldError("property_location") }}
+                            </p>
+                        </div>
                     </div>
+                </transition>
+
+                <div
+                    class="consent-panel mt-5"
+                    :class="{
+                        'consent-panel-error': getFieldError('privacy_consent'),
+                    }"
+                >
+                    <label class="consent-check" for="privacy-consent">
+                        <input
+                            id="privacy-consent"
+                            v-model="form.privacy_consent"
+                            type="checkbox"
+                            class="consent-checkbox"
+                            @change="handleInput('privacy_consent')"
+                            @blur="handleBlur('privacy_consent')"
+                        />
+
+                        <span class="consent-copy">
+                            Съгласен/съгласна съм личните ми данни да бъдат обработвани
+                            за целите на кредитната консултация и запознат/а съм с
+                            документа
+                            <a
+                                :href="leadConsentDocument.url"
+                                class="consent-link"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                {{
+                                    false
+                                        ? "Подготвяме документа..."
+                                        : leadConsentDocument.name
+                                }}
+                            </a>
+                            .
+                        </span>
+                    </label>
+
+                    <p class="consent-note">
+                        За да изпратите заявката, трябва първо да отбележите това
+                        съгласие.
+                    </p>
 
                     <p
-                        v-if="submitError"
-                        class="rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
+                        v-if="getFieldError('privacy_consent')"
+                        class="field-error mt-3"
                     >
-                        {{ submitError }}
+                        {{ getFieldError("privacy_consent") }}
                     </p>
-                </section>
+                </div>
+
+                <div class="mt-5">
+                    <button
+                        type="submit"
+                        :disabled="loading || !form.privacy_consent"
+                        :aria-busy="loading ? 'true' : 'false'"
+                        class="cta-button"
+                    >
+                        <font-awesome-icon icon="fa-solid fa-paper-plane" />
+                        <span v-if="!loading">Направи безплатна консултация</span>
+                        <span v-else>Изпращане...</span>
+                    </button>
+
+                    <p class="cta-note">Ще се свържем с вас до 48ч</p>
+                </div>
+
+                <p
+                    v-if="submitError"
+                    class="rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
+                >
+                    {{ submitError }}
+                </p>
+            </section>
             </form>
+        </transition>
+
+        <transition name="guard-pop">
+            <div
+                v-if="showGuarantorGuard"
+                class="guard-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="guarantor-guard-title"
+            >
+                <div
+                    class="guard-backdrop"
+                    @click="closeGuarantorGuard"
+                ></div>
+
+                <div class="guard-dialog">
+                    <div class="guard-grid" aria-hidden="true"></div>
+                    <div class="guard-glow guard-glow-primary"></div>
+                    <div class="guard-glow guard-glow-secondary"></div>
+
+                    <div class="guard-pill">Важно</div>
+                    <h3 id="guarantor-guard-title" class="guard-title">
+                        Преди да изпратите заявката
+                    </h3>
+
+                    <p class="guard-text">
+                        ПОРЪЧИТЕЛЯТ ТРЯБВА ДА ИМА СТАБИЛЕН ДОХОД, ДОБРА КРЕДИТ
+                        ИСТОРИЯ, БЕЗ ПРОСРОЧИЯ.
+                    </p>
+
+                    <p class="guard-note">
+                        Ако това е налице, продължете с изпращането на заявката.
+                    </p>
+
+                    <div class="guard-actions">
+                        <button
+                            type="button"
+                            class="guard-secondary"
+                            @click="closeGuarantorGuard"
+                        >
+                            Назад
+                        </button>
+                        <button
+                            type="button"
+                            class="guard-primary"
+                            :disabled="loading"
+                            @click="confirmGuarantorGuard"
+                        >
+                            <span v-if="!loading">Изпрати</span>
+                            <span v-else>Изпращане...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </transition>
     </div>
 </template>
@@ -650,6 +574,7 @@ const props = defineProps({
 });
 
 const successPanel = ref(null);
+const showGuarantorGuard = ref(false);
 const leadConsentDocument = getInitialData("leadConsentDocument", {
     name: "Съгласие за обработка на лични данни",
     url: "/documents/legal/lead-personal-data-consent-v1.pdf",
@@ -671,6 +596,7 @@ const {
     formattedMinAmount,
     formattedMaxAmount,
     creditRangeStyle,
+    validateForm,
     handleBlur,
     handleInput,
     submitForm,
@@ -680,7 +606,30 @@ const {
 });
 
 async function handleSubmit() {
+    if (isConsumerWithGuarantor.value) {
+        if (!validateForm()) {
+            return;
+        }
+
+        showGuarantorGuard.value = true;
+
+        return;
+    }
+
     await submitForm();
+}
+
+function closeGuarantorGuard() {
+    if (loading.value) {
+        return;
+    }
+
+    showGuarantorGuard.value = false;
+}
+
+async function confirmGuarantorGuard() {
+    await submitForm();
+    showGuarantorGuard.value = false;
 }
 
 watch(success, async (isSuccess) => {
@@ -694,6 +643,12 @@ watch(success, async (isSuccess) => {
         behavior: "smooth",
         block: "center",
     });
+});
+
+watch(isConsumerWithGuarantor, (value) => {
+    if (!value) {
+        showGuarantorGuard.value = false;
+    }
 });
 </script>
 
@@ -718,16 +673,15 @@ watch(success, async (isSuccess) => {
         linear-gradient(
             145deg,
             color-mix(in oklab, var(--color-accent-soft) 82%, white) 0%,
-            color-mix(
-                    in oklab,
-                    var(--color-surface) 96%,
-                    var(--color-accent-soft)
-                )
+            color-mix(in oklab, var(--color-surface) 96%, var(--color-accent-soft))
                 54%,
             color-mix(in oklab, var(--color-accent-soft) 52%, white) 100%
         );
-    border: 1px solid
-        color-mix(in oklab, var(--color-accent-soft-border) 84%, white);
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 84%,
+        white
+    );
     box-shadow:
         0 30px 80px rgba(11, 79, 91, 0.18),
         inset 0 1px 0 rgba(255, 255, 255, 0.82);
@@ -747,10 +701,11 @@ watch(success, async (isSuccess) => {
             rgba(11, 79, 91, 0.04) calc(50% + 0.5px),
             transparent calc(50% + 0.5px)
         ),
-        linear-gradient(rgba(11, 79, 91, 0.04) 1px, transparent 1px);
-    background-size:
-        100% 100%,
-        100% 26px;
+        linear-gradient(
+            rgba(11, 79, 91, 0.04) 1px,
+            transparent 1px
+        );
+    background-size: 100% 100%, 100% 26px;
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.28), transparent 72%);
     pointer-events: none;
 }
@@ -839,8 +794,11 @@ watch(success, async (isSuccess) => {
     text-transform: uppercase;
     color: var(--color-accent-darkened);
     background: color-mix(in oklab, var(--color-accent-soft) 68%, white);
-    border: 1px solid
-        color-mix(in oklab, var(--color-accent-soft-border) 78%, white);
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 78%,
+        white
+    );
 }
 
 .success-badge-wrap {
@@ -856,8 +814,11 @@ watch(success, async (isSuccess) => {
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    border: 1px solid
-        color-mix(in oklab, var(--color-accent-darkened) 26%, white);
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-darkened) 26%,
+        white
+    );
     animation: success-pulse 2.4s ease-out infinite;
 }
 
@@ -946,8 +907,11 @@ watch(success, async (isSuccess) => {
     font-weight: 800;
     color: var(--color-accent-ink);
     background: color-mix(in oklab, var(--color-accent-soft) 58%, white);
-    border: 1px solid
-        color-mix(in oklab, var(--color-accent-soft-border) 70%, white);
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 70%,
+        white
+    );
 }
 
 .success-note {
@@ -1154,8 +1118,8 @@ watch(success, async (isSuccess) => {
 
 .input-error {
     border-color: color-mix(in oklab, var(--color-error, #dc2626) 75%, white);
-    box-shadow: 0 0 0 3px
-        color-mix(in oklab, var(--color-error, #dc2626) 10%, white);
+    box-shadow:
+        0 0 0 3px color-mix(in oklab, var(--color-error, #dc2626) 10%, white);
 }
 
 .field-error {
@@ -1167,14 +1131,18 @@ watch(success, async (isSuccess) => {
 
 .consent-panel {
     border-radius: 24px;
-    border: 1px solid
-        color-mix(in oklab, var(--color-accent-soft-border) 80%, white);
-    background: linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--color-accent-soft) 42%, white) 0%,
-        color-mix(in oklab, var(--color-surface) 95%, var(--color-accent-soft))
-            100%
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 80%,
+        white
     );
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in oklab, var(--color-accent-soft) 42%, white) 0%,
+            color-mix(in oklab, var(--color-surface) 95%, var(--color-accent-soft))
+                100%
+        );
     padding: 1rem 1rem 1rem 1.05rem;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.82),
@@ -1291,6 +1259,199 @@ watch(success, async (isSuccess) => {
     color: var(--color-text-muted);
 }
 
+.guard-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+}
+
+.guard-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(6px);
+}
+
+.guard-dialog {
+    position: relative;
+    overflow: hidden;
+    width: min(100%, 33rem);
+    padding: 2rem 1.4rem 1.45rem;
+    border-radius: 30px;
+    background:
+        radial-gradient(
+            circle at top right,
+            color-mix(in oklab, var(--color-accent-soft) 78%, white) 0%,
+            transparent 46%
+        ),
+        linear-gradient(
+            155deg,
+            color-mix(in oklab, var(--color-accent-soft) 70%, white) 0%,
+            color-mix(in oklab, var(--color-surface) 96%, var(--color-accent-soft))
+                60%,
+            color-mix(in oklab, var(--color-accent-soft) 36%, white) 100%
+        );
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 80%,
+        white
+    );
+    box-shadow:
+        0 28px 70px rgba(15, 23, 42, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    text-align: center;
+}
+
+.guard-grid {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(
+            90deg,
+            transparent 0,
+            transparent calc(50% - 0.5px),
+            rgba(11, 79, 91, 0.04) calc(50% - 0.5px),
+            rgba(11, 79, 91, 0.04) calc(50% + 0.5px),
+            transparent calc(50% + 0.5px)
+        ),
+        linear-gradient(rgba(11, 79, 91, 0.04) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 24px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 78%);
+    pointer-events: none;
+}
+
+.guard-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(18px);
+    opacity: 0.7;
+    z-index: -1;
+}
+
+.guard-glow-primary {
+    width: 190px;
+    height: 190px;
+    top: -60px;
+    right: -34px;
+    background: color-mix(in oklab, var(--color-accent) 24%, white);
+}
+
+.guard-glow-secondary {
+    width: 170px;
+    height: 170px;
+    bottom: -54px;
+    left: -26px;
+    background: color-mix(in oklab, var(--color-success) 16%, white);
+}
+
+.guard-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.45rem 0.9rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent-darkened);
+    background: color-mix(in oklab, var(--color-accent-soft) 68%, white);
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 78%,
+        white
+    );
+}
+
+.guard-title {
+    margin-top: 1rem;
+    font-size: clamp(1.75rem, 4.2vw, 2.4rem);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--color-accent-ink);
+}
+
+.guard-text {
+    margin: 1rem auto 0;
+    max-width: 28rem;
+    font-size: 1rem;
+    line-height: 1.8;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--color-accent-ink);
+}
+
+.guard-note {
+    margin-top: 0.95rem;
+    font-size: 0.94rem;
+    line-height: 1.7;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.guard-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+    margin-top: 1.4rem;
+}
+
+.guard-primary,
+.guard-secondary {
+    min-height: 54px;
+    border-radius: 18px;
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    font-weight: 900;
+    border: 0;
+    cursor: pointer;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        filter 0.18s ease;
+}
+
+.guard-primary {
+    color: var(--color-surface);
+    background: linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--color-accent) 88%, white) 0%,
+        var(--color-accent-darkened) 100%
+    );
+    box-shadow:
+        0 14px 28px rgba(15, 23, 42, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.guard-secondary {
+    color: var(--color-accent-ink);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid color-mix(
+        in oklab,
+        var(--color-accent-soft-border) 72%,
+        white
+    );
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.guard-primary:hover:not(:disabled),
+.guard-secondary:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.guard-primary:disabled,
+.guard-secondary:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
 .success-swap-enter-active,
 .success-swap-leave-active {
     transition:
@@ -1315,6 +1476,31 @@ watch(success, async (isSuccess) => {
 .fade-slide-leave-to {
     opacity: 0;
     transform: translateY(6px);
+}
+
+.guard-pop-enter-active,
+.guard-pop-leave-active {
+    transition: opacity 0.24s ease;
+}
+
+.guard-pop-enter-active .guard-dialog,
+.guard-pop-leave-active .guard-dialog {
+    transition:
+        transform 0.28s ease,
+        opacity 0.28s ease,
+        filter 0.28s ease;
+}
+
+.guard-pop-enter-from,
+.guard-pop-leave-to {
+    opacity: 0;
+}
+
+.guard-pop-enter-from .guard-dialog,
+.guard-pop-leave-to .guard-dialog {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    filter: blur(8px);
 }
 
 @keyframes success-badge-bounce {
@@ -1368,7 +1554,9 @@ watch(success, async (isSuccess) => {
     .success-badge,
     .success-spark,
     .success-swap-enter-active,
-    .success-swap-leave-active {
+    .success-swap-leave-active,
+    .guard-pop-enter-active,
+    .guard-pop-leave-active {
         animation: none !important;
         transition: none !important;
     }

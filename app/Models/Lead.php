@@ -168,7 +168,7 @@ class Lead extends Model implements HasRichContent
     public static function getPublicCreditTypeOptions(): array
     {
         return [
-            self::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR => 'Потребителски кредит с поръчител',
+            self::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR => 'Финансиране с поръчител',
             self::CREDIT_TYPE_MORTGAGE => 'Ипотечен кредит',
         ];
     }
