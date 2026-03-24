@@ -159,7 +159,7 @@ const navigationLinks = [
 const trustItems = [
     "Онлайн консултация",
     "Безплатна първоначална консултация",
-    "Отговор до 24 часа",
+    "Отговор до 48 часа",
 ];
 
 const footerLegalLinks = [

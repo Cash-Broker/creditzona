@@ -42,6 +42,10 @@ class AdminPanelProvider extends PanelProvider
             )
             ->databaseNotificationsPolling('5s')
             ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): View => view('filament.components.admin-lead-assignment-status-toggle'),
+            )
+            ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): View => view('filament.components.admin-lead-alerts'),
             )

@@ -134,6 +134,15 @@ class LeadService
         return $lead;
     }
 
+    public function setMarkedForLater(Lead $lead, bool $markedForLater): Lead
+    {
+        $lead->forceFill([
+            'marked_for_later_at' => $markedForLater ? now() : null,
+        ])->save();
+
+        return $lead->refresh();
+    }
+
     public function sendAdditionalAssignmentNotification(
         Lead $lead,
         ?int $previousAdditionalUserId = null,

@@ -4,7 +4,7 @@
 @endphp
 
 <div>
-    @livewire(\App\Livewire\AdminLeadAlerts::class)
+    @livewire(\App\Livewire\AdminLeadAlerts::class, [], key('admin-lead-alerts'))
 
     @once
         <script>

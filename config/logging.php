@@ -16,11 +16,24 @@ if ($stackChannels === []) {
 }
 
 if (
-    filled(env('TELEGRAM_LOG_BOT_TOKEN'))
+    env('APP_ENV') === 'production'
+    && filled(env('TELEGRAM_LOG_BOT_TOKEN'))
     && filled(env('TELEGRAM_LOG_CHAT_ID'))
     && ! in_array('telegram', $stackChannels, true)
 ) {
     $stackChannels[] = 'telegram';
+}
+
+if (
+    filled(env('TELEGRAM_LOG_BOT_TOKEN'))
+    && filled(env('TELEGRAM_LOG_CHAT_ID'))
+    && env('APP_ENV') !== 'production'
+    && in_array('telegram', $stackChannels, true)
+) {
+    $stackChannels = array_values(array_filter(
+        $stackChannels,
+        static fn (string $channel): bool => $channel !== 'telegram',
+    ));
 }
 
 return [

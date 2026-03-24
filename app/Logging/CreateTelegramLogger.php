@@ -16,8 +16,9 @@ class CreateTelegramLogger
         $name = (string) ($config['name'] ?? 'telegram');
         $botToken = trim((string) ($config['bot_token'] ?? ''));
         $chatId = trim((string) ($config['chat_id'] ?? ''));
+        $environment = (string) ($config['environment'] ?? config('app.env', 'production'));
 
-        if ($botToken === '' || $chatId === '') {
+        if ($environment !== 'production' || $botToken === '' || $chatId === '') {
             return new Logger($name, [new NullHandler]);
         }
 
@@ -27,7 +28,7 @@ class CreateTelegramLogger
                 chatId: $chatId,
                 messageBuilder: new TelegramMessageBuilder(
                     appName: (string) ($config['app_name'] ?? config('app.name', 'Laravel')),
-                    environment: (string) ($config['environment'] ?? config('app.env', 'production')),
+                    environment: $environment,
                 ),
                 messageThreadId: filled($config['message_thread_id'] ?? null)
                     ? (string) $config['message_thread_id']

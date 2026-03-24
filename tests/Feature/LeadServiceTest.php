@@ -309,6 +309,72 @@ class LeadServiceTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_lead_skips_offline_primary_operator_when_assigning_from_public_form(): void
+    {
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'is_available_for_lead_assignment' => false,
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+            'is_available_for_lead_assignment' => true,
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'krasimira@creditzona.test',
+            'is_available_for_lead_assignment' => true,
+        ]);
+
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'phone' => '0888999000',
+        ]));
+
+        $this->assertSame($elena->id, $lead->assigned_user_id);
+    }
+
+    public function test_create_lead_does_not_reuse_historical_operator_when_that_operator_is_offline(): void
+    {
+        Carbon::setTestNow('2026-03-12 10:00:00');
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'is_available_for_lead_assignment' => false,
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        Lead::query()->insert([
+            'credit_type' => 'consumer',
+            'first_name' => 'ÐŸÐµÑ‚ÑŠÑ€',
+            'last_name' => 'ÐŸÐµÑ‚Ñ€Ð¾Ð²',
+            'phone' => '0888123456',
+            'normalized_phone' => '0888123456',
+            'email' => 'petar@example.com',
+            'city' => 'Ð¡Ð¾Ñ„Ð¸Ñ',
+            'amount' => 12000,
+            'status' => 'new',
+            'assigned_user_id' => $anna->id,
+            'created_at' => now()->subDays(15),
+            'updated_at' => now()->subDays(15),
+        ]);
+
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'phone' => '0888 123 456',
+        ]));
+
+        $this->assertSame($elena->id, $lead->assigned_user_id);
+
+        Carbon::setTestNow();
+    }
+
     public function test_create_lead_does_not_reuse_historical_assignment_outside_primary_assignment_pool(): void
     {
         Carbon::setTestNow('2026-03-12 10:00:00');

@@ -67,6 +67,7 @@ class Lead extends Model implements HasRichContent
         'additional_user_id',
         'returned_additional_user_id',
         'returned_to_primary_at',
+        'marked_for_later_at',
         'source',
         'utm_source',
         'utm_campaign',
@@ -326,6 +327,7 @@ class Lead extends Model implements HasRichContent
             'privacy_consent_accepted' => 'boolean',
             'privacy_consent_accepted_at' => 'datetime',
             'returned_to_primary_at' => 'datetime',
+            'marked_for_later_at' => 'datetime',
         ];
     }
 
@@ -382,6 +384,11 @@ class Lead extends Model implements HasRichContent
             ->whereNull('additional_user_id')
             ->whereNotNull('returned_additional_user_id')
             ->whereNotNull('returned_to_primary_at');
+    }
+
+    public function isMarkedForLater(): bool
+    {
+        return $this->marked_for_later_at !== null;
     }
 
     protected function setUpRichContent(): void

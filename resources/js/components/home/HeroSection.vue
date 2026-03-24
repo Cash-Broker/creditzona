@@ -104,7 +104,7 @@
 const stats = [
     {
         label: "Отговор",
-        value: "до 24 часа",
+        value: "до 48 часа",
         icon: "fa-solid fa-phone",
     },
     {

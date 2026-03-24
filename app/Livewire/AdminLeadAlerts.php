@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Lead;
 use App\Models\User;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
@@ -81,14 +82,9 @@ class AdminLeadAlerts extends Component
         session()->put('admin_surfaced_lead_notification_ids', $this->surfacedNotificationIds);
     }
 
-    public function render(): string
+    public function render(): View
     {
-        return <<<'HTML'
-<div
-    wire:poll.5s="refreshState"
-    class="hidden"
-></div>
-HTML;
+        return view('livewire.admin-lead-alerts');
     }
 
     /**

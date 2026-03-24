@@ -78,14 +78,14 @@ class AdminOverviewWidgetTest extends TestCase
         $stats = $this->makeWidget()->exposedStats();
 
         $this->assertCount(6, $stats);
-        $this->assertSame('Нови заявки', $stats[0]->getLabel());
+        $this->assertSame('Получени заявки днес', $stats[0]->getLabel());
         $this->assertSame(2, $stats[0]->getValue());
-        $this->assertSame('Общо 3 заявки', $stats[0]->getDescription());
-        $this->assertSame('Върнати към мен', $stats[1]->getLabel());
-        $this->assertSame(0, $stats[1]->getValue());
-        $this->assertSame('Получени заявки днес', $stats[2]->getLabel());
-        $this->assertSame(2, $stats[2]->getValue());
-        $this->assertSame('Занулява се всеки ден в 00:00 ч.', $stats[2]->getDescription());
+        $this->assertSame('Занулява се всеки ден в 00:00 ч.', $stats[0]->getDescription());
+        $this->assertSame('Нови заявки', $stats[1]->getLabel());
+        $this->assertSame(2, $stats[1]->getValue());
+        $this->assertSame('Общо 3 заявки', $stats[1]->getDescription());
+        $this->assertSame('Върнати към мен', $stats[2]->getLabel());
+        $this->assertSame(0, $stats[2]->getValue());
         $this->assertSame('Контактни съобщения', $stats[3]->getLabel());
         $this->assertSame(1, $stats[3]->getValue());
         $this->assertSame('Публикувани статии', $stats[4]->getLabel());

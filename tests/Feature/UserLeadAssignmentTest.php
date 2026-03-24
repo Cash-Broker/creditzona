@@ -108,6 +108,29 @@ class UserLeadAssignmentTest extends TestCase
             ->all());
     }
 
+    public function test_primary_assignment_scope_excludes_offline_operators(): void
+    {
+        $onlineOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'is_available_for_lead_assignment' => true,
+        ]);
+
+        User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+            'is_available_for_lead_assignment' => false,
+        ]);
+
+        $this->assertSame(
+            [$onlineOperator->email],
+            User::query()
+                ->eligibleForLeadPrimaryAssignment()
+                ->pluck('email')
+                ->all(),
+        );
+    }
+
     public function test_user_leads_relationship_returns_assigned_leads(): void
     {
         $operator = User::factory()->create([

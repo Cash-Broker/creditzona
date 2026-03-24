@@ -70,4 +70,21 @@ class TelegramLoggingTest extends TestCase
 
         Http::assertNothingSent();
     }
+
+    public function test_telegram_logger_does_not_send_outside_production_even_with_credentials(): void
+    {
+        Http::fake();
+
+        $logger = (new CreateTelegramLogger)([
+            'name' => 'telegram',
+            'bot_token' => 'test-bot-token',
+            'chat_id' => '123456',
+            'environment' => 'local',
+            'level' => 'error',
+        ]);
+
+        $logger->error('This should not reach Telegram in local.');
+
+        Http::assertNothingSent();
+    }
 }

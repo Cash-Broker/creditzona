@@ -47,6 +47,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'role',
+        'is_available_for_lead_assignment',
     ];
 
     /**
@@ -68,6 +69,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'is_available_for_lead_assignment' => 'boolean',
             'password' => 'hashed',
         ];
     }
@@ -98,6 +100,13 @@ class User extends Authenticatable implements FilamentUser
     }
 
     public function scopeEligibleForLeadPrimaryAssignment(Builder $query): Builder
+    {
+        return $query
+            ->inLeadPrimaryAssignmentPool()
+            ->where('is_available_for_lead_assignment', true);
+    }
+
+    public function scopeInLeadPrimaryAssignmentPool(Builder $query): Builder
     {
         return $query
             ->where('role', self::ROLE_OPERATOR)
@@ -135,5 +144,15 @@ class User extends Authenticatable implements FilamentUser
     {
         return $panel->getId() === 'admin'
             && ($this->isAdmin() || $this->isOperator());
+    }
+
+    public function isAvailableForLeadAssignment(): bool
+    {
+        return (bool) $this->is_available_for_lead_assignment;
+    }
+
+    public function canToggleLeadAssignmentAvailability(): bool
+    {
+        return $this->canBeLeadPrimaryAssignee();
     }
 }

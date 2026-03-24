@@ -67,13 +67,13 @@ class AdminOverview extends StatsOverviewWidget
         $publishedFaqs = Faq::query()->where('is_published', true)->count();
 
         return [
-            $leadStat,
-            $returnedToMeStat,
             Stat::make('Получени заявки днес', $todayLeads)
                 ->description('Занулява се всеки ден в 00:00 ч.')
                 ->icon(Heroicon::OutlinedCalendarDays)
                 ->color($todayLeads > 0 ? 'success' : 'gray')
                 ->url(LeadResource::getUrl()),
+            $leadStat,
+            $returnedToMeStat,
             Stat::make('Контактни съобщения', $messages)
                 ->description('Получени през сайта')
                 ->icon(Heroicon::OutlinedChatBubbleLeftRight)
