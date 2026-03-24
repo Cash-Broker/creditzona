@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\ReturnedLeadArchives;
+namespace App\Filament\Resources\ReturnedToMeLeadArchives;
 
 use App\Filament\Resources\Leads\LeadResource as BaseLeadResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
 use App\Filament\Resources\Leads\Schemas\LeadInfolist;
 use App\Filament\Resources\Leads\Tables\LeadsTable;
-use App\Filament\Resources\ReturnedLeadArchives\Pages\EditReturnedLeadArchive;
-use App\Filament\Resources\ReturnedLeadArchives\Pages\ListReturnedLeadArchives;
-use App\Filament\Resources\ReturnedLeadArchives\Pages\ViewReturnedLeadArchive;
+use App\Filament\Resources\ReturnedToMeLeadArchives\Pages\EditReturnedToMeLeadArchive;
+use App\Filament\Resources\ReturnedToMeLeadArchives\Pages\ListReturnedToMeLeadArchives;
+use App\Filament\Resources\ReturnedToMeLeadArchives\Pages\ViewReturnedToMeLeadArchive;
 use App\Models\Lead;
 use App\Models\User;
 use BackedEnum;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
-class ReturnedLeadArchiveResource extends Resource
+class ReturnedToMeLeadArchiveResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
@@ -29,13 +29,13 @@ class ReturnedLeadArchiveResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Заявки и контакти';
 
-    protected static ?string $navigationLabel = 'Архивирани върнати';
+    protected static ?string $navigationLabel = 'Архивирани върнати към мен';
 
-    protected static ?int $navigationSort = 15;
+    protected static ?int $navigationSort = 14;
 
-    protected static ?string $modelLabel = 'архивирана върната заявка';
+    protected static ?string $modelLabel = 'архивирана върната към мен заявка';
 
-    protected static ?string $pluralModelLabel = 'архивирани върнати заявки';
+    protected static ?string $pluralModelLabel = 'архивирани върнати към мен заявки';
 
     protected static bool $hasTitleCaseModelLabel = false;
 
@@ -69,7 +69,7 @@ class ReturnedLeadArchiveResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table, static::class, showReturnedMeta: true);
+        return LeadsTable::configure($table, static::class, showReturnedMeta: true, showReturnedToMeArchiveMeta: true);
     }
 
     public static function getRelations(): array
@@ -82,9 +82,9 @@ class ReturnedLeadArchiveResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListReturnedLeadArchives::route('/'),
-            'view' => ViewReturnedLeadArchive::route('/{record}'),
-            'edit' => EditReturnedLeadArchive::route('/{record}/edit'),
+            'index' => ListReturnedToMeLeadArchives::route('/'),
+            'view' => ViewReturnedToMeLeadArchive::route('/{record}'),
+            'edit' => EditReturnedToMeLeadArchive::route('/{record}/edit'),
         ];
     }
 
@@ -97,6 +97,6 @@ class ReturnedLeadArchiveResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->returnedArchiveForUser($user);
+        return $query->returnedToPrimaryArchiveForUser($user);
     }
 }

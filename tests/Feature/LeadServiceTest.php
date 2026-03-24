@@ -511,6 +511,101 @@ class LeadServiceTest extends TestCase
         $this->assertNotNull($lead->returned_to_primary_at);
     }
 
+    public function test_operator_can_archive_attached_lead_and_store_archive_state(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->archiveAttachedLead($lead, $elena);
+
+        $lead->refresh();
+
+        $this->assertSame($anna->id, $lead->assigned_user_id);
+        $this->assertNull($lead->additional_user_id);
+        $this->assertSame($elena->id, $lead->archived_additional_user_id);
+        $this->assertNotNull($lead->attached_archived_at);
+    }
+
+    public function test_archiving_attached_lead_requires_current_additional_assignee(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        $this->expectException(AuthorizationException::class);
+        $this->expectExceptionMessage('Заявката не е закачена към вас.');
+
+        app(LeadService::class)->archiveAttachedLead($lead, $renata);
+    }
+
+    public function test_reassigning_archived_attached_lead_clears_attached_archive_state(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'archived_additional_user_id' => $elena->id,
+            'attached_archived_at' => now(),
+        ]));
+
+        $lead->forceFill([
+            'additional_user_id' => $renata->id,
+        ])->save();
+
+        app(LeadService::class)->sendAdditionalAssignmentNotification(
+            $lead->fresh(),
+            null,
+            $anna,
+        );
+
+        $lead->refresh();
+
+        $this->assertSame($renata->id, $lead->additional_user_id);
+        $this->assertNull($lead->archived_additional_user_id);
+        $this->assertNull($lead->attached_archived_at);
+    }
+
     public function test_returning_attached_lead_stores_database_notification_for_primary_assignee(): void
     {
         $anna = User::factory()->create([
@@ -541,6 +636,95 @@ class LeadServiceTest extends TestCase
 
         $this->assertSame('Имате върната заявка към вас', $payload['title']);
         $this->assertStringContainsString($elena->name, $payload['body']);
+    }
+
+    public function test_primary_operator_can_archive_returned_to_me_lead(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $elena->id,
+            'returned_to_primary_at' => now(),
+        ]));
+
+        app(LeadService::class)->archiveReturnedToPrimaryLead($lead, $anna);
+
+        $lead->refresh();
+
+        $this->assertSame($anna->id, $lead->returned_to_primary_archived_user_id);
+        $this->assertNotNull($lead->returned_to_primary_archived_at);
+    }
+
+    public function test_archiving_returned_to_me_lead_requires_primary_assignee(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $elena->id,
+            'returned_to_primary_at' => now(),
+        ]));
+
+        $this->expectException(AuthorizationException::class);
+        $this->expectExceptionMessage('Тази върната заявка не е към вас.');
+
+        app(LeadService::class)->archiveReturnedToPrimaryLead($lead, $renata);
+    }
+
+    public function test_returning_archived_to_me_lead_again_clears_returned_archive_state(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $elena);
+        app(LeadService::class)->archiveReturnedToPrimaryLead($lead->fresh(), $anna);
+
+        $lead->forceFill([
+            'additional_user_id' => $elena->id,
+        ])->save();
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead->fresh(), $elena);
+
+        $lead->refresh();
+
+        $this->assertNull($lead->returned_to_primary_archived_user_id);
+        $this->assertNull($lead->returned_to_primary_archived_at);
     }
 
     public function test_returning_attached_lead_requires_current_additional_assignee(): void

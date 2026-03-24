@@ -2,16 +2,21 @@
 
 namespace App\Filament\Resources\AttachedLeads\Pages;
 
+use App\Filament\Resources\AttachedLeadArchives\AttachedLeadArchiveResource;
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
 use App\Models\User;
 use App\Services\LeadService;
+use DomainException;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Actions as SchemaActions;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Support\Enums\Alignment;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class EditAttachedLead extends EditRecord
 {
@@ -36,6 +41,64 @@ class EditAttachedLead extends EditRecord
         $this->save(shouldRedirect: true);
     }
 
+    public function saveAndReturn(): void
+    {
+        $this->save(shouldRedirect: false, shouldSendSavedNotification: false);
+
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        try {
+            app(LeadService::class)->returnAttachedLeadToPrimary($this->getRecord()->refresh(), $user);
+        } catch (AuthorizationException|DomainException $exception) {
+            Notification::make()
+                ->title($exception->getMessage())
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Заявката е запазена и върната към основния служител.')
+            ->success()
+            ->send();
+
+        $this->redirect(AttachedLeadResource::getUrl('index'));
+    }
+
+    public function saveAndArchive(): void
+    {
+        $this->save(shouldRedirect: false, shouldSendSavedNotification: false);
+
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        try {
+            app(LeadService::class)->archiveAttachedLead($this->getRecord()->refresh(), $user);
+        } catch (AuthorizationException|DomainException $exception) {
+            Notification::make()
+                ->title($exception->getMessage())
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Заявката е запазена и архивирана.')
+            ->success()
+            ->send();
+
+        $this->redirect(AttachedLeadArchiveResource::getUrl('index'));
+    }
+
     public function getFormActionsContentComponent(): Component
     {
         return Grid::make([
@@ -44,12 +107,13 @@ class EditAttachedLead extends EditRecord
         ])
             ->schema([
                 SchemaActions::make([
-                    $this->getSaveFormAction(),
+                    $this->getSaveAndReturnFormAction(),
+                    $this->getSaveAndArchiveFormAction(),
                     $this->getCancelFormAction(),
                 ])
                     ->alignment(Alignment::Start),
                 SchemaActions::make([
-                    AttachedLeadResource::makeReturnToPrimaryAction(),
+                    $this->getSaveFormAction(),
                 ])
                     ->alignment(Alignment::End),
             ])
@@ -65,6 +129,30 @@ class EditAttachedLead extends EditRecord
             ->submit(null)
             ->action('saveAndRedirect')
             ->label('Запази');
+    }
+
+    protected function getSaveAndReturnFormAction(): Action
+    {
+        return Action::make('save_and_return')
+            ->label('Запази и върни')
+            ->icon(Heroicon::OutlinedArrowUturnLeft)
+            ->color('gray')
+            ->requiresConfirmation()
+            ->modalHeading('Запази и върни')
+            ->modalDescription('Промените ще бъдат запазени и заявката ще бъде върната към основния служител.')
+            ->action('saveAndReturn');
+    }
+
+    protected function getSaveAndArchiveFormAction(): Action
+    {
+        return Action::make('save_and_archive')
+            ->label('Запази и архивирай')
+            ->icon(Heroicon::OutlinedArchiveBox)
+            ->color('info')
+            ->requiresConfirmation()
+            ->modalHeading('Запази и архивирай')
+            ->modalDescription('Промените ще бъдат запазени и заявката ще бъде преместена в "Архивирани към мен".')
+            ->action('saveAndArchive');
     }
 
     protected function getCancelFormAction(): Action

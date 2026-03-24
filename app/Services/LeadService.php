@@ -134,6 +134,47 @@ class LeadService
         return $lead;
     }
 
+    public function archiveAttachedLead(Lead $lead, User $actor): Lead
+    {
+        if (! ($actor->isAdmin() || $actor->isOperator())) {
+            throw new AuthorizationException('Нямате достъп да архивирате тази заявка.');
+        }
+
+        if ($lead->additional_user_id !== $actor->id) {
+            throw new AuthorizationException('Заявката не е закачена към вас.');
+        }
+
+        $lead->forceFill([
+            'additional_user_id' => null,
+            'archived_additional_user_id' => $actor->id,
+            'attached_archived_at' => now(),
+        ])->save();
+
+        return $lead->refresh();
+    }
+
+    public function archiveReturnedToPrimaryLead(Lead $lead, User $actor): Lead
+    {
+        if (! ($actor->isAdmin() || $actor->isOperator())) {
+            throw new AuthorizationException('Нямате достъп да архивирате тази върната заявка.');
+        }
+
+        if ($lead->assigned_user_id !== $actor->id) {
+            throw new AuthorizationException('Тази върната заявка не е към вас.');
+        }
+
+        if ($lead->additional_user_id !== null || $lead->returned_to_primary_at === null) {
+            throw new DomainException('Само върнати към вас заявки могат да бъдат архивирани.');
+        }
+
+        $lead->forceFill([
+            'returned_to_primary_archived_user_id' => $actor->id,
+            'returned_to_primary_archived_at' => now(),
+        ])->save();
+
+        return $lead->refresh();
+    }
+
     public function setMarkedForLater(Lead $lead, bool $markedForLater): Lead
     {
         $lead->forceFill([
@@ -148,6 +189,18 @@ class LeadService
         ?int $previousAdditionalUserId = null,
         ?User $actor = null,
     ): void {
+        if ($lead->additional_user_id !== null && (
+            $lead->archived_additional_user_id !== null
+            || $lead->attached_archived_at !== null
+        )) {
+            $lead->forceFill([
+                'archived_additional_user_id' => null,
+                'attached_archived_at' => null,
+            ])->save();
+
+            $lead = $lead->refresh();
+        }
+
         if (! Schema::hasTable('notifications')) {
             return;
         }
@@ -291,6 +344,15 @@ class LeadService
 
     private function sendReturnedLeadNotification(Lead $lead, User $actor): void
     {
+        if ($lead->returned_to_primary_archived_at !== null || $lead->returned_to_primary_archived_user_id !== null) {
+            $lead->forceFill([
+                'returned_to_primary_archived_user_id' => null,
+                'returned_to_primary_archived_at' => null,
+            ])->save();
+
+            $lead = $lead->refresh();
+        }
+
         if (! Schema::hasTable('notifications')) {
             return;
         }

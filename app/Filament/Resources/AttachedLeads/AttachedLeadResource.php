@@ -119,6 +119,47 @@ class AttachedLeadResource extends Resource
             });
     }
 
+    public static function makeArchiveAction(): Action
+    {
+        return Action::make('archive_attached')
+            ->label('Архивирай')
+            ->icon(Heroicon::OutlinedArchiveBox)
+            ->color('info')
+            ->requiresConfirmation()
+            ->modalHeading('Архивиране на закачена заявка')
+            ->modalDescription('Заявката ще бъде махната от "Закачени към мен" и ще се премести в "Архивирани към мен".')
+            ->visible(function (Lead $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && ($user->isAdmin() || $user->isOperator())
+                    && $record->additional_user_id === $user->id;
+            })
+            ->action(function (Lead $record): void {
+                $user = auth()->user();
+
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                try {
+                    app(LeadService::class)->archiveAttachedLead($record, $user);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Заявката е архивирана и вече е в "Архивирани към мен".')
+                    ->success()
+                    ->send();
+            });
+    }
+
     public static function getRelations(): array
     {
         return [

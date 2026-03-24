@@ -67,6 +67,10 @@ class Lead extends Model implements HasRichContent
         'additional_user_id',
         'returned_additional_user_id',
         'returned_to_primary_at',
+        'returned_to_primary_archived_user_id',
+        'returned_to_primary_archived_at',
+        'archived_additional_user_id',
+        'attached_archived_at',
         'marked_for_later_at',
         'source',
         'utm_source',
@@ -335,6 +339,8 @@ class Lead extends Model implements HasRichContent
             'privacy_consent_accepted' => 'boolean',
             'privacy_consent_accepted_at' => 'datetime',
             'returned_to_primary_at' => 'datetime',
+            'returned_to_primary_archived_at' => 'datetime',
+            'attached_archived_at' => 'datetime',
             'marked_for_later_at' => 'datetime',
         ];
     }
@@ -375,7 +381,17 @@ class Lead extends Model implements HasRichContent
 
     public function scopeAttachedToUser(Builder $query, User $user): Builder
     {
-        return $query->where('additional_user_id', $user->id);
+        return $query
+            ->where('additional_user_id', $user->id)
+            ->whereNull('attached_archived_at');
+    }
+
+    public function scopeAttachedArchiveForUser(Builder $query, User $user): Builder
+    {
+        return $query
+            ->whereNull('additional_user_id')
+            ->where('archived_additional_user_id', $user->id)
+            ->whereNotNull('attached_archived_at');
     }
 
     public function scopeReturnedArchiveForUser(Builder $query, User $user): Builder
@@ -391,7 +407,15 @@ class Lead extends Model implements HasRichContent
             ->where('assigned_user_id', $user->id)
             ->whereNull('additional_user_id')
             ->whereNotNull('returned_additional_user_id')
-            ->whereNotNull('returned_to_primary_at');
+            ->whereNotNull('returned_to_primary_at')
+            ->whereNull('returned_to_primary_archived_at');
+    }
+
+    public function scopeReturnedToPrimaryArchiveForUser(Builder $query, User $user): Builder
+    {
+        return $query
+            ->where('returned_to_primary_archived_user_id', $user->id)
+            ->whereNotNull('returned_to_primary_archived_at');
     }
 
     public function isMarkedForLater(): bool
@@ -419,6 +443,16 @@ class Lead extends Model implements HasRichContent
     public function returnedAdditionalUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'returned_additional_user_id');
+    }
+
+    public function returnedToPrimaryArchivedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'returned_to_primary_archived_user_id');
+    }
+
+    public function archivedAdditionalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'archived_additional_user_id');
     }
 
     public function guarantors(): HasMany

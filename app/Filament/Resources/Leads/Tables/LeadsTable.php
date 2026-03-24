@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Leads\Tables;
 
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\LeadResource;
+use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
 use App\Models\Lead;
 use App\Services\LeadService;
 use Filament\Actions\BulkAction;
@@ -26,7 +27,10 @@ class LeadsTable
         Table $table,
         string $resourceClass = LeadResource::class,
         bool $isAttachedResource = false,
+        bool $isReturnedToMeResource = false,
         bool $showReturnedMeta = false,
+        bool $showAttachedArchiveMeta = false,
+        bool $showReturnedToMeArchiveMeta = false,
     ): Table {
         return $table
             ->poll('5s')
@@ -102,6 +106,18 @@ class LeadsTable
                     ->dateTime('d.m.Y H:i', 'Europe/Sofia')
                     ->sortable()
                     ->visible($showReturnedMeta),
+
+                TextColumn::make('attached_archived_at')
+                    ->label('Архивирана на')
+                    ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                    ->sortable()
+                    ->visible($showAttachedArchiveMeta),
+
+                TextColumn::make('returned_to_primary_archived_at')
+                    ->label('Архивирана на')
+                    ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                    ->sortable()
+                    ->visible($showReturnedToMeArchiveMeta),
 
                 TextColumn::make('phone')
                     ->label('Телефон')
@@ -184,7 +200,9 @@ class LeadsTable
                     ->native(false),
             ])
             ->recordActions(array_values(array_filter([
+                $isAttachedResource ? AttachedLeadResource::makeArchiveAction() : null,
                 $isAttachedResource ? AttachedLeadResource::makeReturnToPrimaryAction() : null,
+                $isReturnedToMeResource ? ReturnedToMeLeadResource::makeArchiveAction() : null,
                 ViewAction::make(),
                 EditAction::make(),
             ])))

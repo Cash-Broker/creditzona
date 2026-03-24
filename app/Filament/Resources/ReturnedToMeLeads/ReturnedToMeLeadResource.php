@@ -12,10 +12,14 @@ use App\Filament\Resources\ReturnedToMeLeads\Pages\ViewReturnedToMeLead;
 use App\Models\Lead;
 use App\Models\User;
 use BackedEnum;
+use DomainException;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +35,7 @@ class ReturnedToMeLeadResource extends Resource
 
     protected static ?string $navigationLabel = 'Върнати към мен';
 
-    protected static ?int $navigationSort = 12;
+    protected static ?int $navigationSort = 13;
 
     protected static ?string $modelLabel = 'върната към мен заявка';
 
@@ -69,7 +73,50 @@ class ReturnedToMeLeadResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table, static::class, showReturnedMeta: true);
+        return LeadsTable::configure($table, static::class, isReturnedToMeResource: true, showReturnedMeta: true);
+    }
+
+    public static function makeArchiveAction(): Action
+    {
+        return Action::make('archive_returned_to_me')
+            ->label('Архивирай')
+            ->icon(Heroicon::OutlinedArchiveBox)
+            ->color('info')
+            ->requiresConfirmation()
+            ->modalHeading('Архивиране на върната заявка')
+            ->modalDescription('Заявката ще бъде махната от "Върнати към мен" и ще се премести в "Архивирани върнати към мен".')
+            ->visible(function (Lead $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && ($user->isAdmin() || $user->isOperator())
+                    && $record->assigned_user_id === $user->id
+                    && $record->additional_user_id === null
+                    && $record->returned_to_primary_at !== null;
+            })
+            ->action(function (Lead $record): void {
+                $user = auth()->user();
+
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                try {
+                    app(\App\Services\LeadService::class)->archiveReturnedToPrimaryLead($record, $user);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Заявката е архивирана и вече е в "Архивирани върнати към мен".')
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getRelations(): array
