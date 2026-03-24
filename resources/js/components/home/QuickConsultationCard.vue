@@ -26,8 +26,10 @@
                     :is="headingTag"
                     class="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-[-0.03em] text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.35)] sm:text-4xl lg:text-5xl"
                 >
-                    Когато другите виждат риск,
-                    <span class="text-accent-soft">ние търсим решение</span>
+                    Когато другите виждат риск, ние намираме решение —
+                    <span class="text-accent-soft"
+                        >дори при запори, откази и лошо ЦКР</span
+                    >
                 </component>
 
                 <div

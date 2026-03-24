@@ -23,43 +23,19 @@ class LeadSubmissionTest extends TestCase
         Storage::fake('local');
     }
 
-    public function test_successful_consumer_lead_submission(): void
+    public function test_public_submission_rejects_legacy_consumer_credit_type(): void
     {
-        $response = $this->postJson('/leads', $this->validPayload());
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'guarantors' => [],
+        ]));
 
         $response
-            ->assertOk()
-            ->assertJson([
-                'message' => 'Благодарим! Ще се свържем с вас до 48ч.',
-            ]);
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['credit_type']);
 
-        $this->assertDatabaseHas('leads', [
-            'credit_type' => 'consumer',
-            'first_name' => 'Иван',
-            'last_name' => 'Иванов',
-            'phone' => '0888123456',
-            'email' => 'ivan@example.com',
-            'city' => 'Пловдив',
-            'amount' => 10000,
-            'property_type' => null,
-            'property_location' => null,
-            'status' => 'new',
-            'assigned_user_id' => null,
-            'source' => 'landing-page',
-            'utm_source' => 'google',
-            'utm_campaign' => 'spring-campaign',
-            'utm_medium' => 'cpc',
-            'gclid' => 'test-gclid',
-            'privacy_consent_accepted' => true,
-            'privacy_consent_document_name' => Lead::getPrivacyConsentDocumentName(),
-        ]);
-
-        $lead = Lead::query()->latest('id')->firstOrFail();
-
-        $this->assertNotNull($lead->privacy_consent_accepted_at);
-        $this->assertNotNull($lead->privacy_consent_document_path);
-        $this->assertStringStartsWith('lead-consents/', $lead->privacy_consent_document_path);
-        Storage::disk('local')->assertExists($lead->privacy_consent_document_path);
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('lead_guarantors', 0);
     }
 
     public function test_successful_submission_sends_confirmation_email_to_client_without_queueing(): void
@@ -195,7 +171,7 @@ class LeadSubmissionTest extends TestCase
         $this->assertDatabaseCount('lead_guarantors', 0);
     }
 
-    public function test_submission_accepts_additional_fields_and_guarantors(): void
+    public function test_submission_accepts_additional_fields_and_single_guarantor(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
             'middle_name' => 'Петров',
@@ -211,12 +187,6 @@ class LeadSubmissionTest extends TestCase
                     'last_name' => 'Иванова',
                     'phone' => '0888000111',
                     'status' => LeadGuarantor::STATUS_SUITABLE,
-                ],
-                [
-                    'first_name' => 'Георги',
-                    'last_name' => 'Петров',
-                    'phone' => '0888000222',
-                    'status' => LeadGuarantor::STATUS_UNSUITABLE,
                 ],
             ],
         ]));
@@ -236,7 +206,7 @@ class LeadSubmissionTest extends TestCase
             'salary_bank' => 'УниКредит Булбанк',
         ]);
 
-        $this->assertDatabaseCount('lead_guarantors', 2);
+        $this->assertDatabaseCount('lead_guarantors', 1);
 
         $this->assertDatabaseHas('lead_guarantors', [
             'lead_id' => $lead->id,
@@ -244,14 +214,6 @@ class LeadSubmissionTest extends TestCase
             'last_name' => 'Иванова',
             'phone' => '0888000111',
             'status' => LeadGuarantor::STATUS_SUITABLE,
-        ]);
-
-        $this->assertDatabaseHas('lead_guarantors', [
-            'lead_id' => $lead->id,
-            'first_name' => 'Георги',
-            'last_name' => 'Петров',
-            'phone' => '0888000222',
-            'status' => LeadGuarantor::STATUS_UNSUITABLE,
         ]);
     }
 
@@ -934,8 +896,8 @@ class LeadSubmissionTest extends TestCase
      */
     private function validPayload(array $overrides = []): array
     {
-        return array_merge([
-            'credit_type' => 'consumer',
+        $payload = array_merge([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
             'first_name' => 'Иван',
             'middle_name' => null,
             'last_name' => 'Иванов',
@@ -951,7 +913,14 @@ class LeadSubmissionTest extends TestCase
             'amount' => 10000,
             'property_type' => null,
             'property_location' => null,
-            'guarantors' => [],
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Петрова',
+                    'phone' => '0888000111',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+            ],
             'source' => 'landing-page',
             'utm_source' => 'google',
             'utm_campaign' => 'spring-campaign',
@@ -961,5 +930,14 @@ class LeadSubmissionTest extends TestCase
             'website' => '',
             'form_started_at' => now()->subSeconds(5)->getTimestampMs(),
         ], $overrides);
+
+        if (
+            ($payload['credit_type'] ?? null) !== Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR
+            && ! array_key_exists('guarantors', $overrides)
+        ) {
+            $payload['guarantors'] = [];
+        }
+
+        return $payload;
     }
 }

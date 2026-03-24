@@ -6,7 +6,6 @@ const amountMax = 50000;
 const amountStep = 500;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const allowedCreditTypes = new Set([
-    "consumer",
     "consumer_with_guarantor",
     "mortgage",
 ]);
@@ -18,9 +17,17 @@ const fieldsWithoutLatin = new Set([
     "property_location",
 ]);
 
+function resolveInitialCreditType(initialCreditType = "") {
+    if (initialCreditType === "consumer") {
+        return "consumer_with_guarantor";
+    }
+
+    return allowedCreditTypes.has(initialCreditType) ? initialCreditType : "";
+}
+
 function createInitialForm(initialCreditType = "") {
     return {
-        credit_type: initialCreditType,
+        credit_type: resolveInitialCreditType(initialCreditType),
         first_name: "",
         last_name: "",
         phone: "",
@@ -66,9 +73,6 @@ export function useLeadForm(options = {}) {
     const isMortgage = computed(() => form.credit_type === "mortgage");
     const isConsumerWithGuarantor = computed(
         () => form.credit_type === "consumer_with_guarantor",
-    );
-    const shouldOfferGuarantorUpsell = computed(
-        () => !lockCreditType && form.credit_type === "consumer",
     );
 
     const formattedAmount = computed(() => {
@@ -579,21 +583,12 @@ export function useLeadForm(options = {}) {
         };
     }
 
-    function switchToConsumerWithGuarantor() {
-        form.credit_type = "consumer_with_guarantor";
-    }
-
-    async function submitForm(options = {}) {
-        const { skipGuarantorUpsell = false } = options;
+    async function submitForm() {
         success.value = false;
         submitError.value = "";
 
         if (!validateForm()) {
             return { status: "validation_failed" };
-        }
-
-        if (!skipGuarantorUpsell && shouldOfferGuarantorUpsell.value) {
-            return { status: "show_guarantor_upsell" };
         }
 
         loading.value = true;
@@ -642,7 +637,6 @@ export function useLeadForm(options = {}) {
         getFieldError,
         isMortgage,
         isConsumerWithGuarantor,
-        shouldOfferGuarantorUpsell,
         lockCreditType,
         amountMin,
         amountMax,
@@ -654,7 +648,6 @@ export function useLeadForm(options = {}) {
         handleBlur,
         handleInput,
         submitForm,
-        switchToConsumerWithGuarantor,
         resetForm,
     };
 }

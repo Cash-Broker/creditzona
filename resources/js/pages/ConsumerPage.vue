@@ -131,7 +131,7 @@
 
         <section class="mt-16">
             <QuickConsultationCard
-                initial-credit-type="consumer"
+                initial-credit-type="consumer_with_guarantor"
                 :lock-credit-type="true"
             />
         </section>

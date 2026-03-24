@@ -55,7 +55,7 @@ class StoreLeadRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'credit_type' => ['required', Rule::in(array_keys(Lead::getCreditTypeOptions()))],
+            'credit_type' => ['required', Rule::in(array_keys(Lead::getPublicCreditTypeOptions()))],
             'first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името')],
             'middle_name' => ['nullable', 'string', 'max:60', CyrillicText::lettersOnly('Презимето')],
             'last_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Фамилията')],
