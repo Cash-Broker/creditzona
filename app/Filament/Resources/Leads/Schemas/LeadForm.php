@@ -213,14 +213,14 @@ class LeadForm
                             ->appendFiles()
                             ->downloadable()
                             ->openable()
-                            ->panelLayout('integrated')
+                            ->panelLayout('compact')
                             ->maxFiles(15)
                             ->maxSize(10240)
                             ->helperText('PDF, DOC, DOCX, XLS, XLSX, JPG, PNG и WEBP до 10 MB.')
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 Storage::disk('local')->delete($file);
                             })
-                            ->columnSpan(2),
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Поръчители')
                     ->columnSpanFull()
@@ -400,14 +400,14 @@ class LeadForm
                         ->appendFiles()
                         ->downloadable()
                         ->openable()
-                        ->panelLayout('integrated')
+                        ->panelLayout('compact')
                         ->maxFiles(15)
                         ->maxSize(10240)
                         ->helperText('PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, WEBP и GIF до 10 MB.')
                         ->deleteUploadedFileUsing(static function (string $file): void {
                             Storage::disk('local')->delete($file);
                         })
-                        ->columnSpan(2),
+                        ->columnSpanFull(),
                 ]),
             Section::make('Вътрешна бележка за поръчителя')
                 ->schema([
