@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AdminCalendarEventFeedController;
+use App\Http\Controllers\AdminCalendarEventTimingController;
 use App\Http\Controllers\AdminDocumentFileController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadDocumentDownloadController;
@@ -53,4 +55,8 @@ Route::middleware([Authenticate::class])
             ->name('leads.guarantors.documents.download');
         Route::get('/leads/{lead}/guarantors/{guarantor}/privacy-consent/download', LeadGuarantorPrivacyConsentDocumentDownloadController::class)
             ->name('leads.guarantors.privacy-consent.download');
+        Route::get('/calendar/events/feed', AdminCalendarEventFeedController::class)
+            ->name('calendar-events.feed');
+        Route::patch('/calendar/events/{calendarEvent}/timing', AdminCalendarEventTimingController::class)
+            ->name('calendar-events.timing.update');
     });

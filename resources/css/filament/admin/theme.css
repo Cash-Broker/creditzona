@@ -220,6 +220,85 @@
     border-bottom-left-radius: 0.75rem;
 }
 
+.calendar-shell {
+    padding: 1rem;
+}
+
+.cz-admin-calendar {
+    min-height: 72vh;
+}
+
+.cz-admin-calendar .fc {
+    --fc-border-color: rgba(226, 232, 240, 0.9);
+    --fc-page-bg-color: #ffffff;
+    --fc-neutral-bg-color: #f8fafc;
+    --fc-neutral-text-color: #475569;
+    --fc-button-bg-color: #0f172a;
+    --fc-button-border-color: #0f172a;
+    --fc-button-hover-bg-color: #1e293b;
+    --fc-button-hover-border-color: #1e293b;
+    --fc-button-active-bg-color: #2563eb;
+    --fc-button-active-border-color: #2563eb;
+    --fc-today-bg-color: rgba(37, 99, 235, 0.08);
+    font-family: inherit;
+}
+
+.cz-admin-calendar .fc .fc-toolbar {
+    gap: 1rem;
+    padding: 0.25rem 0 1rem;
+}
+
+.cz-admin-calendar .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.cz-admin-calendar .fc .fc-button {
+    border-radius: 0.9rem;
+    box-shadow: none;
+    font-weight: 600;
+    text-transform: none;
+}
+
+.cz-admin-calendar .fc .fc-col-header-cell-cushion,
+.cz-admin-calendar .fc .fc-daygrid-day-number,
+.cz-admin-calendar .fc .fc-timegrid-axis-cushion,
+.cz-admin-calendar .fc .fc-timegrid-slot-label-cushion {
+    color: #334155;
+}
+
+.cz-admin-calendar .fc .fc-view-harness {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(248, 250, 252, 0.92));
+}
+
+.cz-admin-calendar .fc .fc-daygrid-day.fc-day-today,
+.cz-admin-calendar .fc .fc-timegrid-col.fc-day-today {
+    background: rgba(37, 99, 235, 0.08);
+}
+
+.cz-admin-calendar .fc .fc-event {
+    border-radius: 0.85rem;
+    border-width: 0;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+    padding: 0.15rem 0.25rem;
+}
+
+.cz-admin-calendar .fc .fc-event-main {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.cz-admin-calendar .fc .fc-timegrid-event-harness-inset .fc-timegrid-event,
+.cz-admin-calendar .fc .fc-daygrid-event {
+    cursor: pointer;
+}
+
+.cz-admin-calendar .fc .fc-highlight {
+    background: rgba(14, 165, 233, 0.18);
+}
+
 .fi-ta-row.lead-record-later:not(.fi-selected) > td:last-child {
     border-top-right-radius: 0.75rem;
     border-bottom-right-radius: 0.75rem;

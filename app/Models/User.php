@@ -99,6 +99,21 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(ContactMessage::class, 'assigned_user_id');
     }
 
+    public function calendarEvents(): HasMany
+    {
+        return $this->hasMany(CalendarEvent::class);
+    }
+
+    public function createdCalendarEvents(): HasMany
+    {
+        return $this->hasMany(CalendarEvent::class, 'created_by_user_id');
+    }
+
+    public function updatedCalendarEvents(): HasMany
+    {
+        return $this->hasMany(CalendarEvent::class, 'updated_by_user_id');
+    }
+
     public function scopeEligibleForLeadPrimaryAssignment(Builder $query): Builder
     {
         return $query

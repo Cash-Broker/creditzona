@@ -8,6 +8,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -52,6 +53,8 @@ class AdminPanelProvider extends PanelProvider
             ->assets([
                 Js::make('admin-form-arrow-navigation', Vite::asset('resources/js/filament/admin/form-arrow-navigation.js'))
                     ->module(),
+                Js::make('admin-calendar-page', Vite::asset('resources/js/filament/admin/calendar-page.js'))
+                    ->module(),
             ])
             ->defaultThemeMode(ThemeMode::Light)
             ->darkMode(false)
@@ -62,6 +65,11 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
+            ])
+            ->navigationGroups([
+                NavigationGroup::make('Заявки и контакти'),
+                NavigationGroup::make('Организация'),
+                NavigationGroup::make('Съдържание'),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

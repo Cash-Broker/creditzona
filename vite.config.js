@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/css/filament/admin/theme.css',
                 'resources/js/app.js',
                 'resources/js/filament/admin/form-arrow-navigation.js',
+                'resources/js/filament/admin/calendar-page.js',
             ],
             refresh: true,
         }),
