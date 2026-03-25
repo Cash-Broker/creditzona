@@ -62,6 +62,8 @@ class LeadServiceTest extends TestCase
 
         $this->assertSame('Имате нова заявка към вас', $payload['title']);
         $this->assertStringContainsString($lead->first_name, $payload['body']);
+        $this->assertSame($lead->id, $payload['lead_id']);
+        $this->assertSame('lead_assigned', $payload['notification_type']);
     }
 
     public function test_send_additional_assignment_notification_stores_database_notification_for_selected_operator(): void
@@ -103,6 +105,109 @@ class LeadServiceTest extends TestCase
 
         $this->assertSame('Имате нова заявка към вас', $payload['title']);
         $this->assertStringContainsString($admin->name, $payload['body']);
+        $this->assertSame($lead->id, $payload['lead_id']);
+        $this->assertSame('lead_additional_assigned', $payload['notification_type']);
+    }
+
+    public function test_returning_lead_marks_existing_unread_notifications_as_read_before_storing_the_new_one(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'assigned_user_id' => $anna->id,
+        ]));
+
+        $lead->forceFill([
+            'additional_user_id' => $elena->id,
+        ])->save();
+
+        app(LeadService::class)->sendAdditionalAssignmentNotification(
+            $lead->fresh(),
+            null,
+            $anna,
+        );
+
+        $this->assertCount(2, $this->unreadNotificationsForLead($lead));
+
+        app(LeadService::class)->returnLead($lead->fresh(), $elena);
+
+        $leadNotifications = $this->notificationsForLead($lead);
+        $unreadNotifications = $this->unreadNotificationsForLead($lead)->values();
+        $readNotificationTypes = $leadNotifications
+            ->filter(fn (array $notification): bool => $notification['record']->read_at !== null)
+            ->pluck('payload.notification_type')
+            ->all();
+
+        $this->assertCount(3, $leadNotifications);
+        $this->assertCount(1, $unreadNotifications);
+        $this->assertSame($anna->id, $unreadNotifications->first()['record']->notifiable_id);
+        $this->assertSame('lead_returned', $unreadNotifications->first()['payload']['notification_type']);
+        $this->assertEqualsCanonicalizing([
+            'lead_assigned',
+            'lead_additional_assigned',
+        ], $readNotificationTypes);
+    }
+
+    public function test_reassigning_additional_assignee_marks_previous_unread_notification_as_read_before_notifying_the_new_user(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->sendAdditionalAssignmentNotification(
+            $lead->fresh(),
+            null,
+            $anna,
+        );
+
+        $lead->forceFill([
+            'additional_user_id' => $renata->id,
+        ])->save();
+
+        app(LeadService::class)->sendAdditionalAssignmentNotification(
+            $lead->fresh(),
+            $elena->id,
+            $anna,
+        );
+
+        $leadNotifications = $this->notificationsForLead($lead);
+        $elenaNotification = $leadNotifications->first(
+            fn (array $notification): bool => (int) $notification['record']->notifiable_id === $elena->id,
+        );
+        $renataNotification = $leadNotifications->first(
+            fn (array $notification): bool => (int) $notification['record']->notifiable_id === $renata->id,
+        );
+
+        $this->assertCount(2, $leadNotifications);
+        $this->assertNotNull($elenaNotification);
+        $this->assertNotNull($renataNotification);
+        $this->assertNotNull($elenaNotification['record']->read_at);
+        $this->assertNull($renataNotification['record']->read_at);
+        $this->assertSame('lead_additional_assigned', $renataNotification['payload']['notification_type']);
     }
 
     public function test_create_lead_defaults_assignment_to_null(): void
@@ -636,6 +741,8 @@ class LeadServiceTest extends TestCase
 
         $this->assertSame('Имате върната заявка към вас', $payload['title']);
         $this->assertStringContainsString($elena->name, $payload['body']);
+        $this->assertSame($lead->id, $payload['lead_id']);
+        $this->assertSame('lead_returned', $payload['notification_type']);
     }
 
     public function test_primary_operator_can_archive_returned_to_me_lead(): void
@@ -771,6 +878,32 @@ class LeadServiceTest extends TestCase
         $this->expectExceptionMessage('Изберете основен служител, преди да върнете заявката.');
 
         app(LeadService::class)->returnAttachedLeadToPrimary($lead, $renata);
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array{record: object, payload: array<string, mixed>}>
+     */
+    private function notificationsForLead(Lead $lead)
+    {
+        return collect(DB::table('notifications')->orderBy('created_at')->get())
+            ->map(function (object $notification): array {
+                return [
+                    'record' => $notification,
+                    'payload' => json_decode((string) $notification->data, true, flags: JSON_THROW_ON_ERROR),
+                ];
+            })
+            ->filter(fn (array $notification): bool => ($notification['payload']['lead_id'] ?? null) === $lead->id)
+            ->values();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array{record: object, payload: array<string, mixed>}>
+     */
+    private function unreadNotificationsForLead(Lead $lead)
+    {
+        return $this->notificationsForLead($lead)
+            ->filter(fn (array $notification): bool => $notification['record']->read_at === null)
+            ->values();
     }
 
     /**

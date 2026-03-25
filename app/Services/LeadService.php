@@ -7,8 +7,11 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Support\Phone\PhoneNormalizer;
 use DomainException;
+use Filament\Notifications\DatabaseNotification as FilamentDatabaseNotification;
 use Filament\Notifications\Notification;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Notifications\DatabaseNotification as DatabaseNotificationModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +20,18 @@ use Illuminate\Support\Facades\Storage;
 
 class LeadService
 {
+    private const LEAD_ASSIGNED_NOTIFICATION_TYPE = 'lead_assigned';
+
+    private const LEAD_ADDITIONAL_ASSIGNED_NOTIFICATION_TYPE = 'lead_additional_assigned';
+
+    private const LEAD_RETURNED_NOTIFICATION_TYPE = 'lead_returned';
+
+    private const LEAD_NOTIFICATION_TYPES = [
+        self::LEAD_ASSIGNED_NOTIFICATION_TYPE,
+        self::LEAD_ADDITIONAL_ASSIGNED_NOTIFICATION_TYPE,
+        self::LEAD_RETURNED_NOTIFICATION_TYPE,
+    ];
+
     public function __construct(
         private readonly LeadPrivacyConsentPdfService $leadPrivacyConsentPdfService,
     ) {}
@@ -107,7 +122,7 @@ class LeadService
         return $lead;
     }
 
-    public function returnAttachedLeadToPrimary(Lead $lead, User $actor): Lead
+    public function returnLead(Lead $lead, User $actor): Lead
     {
         if (! ($actor->isAdmin() || $actor->isOperator())) {
             throw new AuthorizationException('Нямате достъп да върнете тази заявка.');
@@ -121,17 +136,27 @@ class LeadService
             throw new DomainException('Изберете основен служител, преди да върнете заявката.');
         }
 
-        $lead->forceFill([
-            'additional_user_id' => null,
-            'returned_additional_user_id' => $actor->id,
-            'returned_to_primary_at' => now(),
-        ])->save();
+        return DB::transaction(function () use ($lead, $actor): Lead {
+            $lead->forceFill([
+                'additional_user_id' => null,
+                'returned_additional_user_id' => $actor->id,
+                'returned_to_primary_at' => now(),
+                'returned_to_primary_archived_user_id' => null,
+                'returned_to_primary_archived_at' => null,
+            ])->save();
 
-        $lead = $lead->refresh();
+            $lead = $lead->refresh();
 
-        $this->sendReturnedLeadNotification($lead, $actor);
+            $this->markUnreadLeadNotificationsAsRead($lead);
+            $this->sendReturnedLeadNotification($lead, $actor);
 
-        return $lead;
+            return $lead;
+        });
+    }
+
+    public function returnAttachedLeadToPrimary(Lead $lead, User $actor): Lead
+    {
+        return $this->returnLead($lead, $actor);
     }
 
     public function archiveAttachedLead(Lead $lead, User $actor): Lead
@@ -189,41 +214,52 @@ class LeadService
         ?int $previousAdditionalUserId = null,
         ?User $actor = null,
     ): void {
-        if ($lead->additional_user_id !== null && (
-            $lead->archived_additional_user_id !== null
-            || $lead->attached_archived_at !== null
-        )) {
-            $lead->forceFill([
-                'archived_additional_user_id' => null,
-                'attached_archived_at' => null,
-            ])->save();
+        DB::transaction(function () use ($lead, $previousAdditionalUserId, $actor): void {
+            if ($lead->additional_user_id !== null && (
+                $lead->archived_additional_user_id !== null
+                || $lead->attached_archived_at !== null
+            )) {
+                $lead->forceFill([
+                    'archived_additional_user_id' => null,
+                    'attached_archived_at' => null,
+                ])->save();
 
-            $lead = $lead->refresh();
-        }
+                $lead = $lead->refresh();
+            }
 
-        if (! Schema::hasTable('notifications')) {
-            return;
-        }
+            if (! Schema::hasTable('notifications')) {
+                return;
+            }
 
-        if ($lead->additional_user_id === null || $lead->additional_user_id === $previousAdditionalUserId) {
-            return;
-        }
+            if ($previousAdditionalUserId !== null && $previousAdditionalUserId !== $lead->additional_user_id) {
+                $this->markUnreadLeadNotificationsAsRead($lead, $previousAdditionalUserId);
+            }
 
-        $lead->loadMissing('additionalUser');
+            if ($lead->additional_user_id === null || $lead->additional_user_id === $previousAdditionalUserId) {
+                return;
+            }
 
-        $additionalAssignee = $lead->additionalUser;
+            $lead->loadMissing('additionalUser');
 
-        if (! $additionalAssignee instanceof User) {
-            return;
-        }
+            $additionalAssignee = $lead->additionalUser;
 
-        $notification = Notification::make()
-            ->title('Имате нова заявка към вас')
-            ->body($this->formatAdditionalAssignmentNotificationBody($lead, $additionalAssignee, $actor))
-            ->warning()
-            ->persistent();
+            if (! $additionalAssignee instanceof User) {
+                return;
+            }
 
-        $additionalAssignee->notifyNow($notification->toDatabase(), ['database']);
+            $notification = Notification::make()
+                ->title('Имате нова заявка към вас')
+                ->body($this->formatAdditionalAssignmentNotificationBody($lead, $additionalAssignee, $actor))
+                ->warning()
+                ->persistent();
+
+            $this->replaceUnreadLeadNotifications(
+                $lead,
+                $additionalAssignee,
+                $notification,
+                self::LEAD_ADDITIONAL_ASSIGNED_NOTIFICATION_TYPE,
+            );
+        });
     }
 
     private function resolveAssignedUserId(array $data): ?int
@@ -323,6 +359,8 @@ class LeadService
             return;
         }
 
+        $lead->loadMissing('assignedUser');
+
         $assignee = $lead->assignedUser;
 
         if (! $assignee instanceof User) {
@@ -339,23 +377,21 @@ class LeadService
             ->warning()
             ->persistent();
 
-        $assignee->notifyNow($notification->toDatabase(), ['database']);
+        $this->replaceUnreadLeadNotifications(
+            $lead,
+            $assignee,
+            $notification,
+            self::LEAD_ASSIGNED_NOTIFICATION_TYPE,
+        );
     }
 
     private function sendReturnedLeadNotification(Lead $lead, User $actor): void
     {
-        if ($lead->returned_to_primary_archived_at !== null || $lead->returned_to_primary_archived_user_id !== null) {
-            $lead->forceFill([
-                'returned_to_primary_archived_user_id' => null,
-                'returned_to_primary_archived_at' => null,
-            ])->save();
-
-            $lead = $lead->refresh();
-        }
-
         if (! Schema::hasTable('notifications')) {
             return;
         }
+
+        $lead->loadMissing('assignedUser');
 
         $primaryAssignee = $lead->assignedUser;
 
@@ -377,7 +413,69 @@ class LeadService
             ->info()
             ->persistent();
 
-        $primaryAssignee->notifyNow($notification->toDatabase(), ['database']);
+        $this->replaceUnreadLeadNotifications(
+            $lead,
+            $primaryAssignee,
+            $notification,
+            self::LEAD_RETURNED_NOTIFICATION_TYPE,
+        );
+    }
+
+    private function replaceUnreadLeadNotifications(
+        Lead $lead,
+        User $recipient,
+        Notification $notification,
+        string $notificationType,
+    ): void {
+        $this->markUnreadLeadNotificationsAsRead($lead, $recipient->id);
+        $this->sendLeadDatabaseNotification($recipient, $lead, $notification, $notificationType);
+    }
+
+    private function markUnreadLeadNotificationsAsRead(Lead $lead, ?int $notifiableUserId = null): void
+    {
+        if (! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        $this->leadNotificationQuery($lead, $notifiableUserId)
+            ->whereNull('read_at')
+            ->update([
+                'read_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
+
+    private function leadNotificationQuery(Lead $lead, ?int $notifiableUserId = null): Builder
+    {
+        $query = DatabaseNotificationModel::query()
+            ->where('notifiable_type', User::class)
+            ->where('type', FilamentDatabaseNotification::class)
+            ->where('data->format', 'filament')
+            ->where('data->lead_id', $lead->id)
+            ->whereIn('data->notification_type', self::LEAD_NOTIFICATION_TYPES);
+
+        if ($notifiableUserId !== null) {
+            $query->where('notifiable_id', $notifiableUserId);
+        }
+
+        return $query;
+    }
+
+    private function sendLeadDatabaseNotification(
+        User $recipient,
+        Lead $lead,
+        Notification $notification,
+        string $notificationType,
+    ): void {
+        if (! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        $recipient->notifyNow(new FilamentDatabaseNotification([
+            ...$notification->getDatabaseMessage(),
+            'lead_id' => $lead->id,
+            'notification_type' => $notificationType,
+        ]), ['database']);
     }
 
     private function formatAdditionalAssignmentNotificationBody(
