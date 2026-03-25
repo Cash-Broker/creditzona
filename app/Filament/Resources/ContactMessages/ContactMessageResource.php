@@ -6,6 +6,7 @@ use App\Filament\Resources\ContactMessages\Pages\ListContactMessages;
 use App\Filament\Resources\ContactMessages\Pages\ViewContactMessage;
 use App\Filament\Resources\ContactMessages\Schemas\ContactMessageInfolist;
 use App\Filament\Resources\ContactMessages\Tables\ContactMessagesTable;
+use App\Filament\Resources\Leads\LeadResource;
 use App\Models\ContactMessage;
 use App\Models\User;
 use App\Services\ContactMessageService;
@@ -143,6 +144,46 @@ class ContactMessageResource extends Resource
                     ->success()
                     ->send();
             });
+    }
+
+    public static function makeCreateLeadAction(): Action
+    {
+        return Action::make('create_lead_from_contact_message')
+            ->label(fn (ContactMessage $record): string => $record->generated_lead_id !== null ? 'Отвори заявка' : 'Създай заявка')
+            ->icon(Heroicon::OutlinedClipboardDocumentList)
+            ->color(fn (ContactMessage $record): string => $record->generated_lead_id !== null ? 'success' : 'primary')
+            ->visible(function (ContactMessage $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && $user->isOperator()
+                    && $record->assigned_user_id === $user->id
+                    && $record->archived_at === null;
+            })
+            ->action(function (ContactMessage $record): void {
+                $actor = auth()->user();
+
+                if (! $actor instanceof User) {
+                    return;
+                }
+
+                try {
+                    $lead = app(ContactMessageService::class)->createLeadFromMessage($record, $actor);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                $record->generated_lead_id = $lead->id;
+                $record->lead_generated_at = $record->lead_generated_at ?? now();
+            })
+            ->successRedirectUrl(fn (ContactMessage $record): ?string => filled($record->generated_lead_id)
+                ? LeadResource::getUrl('edit', ['record' => $record->generated_lead_id])
+                : null);
     }
 
     public static function infolist(Schema $schema): Schema

@@ -19,11 +19,14 @@ class ContactMessage extends Model
         'email',
         'message',
         'assigned_user_id',
+        'generated_lead_id',
+        'lead_generated_at',
         'archived_by_user_id',
         'archived_at',
     ];
 
     protected $casts = [
+        'lead_generated_at' => 'datetime',
         'archived_at' => 'datetime',
     ];
 
@@ -64,5 +67,10 @@ class ContactMessage extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function generatedLead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class, 'generated_lead_id');
     }
 }

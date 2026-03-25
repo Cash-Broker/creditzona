@@ -59,6 +59,7 @@ class ContactMessagesTable
                 //
             ])
             ->recordActions(array_values(array_filter([
+                $isAttachedResource && ! $isArchiveResource ? ContactMessageResource::makeCreateLeadAction() : null,
                 (! $isAttachedResource && ! $isArchiveResource) ? ContactMessageResource::makeAssignAction() : null,
                 ! $isArchiveResource ? ContactMessageResource::makeArchiveAction() : null,
                 ViewAction::make(),

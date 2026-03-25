@@ -109,7 +109,7 @@ class LeadServiceTest extends TestCase
         $this->assertSame('lead_additional_assigned', $payload['notification_type']);
     }
 
-    public function test_returning_lead_marks_existing_unread_notifications_as_read_before_storing_the_new_one(): void
+    public function test_returning_lead_deletes_existing_notifications_before_storing_the_new_one(): void
     {
         $anna = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
@@ -139,24 +139,15 @@ class LeadServiceTest extends TestCase
 
         app(LeadService::class)->returnLead($lead->fresh(), $elena);
 
-        $leadNotifications = $this->notificationsForLead($lead);
-        $unreadNotifications = $this->unreadNotificationsForLead($lead)->values();
-        $readNotificationTypes = $leadNotifications
-            ->filter(fn (array $notification): bool => $notification['record']->read_at !== null)
-            ->pluck('payload.notification_type')
-            ->all();
+        $leadNotifications = $this->notificationsForLead($lead)->values();
 
-        $this->assertCount(3, $leadNotifications);
-        $this->assertCount(1, $unreadNotifications);
-        $this->assertSame($anna->id, $unreadNotifications->first()['record']->notifiable_id);
-        $this->assertSame('lead_returned', $unreadNotifications->first()['payload']['notification_type']);
-        $this->assertEqualsCanonicalizing([
-            'lead_assigned',
-            'lead_additional_assigned',
-        ], $readNotificationTypes);
+        $this->assertCount(1, $leadNotifications);
+        $this->assertSame($anna->id, $leadNotifications->first()['record']->notifiable_id);
+        $this->assertNull($leadNotifications->first()['record']->read_at);
+        $this->assertSame('lead_returned', $leadNotifications->first()['payload']['notification_type']);
     }
 
-    public function test_reassigning_additional_assignee_marks_previous_unread_notification_as_read_before_notifying_the_new_user(): void
+    public function test_reassigning_additional_assignee_deletes_previous_notification_before_notifying_the_new_user(): void
     {
         $anna = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
@@ -202,10 +193,9 @@ class LeadServiceTest extends TestCase
             fn (array $notification): bool => (int) $notification['record']->notifiable_id === $renata->id,
         );
 
-        $this->assertCount(2, $leadNotifications);
-        $this->assertNotNull($elenaNotification);
+        $this->assertCount(1, $leadNotifications);
+        $this->assertNull($elenaNotification);
         $this->assertNotNull($renataNotification);
-        $this->assertNotNull($elenaNotification['record']->read_at);
         $this->assertNull($renataNotification['record']->read_at);
         $this->assertSame('lead_additional_assigned', $renataNotification['payload']['notification_type']);
     }
@@ -643,6 +633,39 @@ class LeadServiceTest extends TestCase
         $this->assertNotNull($lead->attached_archived_at);
     }
 
+    public function test_archiving_attached_lead_deletes_all_notifications_for_the_lead(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'assigned_user_id' => $anna->id,
+        ]));
+
+        $lead->forceFill([
+            'additional_user_id' => $elena->id,
+        ])->save();
+
+        app(LeadService::class)->sendAdditionalAssignmentNotification(
+            $lead->fresh(),
+            null,
+            $anna,
+        );
+
+        $this->assertCount(2, $this->notificationsForLead($lead));
+
+        app(LeadService::class)->archiveAttachedLead($lead->fresh(), $elena);
+
+        $this->assertCount(0, $this->notificationsForLead($lead->fresh()));
+    }
+
     public function test_archiving_attached_lead_requires_current_additional_assignee(): void
     {
         $renata = User::factory()->create([
@@ -770,6 +793,32 @@ class LeadServiceTest extends TestCase
 
         $this->assertSame($anna->id, $lead->returned_to_primary_archived_user_id);
         $this->assertNotNull($lead->returned_to_primary_archived_at);
+    }
+
+    public function test_archiving_returned_to_me_lead_deletes_all_notifications_for_the_lead(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead->fresh(), $elena);
+
+        $this->assertCount(1, $this->notificationsForLead($lead->fresh()));
+
+        app(LeadService::class)->archiveReturnedToPrimaryLead($lead->fresh(), $anna);
+
+        $this->assertCount(0, $this->notificationsForLead($lead->fresh()));
     }
 
     public function test_archiving_returned_to_me_lead_requires_primary_assignee(): void

@@ -12,6 +12,7 @@ class ViewAttachedContactMessage extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            \App\Filament\Resources\ContactMessages\ContactMessageResource::makeCreateLeadAction(),
             \App\Filament\Resources\ContactMessages\ContactMessageResource::makeArchiveAction(),
         ];
     }

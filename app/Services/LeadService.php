@@ -147,7 +147,7 @@ class LeadService
 
             $lead = $lead->refresh();
 
-            $this->markUnreadLeadNotificationsAsRead($lead);
+            $this->deleteLeadNotifications($lead);
             $this->sendReturnedLeadNotification($lead, $actor);
 
             return $lead;
@@ -169,11 +169,15 @@ class LeadService
             throw new AuthorizationException('Заявката не е закачена към вас.');
         }
 
-        $lead->forceFill([
-            'additional_user_id' => null,
-            'archived_additional_user_id' => $actor->id,
-            'attached_archived_at' => now(),
-        ])->save();
+        DB::transaction(function () use ($lead, $actor): void {
+            $lead->forceFill([
+                'additional_user_id' => null,
+                'archived_additional_user_id' => $actor->id,
+                'attached_archived_at' => now(),
+            ])->save();
+
+            $this->deleteLeadNotifications($lead->refresh());
+        });
 
         return $lead->refresh();
     }
@@ -192,10 +196,14 @@ class LeadService
             throw new DomainException('Само върнати към вас заявки могат да бъдат архивирани.');
         }
 
-        $lead->forceFill([
-            'returned_to_primary_archived_user_id' => $actor->id,
-            'returned_to_primary_archived_at' => now(),
-        ])->save();
+        DB::transaction(function () use ($lead, $actor): void {
+            $lead->forceFill([
+                'returned_to_primary_archived_user_id' => $actor->id,
+                'returned_to_primary_archived_at' => now(),
+            ])->save();
+
+            $this->deleteLeadNotifications($lead->refresh());
+        });
 
         return $lead->refresh();
     }
@@ -232,7 +240,7 @@ class LeadService
             }
 
             if ($previousAdditionalUserId !== null && $previousAdditionalUserId !== $lead->additional_user_id) {
-                $this->markUnreadLeadNotificationsAsRead($lead, $previousAdditionalUserId);
+                $this->deleteLeadNotifications($lead, $previousAdditionalUserId);
             }
 
             if ($lead->additional_user_id === null || $lead->additional_user_id === $previousAdditionalUserId) {
@@ -253,7 +261,7 @@ class LeadService
                 ->warning()
                 ->persistent();
 
-            $this->replaceUnreadLeadNotifications(
+            $this->replaceLeadNotifications(
                 $lead,
                 $additionalAssignee,
                 $notification,
@@ -377,7 +385,7 @@ class LeadService
             ->warning()
             ->persistent();
 
-        $this->replaceUnreadLeadNotifications(
+        $this->replaceLeadNotifications(
             $lead,
             $assignee,
             $notification,
@@ -413,7 +421,7 @@ class LeadService
             ->info()
             ->persistent();
 
-        $this->replaceUnreadLeadNotifications(
+        $this->replaceLeadNotifications(
             $lead,
             $primaryAssignee,
             $notification,
@@ -421,28 +429,23 @@ class LeadService
         );
     }
 
-    private function replaceUnreadLeadNotifications(
+    private function replaceLeadNotifications(
         Lead $lead,
         User $recipient,
         Notification $notification,
         string $notificationType,
     ): void {
-        $this->markUnreadLeadNotificationsAsRead($lead, $recipient->id);
+        $this->deleteLeadNotifications($lead, $recipient->id);
         $this->sendLeadDatabaseNotification($recipient, $lead, $notification, $notificationType);
     }
 
-    private function markUnreadLeadNotificationsAsRead(Lead $lead, ?int $notifiableUserId = null): void
+    private function deleteLeadNotifications(Lead $lead, ?int $notifiableUserId = null): void
     {
         if (! Schema::hasTable('notifications')) {
             return;
         }
 
-        $this->leadNotificationQuery($lead, $notifiableUserId)
-            ->whereNull('read_at')
-            ->update([
-                'read_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $this->leadNotificationQuery($lead, $notifiableUserId)->delete();
     }
 
     private function leadNotificationQuery(Lead $lead, ?int $notifiableUserId = null): Builder
