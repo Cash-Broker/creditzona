@@ -60,6 +60,10 @@ class CalendarEventForm
                             ->required()
                             ->native(false)
                         : Hidden::make('user_id'),
+                    Select::make('reminder_minutes_before')
+                        ->label('Напомняне')
+                        ->options(CalendarEvent::getReminderOptions())
+                        ->native(false),
                     TextInput::make('location')
                         ->label('Локация')
                         ->maxLength(255),

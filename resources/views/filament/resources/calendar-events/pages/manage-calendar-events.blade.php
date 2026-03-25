@@ -152,6 +152,13 @@
                     </template>
 
                     <div class="grid gap-4 sm:grid-cols-2">
+                        <template x-if="selectedEvent?.reminderLabel">
+                            <div class="rounded-2xl border border-gray-200 px-4 py-3">
+                                <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Напомняне</div>
+                                <div class="mt-1 text-sm font-medium text-gray-900" x-text="selectedEvent.reminderLabel"></div>
+                            </div>
+                        </template>
+
                         <template x-if="selectedEvent?.createdBy">
                             <div class="rounded-2xl border border-gray-200 px-4 py-3">
                                 <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Създадено от</div>

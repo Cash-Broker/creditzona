@@ -185,6 +185,7 @@ window.creditzonaCalendarPage = function creditzonaCalendarPage(config) {
                 eventTypeLabel: event.extendedProps.eventTypeLabel ?? '',
                 status: event.extendedProps.status ?? '',
                 statusLabel: event.extendedProps.statusLabel ?? '',
+                reminderLabel: event.extendedProps.reminderLabel ?? '',
                 userName: event.extendedProps.userName ?? '',
                 createdBy: event.extendedProps.createdBy ?? '',
                 updatedBy: event.extendedProps.updatedBy ?? '',

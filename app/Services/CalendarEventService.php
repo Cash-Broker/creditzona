@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class CalendarEventService
 {
+    public function __construct(
+        private readonly CalendarReminderService $calendarReminderService,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $filters
      * @return Collection<int, array<string, mixed>>
@@ -40,6 +44,7 @@ class CalendarEventService
     public function createEvent(array $data, User $actor): CalendarEvent
     {
         [$startsAt, $endsAt] = $this->normalizeDateRange($data);
+        $ownerId = $this->resolveOwnerId($data, $actor);
 
         $event = new CalendarEvent;
         $event->fill([
@@ -52,7 +57,9 @@ class CalendarEventService
             'event_type' => $data['event_type'] ?? CalendarEvent::TYPE_APPOINTMENT,
             'status' => $data['status'] ?? CalendarEvent::STATUS_SCHEDULED,
             'color' => $this->nullableTrim($data['color'] ?? null),
-            'user_id' => $this->resolveOwnerId($data, $actor),
+            'reminder_minutes_before' => $this->normalizeReminderMinutes($data['reminder_minutes_before'] ?? null),
+            'reminder_sent_at' => null,
+            'user_id' => $ownerId,
             'created_by_user_id' => $actor->id,
             'updated_by_user_id' => $actor->id,
         ]);
@@ -67,6 +74,15 @@ class CalendarEventService
     public function updateEvent(CalendarEvent $event, array $data, User $actor): CalendarEvent
     {
         [$startsAt, $endsAt] = $this->normalizeDateRange($data);
+        $ownerId = $this->resolveOwnerId($data + ['user_id' => $event->user_id], $actor);
+        $reminderMinutes = $this->normalizeReminderMinutes($data['reminder_minutes_before'] ?? $event->reminder_minutes_before);
+        $previousUserId = $event->user_id;
+        $shouldResetReminderState = $event->starts_at?->ne($startsAt)
+            || $event->ends_at?->ne($endsAt)
+            || ((bool) $event->all_day !== (bool) ($data['all_day'] ?? $event->all_day))
+            || ($event->reminder_minutes_before !== $reminderMinutes)
+            || ($previousUserId !== $ownerId)
+            || (($data['status'] ?? $event->status) !== CalendarEvent::STATUS_SCHEDULED);
 
         $event->fill([
             'title' => trim((string) ($data['title'] ?? $event->title)),
@@ -78,10 +94,15 @@ class CalendarEventService
             'event_type' => $data['event_type'] ?? $event->event_type,
             'status' => $data['status'] ?? $event->status,
             'color' => $this->nullableTrim($data['color'] ?? $event->color),
-            'user_id' => $this->resolveOwnerId($data + ['user_id' => $event->user_id], $actor),
+            'reminder_minutes_before' => $reminderMinutes,
+            'user_id' => $ownerId,
             'updated_by_user_id' => $actor->id,
         ]);
         $event->save();
+
+        if ($shouldResetReminderState) {
+            $this->calendarReminderService->resetReminderState($event, $previousUserId);
+        }
 
         return $event->refresh()->loadMissing('user', 'createdBy', 'updatedBy');
     }
@@ -92,6 +113,9 @@ class CalendarEventService
     public function updateTiming(CalendarEvent $event, array $data, User $actor): CalendarEvent
     {
         [$startsAt, $endsAt] = $this->normalizeDateRange($data);
+        $shouldResetReminderState = $event->starts_at?->ne($startsAt)
+            || $event->ends_at?->ne($endsAt)
+            || ((bool) $event->all_day !== (bool) ($data['all_day'] ?? $event->all_day));
 
         $event->forceFill([
             'starts_at' => $startsAt,
@@ -100,11 +124,16 @@ class CalendarEventService
             'updated_by_user_id' => $actor->id,
         ])->save();
 
+        if ($shouldResetReminderState) {
+            $this->calendarReminderService->resetReminderState($event, $event->user_id);
+        }
+
         return $event->refresh()->loadMissing('user', 'createdBy', 'updatedBy');
     }
 
     public function deleteEvent(CalendarEvent $event): void
     {
+        $this->calendarReminderService->deleteReminderNotificationsForEvent($event, $event->user_id);
         $event->delete();
     }
 
@@ -183,6 +212,17 @@ class CalendarEventService
         return filled($value) ? $value : null;
     }
 
+    private function normalizeReminderMinutes(mixed $value): ?int
+    {
+        if (! filled($value)) {
+            return null;
+        }
+
+        $value = (int) $value;
+
+        return array_key_exists($value, CalendarEvent::getReminderOptions()) ? $value : null;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -208,6 +248,7 @@ class CalendarEventService
                 'eventTypeLabel' => $event->getTypeLabel(),
                 'status' => $event->status,
                 'statusLabel' => $event->getStatusLabel(),
+                'reminderLabel' => $event->getReminderLabel(),
                 'userId' => $event->user_id,
                 'userName' => $event->user?->name,
                 'createdBy' => $event->createdBy?->name,

@@ -52,6 +52,7 @@ class ManageCalendarEvents extends Page
                     'event_type' => CalendarEvent::TYPE_APPOINTMENT,
                     'status' => CalendarEvent::STATUS_SCHEDULED,
                     'color' => null,
+                    'reminder_minutes_before' => null,
                     'user_id' => $arguments['user_id'] ?? auth()->id(),
                 ];
             })
@@ -101,6 +102,7 @@ class ManageCalendarEvents extends Page
                 'event_type' => $record->event_type,
                 'status' => $record->status,
                 'color' => $record->color,
+                'reminder_minutes_before' => $record->reminder_minutes_before,
                 'user_id' => $record->user_id,
             ])
             ->schema($this->getEventActionSchema())
@@ -175,6 +177,7 @@ class ManageCalendarEvents extends Page
                 'eventTypeOptions' => CalendarEvent::getEventTypeOptions(),
                 'eventTypeColors' => CalendarEvent::getDefaultTypeColors(),
                 'statusOptions' => CalendarEvent::getStatusOptions(),
+                'reminderOptions' => CalendarEvent::getReminderOptions(),
                 'userOptions' => CalendarEventResource::getUserFilterOptions(),
             ],
         ];

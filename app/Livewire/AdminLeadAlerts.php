@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Lead;
 use App\Models\User;
+use App\Services\CalendarReminderService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Notifications\DatabaseNotification;
@@ -13,9 +14,11 @@ use Livewire\Component;
 
 class AdminLeadAlerts extends Component
 {
-    private const RELEVANT_NOTIFICATION_TITLES = [
-        'Имате нова заявка към вас',
-        'Имате върната заявка към вас',
+    private const RELEVANT_NOTIFICATION_TYPES = [
+        'lead_assigned',
+        'lead_additional_assigned',
+        'lead_returned',
+        CalendarReminderService::NOTIFICATION_TYPE,
     ];
 
     /**
@@ -26,6 +29,8 @@ class AdminLeadAlerts extends Component
     public int $attachedCount = 0;
 
     public int $returnedToMeCount = 0;
+
+    public ?int $lastReminderSweepAt = null;
 
     public function mount(): void
     {
@@ -45,6 +50,12 @@ class AdminLeadAlerts extends Component
             return;
         }
 
+        if ($this->shouldSweepCalendarReminders()) {
+            app(CalendarReminderService::class)->dispatchDueRemindersFor($user);
+            app(CalendarReminderService::class)->cleanupExpiredReminderNotifications($user);
+            $this->lastReminderSweepAt = now()->timestamp;
+        }
+
         $this->attachedCount = Lead::query()->attachedToUser($user)->count();
         $this->returnedToMeCount = $user->isOperator()
             ? Lead::query()->returnedToPrimaryUser($user)->count()
@@ -56,7 +67,7 @@ class AdminLeadAlerts extends Component
             returnedToMeCount: $this->returnedToMeCount,
         );
 
-        $notifications = $this->getUnreadLeadNotifications($user);
+        $notifications = $this->getUnreadRelevantNotifications($user);
 
         if ($notifications->isEmpty()) {
             return;
@@ -92,7 +103,7 @@ class AdminLeadAlerts extends Component
     /**
      * @return Collection<int, DatabaseNotification>
      */
-    private function getUnreadLeadNotifications(User $user): Collection
+    private function getUnreadRelevantNotifications(User $user): Collection
     {
         if (! Schema::hasTable('notifications')) {
             return collect();
@@ -110,8 +121,14 @@ class AdminLeadAlerts extends Component
 
                 return is_array($data)
                     && ($data['format'] ?? null) === 'filament'
-                    && in_array($data['title'] ?? null, self::RELEVANT_NOTIFICATION_TITLES, true);
+                    && in_array($data['notification_type'] ?? null, self::RELEVANT_NOTIFICATION_TYPES, true);
             })
             ->values();
+    }
+
+    private function shouldSweepCalendarReminders(): bool
+    {
+        return $this->lastReminderSweepAt === null
+            || (now()->timestamp - $this->lastReminderSweepAt) >= 60;
     }
 }

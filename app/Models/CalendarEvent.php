@@ -25,6 +25,8 @@ class CalendarEvent extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const REMINDER_NONE = null;
+
     /**
      * @var list<string>
      */
@@ -38,6 +40,8 @@ class CalendarEvent extends Model
         'event_type',
         'status',
         'color',
+        'reminder_minutes_before',
+        'reminder_sent_at',
         'user_id',
         'created_by_user_id',
         'updated_by_user_id',
@@ -52,6 +56,8 @@ class CalendarEvent extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'all_day' => 'boolean',
+            'reminder_minutes_before' => 'integer',
+            'reminder_sent_at' => 'datetime',
         ];
     }
 
@@ -93,6 +99,22 @@ class CalendarEvent extends Model
         ];
     }
 
+    /**
+     * @return array<int|string, string>
+     */
+    public static function getReminderOptions(): array
+    {
+        return [
+            '' => 'Без напомняне',
+            5 => '5 минути по-рано',
+            15 => '15 минути по-рано',
+            30 => '30 минути по-рано',
+            60 => '1 час по-рано',
+            120 => '2 часа по-рано',
+            1440 => '1 ден по-рано',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -130,5 +152,16 @@ class CalendarEvent extends Model
     public function getStatusLabel(): string
     {
         return static::getStatusOptions()[$this->status] ?? $this->status;
+    }
+
+    public function getReminderLabel(): ?string
+    {
+        $value = $this->reminder_minutes_before;
+
+        if ($value === null) {
+            return null;
+        }
+
+        return static::getReminderOptions()[$value] ?? "{$value} минути по-рано";
     }
 }
