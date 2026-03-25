@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Lead;
+use App\Models\LeadGuarantor;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mpdf\Mpdf;
@@ -29,12 +30,14 @@ class LeadPrivacyConsentPdfService
         );
 
         Storage::disk('local')->put($path, $this->buildPdf(
-            $this->formatApplicantIdentity(
-                (string) $lead->first_name,
-                (string) $lead->last_name,
-                (string) $lead->phone,
-                (string) $lead->email,
-                (string) $lead->city,
+            $this->formatParticipantIdentity(
+                $lead->first_name,
+                $lead->middle_name,
+                $lead->last_name,
+                $lead->egn,
+                $lead->phone,
+                $lead->email,
+                $lead->city,
             ),
         ));
 
@@ -44,7 +47,26 @@ class LeadPrivacyConsentPdfService
         ];
     }
 
-    private function buildPdf(string $applicantIdentity): string
+    /**
+     * @return array{content: string, download_name: string}
+     */
+    public function buildGuarantorDownload(LeadGuarantor $guarantor): array
+    {
+        return [
+            'content' => $this->buildPdf($this->formatParticipantIdentity(
+                $guarantor->first_name,
+                $guarantor->middle_name,
+                $guarantor->last_name,
+                $guarantor->egn,
+                $guarantor->phone,
+                $guarantor->email,
+                $guarantor->city,
+            )),
+            'download_name' => $guarantor->buildPrivacyConsentDownloadFileName(),
+        ];
+    }
+
+    private function buildPdf(string $participantIdentity): string
     {
         $templatePath = public_path(Lead::getPrivacyConsentTemplatePath());
 
@@ -65,7 +87,7 @@ class LeadPrivacyConsentPdfService
 
             if ($pageNumber === 1) {
                 $mpdf->useTemplate($template, 0, 0, null, null, true);
-                $this->writeApplicantIdentity($mpdf, $applicantIdentity);
+                $this->writeParticipantIdentity($mpdf, $participantIdentity);
 
                 continue;
             }
@@ -80,13 +102,13 @@ class LeadPrivacyConsentPdfService
         return $mpdf->OutputBinaryData();
     }
 
-    private function writeApplicantIdentity(Mpdf $mpdf, string $applicantIdentity): void
+    private function writeParticipantIdentity(Mpdf $mpdf, string $participantIdentity): void
     {
         $mpdf->WriteFixedPosHTML(
             sprintf(
                 '<div style="font-family: dejavuserif; font-size: %.1Fpt; line-height: 1; white-space: nowrap;">%s</div>',
                 self::FIELD_FONT_SIZE,
-                e($applicantIdentity),
+                e($participantIdentity),
             ),
             self::FIELD_X,
             self::FIELD_Y,
@@ -96,21 +118,28 @@ class LeadPrivacyConsentPdfService
         );
     }
 
-    private function formatApplicantIdentity(
-        string $firstName,
-        string $lastName,
-        string $phone,
-        string $email,
-        string $city,
+    private function formatParticipantIdentity(
+        ?string $firstName,
+        ?string $middleName,
+        ?string $lastName,
+        ?string $egn,
+        ?string $phone,
+        ?string $email,
+        ?string $city,
     ): string {
-        return trim(sprintf(
-            '%s %s, тел. %s, %s, гр. %s',
+        $name = trim(implode(' ', array_filter([
             $firstName,
+            $middleName,
             $lastName,
-            $phone,
-            $email,
-            $city,
-        ));
+        ])));
+
+        return implode(', ', array_values(array_filter([
+            $name !== '' ? $name : null,
+            filled($egn) ? 'ЕГН '.$egn : null,
+            filled($phone) ? 'тел. '.$phone : null,
+            filled($email) ? $email : null,
+            filled($city) ? 'гр. '.$city : null,
+        ])));
     }
 
     private function resolveTempDir(): string

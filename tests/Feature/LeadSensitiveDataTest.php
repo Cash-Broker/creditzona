@@ -277,6 +277,32 @@ class LeadSensitiveDataTest extends TestCase
         );
     }
 
+    public function test_authorized_staff_downloads_generated_guarantor_privacy_consent_pdf(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $lead = Lead::query()->create($this->leadData());
+        $guarantor = $lead->guarantors()->create($this->guarantorData([
+            'egn' => '0987654321',
+        ]));
+
+        $response = $this
+            ->actingAs($admin)
+            ->get(route('admin.leads.guarantors.privacy-consent.download', [
+                'lead' => $lead,
+                'guarantor' => $guarantor,
+            ]));
+
+        $response->assertOk();
+        $this->assertStringContainsString(
+            rawurlencode($guarantor->buildPrivacyConsentDownloadFileName()),
+            (string) $response->headers->get('content-disposition'),
+        );
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+    }
+
     public function test_unrelated_operator_cannot_download_attached_document(): void
     {
         Storage::disk('local')->put('lead-documents/1/application.pdf', 'test-content');
@@ -350,6 +376,26 @@ class LeadSensitiveDataTest extends TestCase
             ->actingAs($operator)
             ->get(route('admin.leads.privacy-consent.download', [
                 'lead' => $lead,
+            ]))
+            ->assertForbidden();
+    }
+
+    public function test_unrelated_operator_cannot_download_generated_guarantor_privacy_consent_pdf(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+        ]);
+
+        $lead = Lead::query()->create($this->leadData());
+        $guarantor = $lead->guarantors()->create($this->guarantorData([
+            'egn' => '0987654321',
+        ]));
+
+        $this
+            ->actingAs($operator)
+            ->get(route('admin.leads.guarantors.privacy-consent.download', [
+                'lead' => $lead,
+                'guarantor' => $guarantor,
             ]))
             ->assertForbidden();
     }

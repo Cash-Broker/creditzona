@@ -339,6 +339,11 @@ class LeadForm
                         ->nullable()
                         ->native(false)
                         ->columnSpan(2),
+                    Placeholder::make('privacy_consent_declaration_download')
+                        ->label('Декларация за съгласие')
+                        ->content(fn (?LeadGuarantor $record): HtmlString => static::renderGuarantorPrivacyConsentAction($record))
+                        ->columnStart(5)
+                        ->columnSpan(2),
                     TextInput::make('phone')
                         ->label('Телефон')
                         ->tel()
@@ -472,6 +477,25 @@ class LeadForm
                     ->columnSpanFull(),
             ])
             ->columnSpanFull();
+    }
+
+    private static function renderGuarantorPrivacyConsentAction(?LeadGuarantor $record): HtmlString
+    {
+        if (! $record?->exists || $record->lead_id === null) {
+            return new HtmlString(
+                '<div class="text-xs text-gray-500">Запазете заявката, за да генерирате декларацията.</div>',
+            );
+        }
+
+        $url = route('admin.leads.guarantors.privacy-consent.download', [
+            'lead' => $record->lead_id,
+            'guarantor' => $record,
+        ]);
+
+        return new HtmlString(sprintf(
+            '<a href="%s" class="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-primary-500/20 dark:bg-white/5 dark:text-primary-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200 dark:focus:ring-offset-gray-950">Генерирай декларация</a>',
+            e($url),
+        ));
     }
 
     private static function requiresFullApplication(?string $status): bool

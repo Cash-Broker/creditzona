@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminDocumentFileController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadDocumentDownloadController;
 use App\Http\Controllers\LeadGuarantorDocumentDownloadController;
+use App\Http\Controllers\LeadGuarantorPrivacyConsentDocumentDownloadController;
 use App\Http\Controllers\LeadPrivacyConsentDocumentDownloadController;
 use App\Http\Controllers\PageController;
 use Filament\Http\Middleware\Authenticate;
@@ -50,4 +51,6 @@ Route::middleware([Authenticate::class])
             ->name('leads.privacy-consent.download');
         Route::get('/leads/{lead}/guarantors/{guarantor}/documents/download', LeadGuarantorDocumentDownloadController::class)
             ->name('leads.guarantors.documents.download');
+        Route::get('/leads/{lead}/guarantors/{guarantor}/privacy-consent/download', LeadGuarantorPrivacyConsentDocumentDownloadController::class)
+            ->name('leads.guarantors.privacy-consent.download');
     });

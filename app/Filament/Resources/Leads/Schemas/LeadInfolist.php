@@ -136,6 +136,16 @@ class LeadInfolist
                                         TextEntry::make('egn')
                                             ->label('ЕГН')
                                             ->placeholder('Няма'),
+                                        ViewEntry::make('privacy_consent_download')
+                                            ->label('Декларация за съгласие')
+                                            ->view('filament.resources.leads.infolists.guarantor-privacy-consent-download')
+                                            ->state(fn (LeadGuarantor $record): array => [
+                                                'url' => route('admin.leads.guarantors.privacy-consent.download', [
+                                                    'lead' => $record->lead_id,
+                                                    'guarantor' => $record,
+                                                ]),
+                                            ])
+                                            ->columnStart(3),
                                         TextEntry::make('phone')
                                             ->label('Телефон')
                                             ->placeholder('Няма'),

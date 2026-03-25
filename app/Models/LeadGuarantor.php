@@ -159,6 +159,21 @@ class LeadGuarantor extends Model implements HasRichContent
         return null;
     }
 
+    public function buildPrivacyConsentDownloadFileName(): string
+    {
+        $baseName = implode('', array_filter([
+            $this->sanitizePrivacyConsentDownloadSegment($this->first_name),
+            $this->sanitizePrivacyConsentDownloadSegment($this->last_name),
+            preg_replace('/\D+/u', '', (string) ($this->phone ?? '')) ?: null,
+        ]));
+
+        if ($baseName === '') {
+            $baseName = 'ДекларацияСъгласие';
+        }
+
+        return $baseName.'ДекларацияСъгласие.pdf';
+    }
+
     protected function casts(): array
     {
         return [
@@ -186,5 +201,12 @@ class LeadGuarantor extends Model implements HasRichContent
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    private function sanitizePrivacyConsentDownloadSegment(?string $value): ?string
+    {
+        $sanitized = preg_replace('/[^\p{L}\p{N}]+/u', '', (string) $value);
+
+        return filled($sanitized) ? $sanitized : null;
     }
 }
