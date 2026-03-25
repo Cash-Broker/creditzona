@@ -156,9 +156,11 @@ class ContactMessageResource extends Resource
                 $user = auth()->user();
 
                 return $user instanceof User
-                    && $user->isOperator()
-                    && $record->assigned_user_id === $user->id
-                    && $record->archived_at === null;
+                    && $record->assigned_user_id !== null
+                    && (
+                        $user->isAdmin()
+                        || ($user->isOperator() && $record->assigned_user_id === $user->id)
+                    );
             })
             ->action(function (ContactMessage $record): void {
                 $actor = auth()->user();

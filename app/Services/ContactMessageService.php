@@ -84,10 +84,6 @@ class ContactMessageService
             throw new DomainException('Закачете съобщението към оператор, преди да създадете заявка.');
         }
 
-        if ($contactMessage->archived_at !== null) {
-            throw new DomainException('Архивирано съобщение не може да създава нова заявка.');
-        }
-
         $existingLead = $contactMessage->generatedLead()->first();
 
         if ($existingLead instanceof Lead) {
