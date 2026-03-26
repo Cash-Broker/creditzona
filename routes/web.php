@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminCalendarEventFeedController;
 use App\Http\Controllers\AdminCalendarEventTimingController;
 use App\Http\Controllers\AdminDocumentFileController;
+use App\Http\Controllers\ContractBatchFileController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadDocumentDownloadController;
 use App\Http\Controllers\LeadGuarantorDocumentDownloadController;
@@ -47,6 +48,10 @@ Route::middleware([Authenticate::class])
             ->name('documents.open');
         Route::get('/documents/{adminDocument}/download', [AdminDocumentFileController::class, 'download'])
             ->name('documents.download');
+        Route::get('/contract-batches/{contractBatch}/archive/download', [ContractBatchFileController::class, 'downloadArchive'])
+            ->name('contract-batches.archive.download');
+        Route::get('/contract-batches/{contractBatch}/documents/{documentKey}/download', [ContractBatchFileController::class, 'downloadDocument'])
+            ->name('contract-batches.documents.download');
         Route::get('/leads/{lead}/documents/download', LeadDocumentDownloadController::class)
             ->name('leads.documents.download');
         Route::get('/leads/{lead}/privacy-consent/download', LeadPrivacyConsentDocumentDownloadController::class)
