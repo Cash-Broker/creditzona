@@ -17,6 +17,7 @@ use Filament\Tables\Columns\CheckboxColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class LeadsTable
@@ -219,7 +220,9 @@ class LeadsTable
                 fn (Lead $record): string => $resourceClass::getUrl('view', ['record' => $record]),
                 shouldOpenInNewTab: true,
             )
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort(fn (Builder $query): Builder => $query
+                ->orderByDesc('created_at')
+                ->orderByDesc('id'))
             ->toolbarActions([
                 BulkAction::make('mark_selected_for_later')
                     ->label('Маркирай за по-късно')
