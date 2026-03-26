@@ -465,4 +465,9 @@ class Lead extends Model implements HasRichContent
     {
         return $this->hasMany(LeadMessage::class);
     }
+
+    public function contractBatches(): HasMany
+    {
+        return $this->hasMany(ContractBatch::class);
+    }
 }

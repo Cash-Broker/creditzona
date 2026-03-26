@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Leads\Pages;
 
+use App\Filament\Resources\ContractBatches\ContractBatchResource;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
 use App\Models\User;
@@ -33,6 +34,9 @@ class EditLead extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('generateContracts')
+                ->label('Генерирай договори')
+                ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey()),
             ViewAction::make(),
         ];
     }
