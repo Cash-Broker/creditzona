@@ -11,6 +11,10 @@ class ContractBatch extends Model
 {
     use HasFactory;
 
+    public const DOCUMENT_VARIANT_PDF = 'pdf';
+
+    public const DOCUMENT_VARIANT_DOCX = 'docx';
+
     public const DOCUMENT_TYPE_APPLICATION_REQUEST = 'application_request';
 
     public const DOCUMENT_TYPE_MEDIATION_AGREEMENT = 'mediation_agreement';
@@ -241,9 +245,9 @@ class ContractBatch extends Model
         $documents = $this->generated_documents ?? [];
 
         return array_values(array_map(static function (array $document): array {
-            $document['is_available'] = filled($document['path'] ?? null)
-                ? Storage::disk('legal')->exists($document['path'])
-                : false;
+            $document['variants'] = self::normalizeGeneratedDocumentVariants($document);
+            $document['is_available'] = collect($document['variants'])
+                ->contains(static fn (array $variant): bool => (bool) ($variant['is_available'] ?? false));
 
             if (blank($document['document_key'] ?? null) && filled($document['document_type'] ?? null)) {
                 $document['document_key'] = $document['document_type'];
@@ -256,17 +260,33 @@ class ContractBatch extends Model
     /**
      * @return array<string, mixed>|null
      */
-    public function findGeneratedDocument(string $documentKey): ?array
+    public function findGeneratedDocument(string $documentKey, string $format = self::DOCUMENT_VARIANT_PDF): ?array
     {
         foreach ($this->getGeneratedDocumentsForDisplay() as $document) {
             if (($document['document_key'] ?? null) === $documentKey) {
-                return $document;
+                $variant = $document['variants'][$format] ?? null;
+
+                if (is_array($variant)) {
+                    return array_merge($document, $variant, [
+                        'format' => $format,
+                    ]);
+                }
+
+                return null;
             }
         }
 
         foreach ($this->getGeneratedDocumentsForDisplay() as $document) {
             if (($document['document_type'] ?? null) === $documentKey) {
-                return $document;
+                $variant = $document['variants'][$format] ?? null;
+
+                if (is_array($variant)) {
+                    return array_merge($document, $variant, [
+                        'format' => $format,
+                    ]);
+                }
+
+                return null;
             }
         }
 
@@ -298,9 +318,19 @@ class ContractBatch extends Model
         $directories = [];
 
         foreach ($this->generated_documents ?? [] as $document) {
-            $path = is_array($document) ? ($document['path'] ?? null) : null;
+            if (! is_array($document)) {
+                continue;
+            }
 
-            if (filled($path)) {
+            $variants = self::normalizeGeneratedDocumentVariants($document);
+
+            foreach ($variants as $variant) {
+                $path = $variant['path'] ?? null;
+
+                if (! filled($path)) {
+                    continue;
+                }
+
                 $directories[] = dirname($path);
                 Storage::disk('legal')->delete($path);
             }
@@ -334,5 +364,49 @@ class ContractBatch extends Model
         }
 
         return str_repeat('*', mb_strlen($normalized) - 4).mb_substr($normalized, -4);
+    }
+
+    /**
+     * @param  array<string, mixed>  $document
+     * @return array<string, array<string, mixed>>
+     */
+    private static function normalizeGeneratedDocumentVariants(array $document): array
+    {
+        $variants = $document['variants'] ?? null;
+
+        if (is_array($variants) && $variants !== []) {
+            return collect($variants)
+                ->filter(static fn (mixed $variant): bool => is_array($variant))
+                ->mapWithKeys(static function (array $variant, string $format): array {
+                    $path = $variant['path'] ?? null;
+
+                    return [
+                        $format => array_merge($variant, [
+                            'format' => $format,
+                            'is_available' => filled($path)
+                                ? Storage::disk('legal')->exists($path)
+                                : false,
+                        ]),
+                    ];
+                })
+                ->all();
+        }
+
+        $path = $document['path'] ?? null;
+
+        if (! filled($path)) {
+            return [];
+        }
+
+        return [
+            self::DOCUMENT_VARIANT_PDF => [
+                'format' => self::DOCUMENT_VARIANT_PDF,
+                'path' => $path,
+                'download_name' => $document['download_name'] ?? basename((string) $path),
+                'mime_type' => $document['mime_type'] ?? 'application/pdf',
+                'file_size' => $document['file_size'] ?? null,
+                'is_available' => Storage::disk('legal')->exists($path),
+            ],
+        ];
     }
 }

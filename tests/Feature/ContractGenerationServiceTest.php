@@ -33,7 +33,7 @@ class ContractGenerationServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_it_generates_pdf_contract_batch_and_encrypts_input_payload(): void
+    public function test_it_generates_pdf_and_docx_contract_batch_and_encrypts_input_payload(): void
     {
         $operator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
@@ -71,9 +71,23 @@ class ContractGenerationServiceTest extends TestCase
         ], $documentKeys);
 
         foreach ($batch->generated_documents as $document) {
-            $this->assertSame('application/pdf', $document['mime_type']);
-            $this->assertStringEndsWith('.pdf', $document['download_name']);
-            Storage::disk('legal')->assertExists($document['path']);
+            $this->assertArrayHasKey('variants', $document);
+            $this->assertArrayHasKey(ContractBatch::DOCUMENT_VARIANT_PDF, $document['variants']);
+            $this->assertArrayHasKey(ContractBatch::DOCUMENT_VARIANT_DOCX, $document['variants']);
+
+            $pdfVariant = $document['variants'][ContractBatch::DOCUMENT_VARIANT_PDF];
+            $docxVariant = $document['variants'][ContractBatch::DOCUMENT_VARIANT_DOCX];
+
+            $this->assertSame('application/pdf', $pdfVariant['mime_type']);
+            $this->assertStringEndsWith('.pdf', $pdfVariant['download_name']);
+            Storage::disk('legal')->assertExists($pdfVariant['path']);
+
+            $this->assertSame(
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                $docxVariant['mime_type'],
+            );
+            $this->assertStringEndsWith('.docx', $docxVariant['download_name']);
+            Storage::disk('legal')->assertExists($docxVariant['path']);
         }
 
         $storedPayload = DB::table('contract_batches')
