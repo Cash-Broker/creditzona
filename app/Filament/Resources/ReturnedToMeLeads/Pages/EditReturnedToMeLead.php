@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ReturnedToMeLeads\Pages;
 
+use App\Filament\Resources\ContractBatches\ContractBatchResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
 use App\Filament\Resources\ReturnedToMeLeadArchives\ReturnedToMeLeadArchiveResource;
 use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
@@ -38,6 +39,9 @@ class EditReturnedToMeLead extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('generateContracts')
+                ->label('Генерирай договори')
+                ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey()),
             ViewAction::make(),
         ];
     }

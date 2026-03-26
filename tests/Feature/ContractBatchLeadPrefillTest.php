@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\AttachedLeads\Pages\EditAttachedLead;
+use App\Filament\Resources\AttachedLeads\Pages\ViewAttachedLead;
 use App\Filament\Resources\ContractBatches\Pages\CreateContractBatch;
 use App\Filament\Resources\Leads\Pages\EditLead;
 use App\Filament\Resources\Leads\Pages\ViewLead;
+use App\Filament\Resources\ReturnedToMeLeads\Pages\EditReturnedToMeLead;
+use App\Filament\Resources\ReturnedToMeLeads\Pages\ViewReturnedToMeLead;
 use App\Models\Lead;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -91,9 +95,52 @@ class ContractBatchLeadPrefillTest extends TestCase
         ])->assertSee('Генерирай договори');
     }
 
-    private function createLeadForContracts(User $assignedUser): Lead
+    public function test_attached_and_returned_lead_pages_show_generate_contracts_action(): void
     {
-        $lead = Lead::query()->create([
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $attachedLead = $this->createLeadForContracts($admin, [
+            'additional_user_id' => $operator->id,
+            'attached_archived_at' => null,
+        ]);
+
+        $returnedLead = $this->createLeadForContracts($operator, [
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $admin->id,
+            'returned_to_primary_at' => CarbonImmutable::parse('2026-03-25 08:00:00', 'Europe/Sofia'),
+            'returned_to_primary_archived_at' => null,
+        ]);
+
+        $this->actingAs($operator);
+
+        Livewire::test(ViewAttachedLead::class, [
+            'record' => (string) $attachedLead->getKey(),
+        ])->assertSee('Генерирай договори');
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $attachedLead->getKey(),
+        ])->assertSee('Генерирай договори');
+
+        Livewire::test(ViewReturnedToMeLead::class, [
+            'record' => (string) $returnedLead->getKey(),
+        ])->assertSee('Генерирай договори');
+
+        Livewire::test(EditReturnedToMeLead::class, [
+            'record' => (string) $returnedLead->getKey(),
+        ])->assertSee('Генерирай договори');
+    }
+
+    private function createLeadForContracts(User $assignedUser, array $overrides = []): Lead
+    {
+        $lead = Lead::query()->create(array_replace([
             'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
             'first_name' => 'Ivan',
             'middle_name' => 'Petrov',
@@ -107,7 +154,7 @@ class ContractBatchLeadPrefillTest extends TestCase
             'amount' => 12000,
             'status' => 'new',
             'assigned_user_id' => $assignedUser->id,
-        ]);
+        ], $overrides));
 
         $lead->forceFill([
             'created_at' => CarbonImmutable::parse('2026-03-20 12:15:00', 'Europe/Sofia'),
