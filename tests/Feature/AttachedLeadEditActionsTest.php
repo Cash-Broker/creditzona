@@ -6,6 +6,7 @@ use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\AttachedLeads\Pages\EditAttachedLead;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\Notes\NoteHistory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -402,6 +403,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'full_name' => 'Мария Петрова',
                     'phone' => '0888000111',
                     'existing_internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+                    'internal_note_entries' => NoteHistory::formEntries($guarantor->internal_notes),
                     'new_internal_note' => 'Втора бележка',
                     'documents' => [],
                     'document_file_names' => [],
@@ -411,9 +413,78 @@ class AttachedLeadEditActionsTest extends TestCase
             ->assertHasNoFormErrors();
 
         $guarantor->refresh();
+        $entries = NoteHistory::entries($guarantor->internal_notes);
 
-        $this->assertStringContainsString('Първа бележка', (string) $guarantor->internal_notes);
-        $this->assertStringContainsString('Рената: Втора бележка', (string) $guarantor->internal_notes);
+        $this->assertSame('Първа бележка', $entries[0]['body']);
+        $this->assertSame('Втора бележка', $entries[1]['body']);
+        $this->assertSame('Рената', $entries[1]['author']);
+    }
+
+    public function test_edit_attached_lead_can_edit_existing_guarantor_note_message(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+            'name' => 'Рената',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010001',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $operator->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $guarantor = $lead->guarantors()->create([
+            'first_name' => 'Мария',
+            'last_name' => 'Петрова',
+            'phone' => '0888000111',
+            'status' => null,
+            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+        ]);
+
+        $this->actingAs($admin);
+
+        $entries = NoteHistory::formEntries($guarantor->internal_notes);
+        $entries[0]['body'] = 'Редактирана бележка за поръчителя';
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->fillForm([
+                'guarantors' => [[
+                    'id' => $guarantor->id,
+                    'status' => null,
+                    'full_name' => 'Мария Петрова',
+                    'phone' => '0888000111',
+                    'existing_internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+                    'internal_note_entries' => $entries,
+                    'new_internal_note' => null,
+                    'documents' => [],
+                    'document_file_names' => [],
+                ]],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $guarantor->refresh();
+        $entries = NoteHistory::entries($guarantor->internal_notes);
+
+        $this->assertSame('Редактирана бележка за поръчителя', $entries[0]['body']);
+        $this->assertSame('Рената', $entries[0]['edited_by']);
+        $this->assertNotNull($entries[0]['edited_at']);
     }
 
     public function test_edit_attached_lead_save_splits_full_name_into_existing_name_columns(): void

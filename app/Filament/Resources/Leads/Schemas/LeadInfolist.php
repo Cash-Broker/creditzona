@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Leads\Schemas;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
+use App\Support\Notes\NoteHistory;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
@@ -183,10 +184,13 @@ class LeadInfolist
                                         TextEntry::make('credit_bank')
                                             ->label('Банка по кредита')
                                             ->placeholder('Няма'),
-                                        TextEntry::make('internal_notes')
+                                        ViewEntry::make('internal_notes_history')
                                             ->label('История на съобщенията за поръчителя')
-                                            ->prose()
-                                            ->placeholder('Няма')
+                                            ->view('filament.resources.leads.infolists.note-history')
+                                            ->state(fn (LeadGuarantor $record): array => [
+                                                'entries' => NoteHistory::entries($record->internal_notes),
+                                                'empty_message' => 'Няма',
+                                            ])
                                             ->columnSpanFull(),
                                     ]),
                                 Section::make('Данни за имота на поръчителя')
@@ -246,10 +250,13 @@ class LeadInfolist
                     ]),
                 Section::make('Съобщения за клиента')
                     ->schema([
-                        TextEntry::make('internal_notes')
+                        ViewEntry::make('internal_notes_history')
                             ->label('История на съобщенията за клиента')
-                            ->prose()
-                            ->placeholder('Няма')
+                            ->view('filament.resources.leads.infolists.note-history')
+                            ->state(fn (Lead $record): array => [
+                                'entries' => NoteHistory::entries($record->internal_notes),
+                                'empty_message' => 'Няма',
+                            ])
                             ->columnSpanFull(),
                     ]),
                 Section::make('Системна информация')

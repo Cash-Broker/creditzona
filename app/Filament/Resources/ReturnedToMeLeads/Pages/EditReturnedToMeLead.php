@@ -22,10 +22,8 @@ class EditReturnedToMeLead extends EditRecord
 
     protected ?int $previousAdditionalUserId = null;
 
-    protected ?string $leadNoteDraft = null;
-
     /**
-     * @var array<int, array{id: int|null, fingerprint: string, note: string}>
+     * @var array<int, array{id: int|null, fingerprint: string, existing_notes: ?string, entries: array<int, array<string, mixed>>, note: ?string}>
      */
     protected array $guarantorNoteDrafts = [];
 
@@ -110,16 +108,12 @@ class EditReturnedToMeLead extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        return LeadForm::mutateSubmittedData($data);
+        return LeadForm::mutateSubmittedData($data, $this->getRecord());
     }
 
     protected function beforeSave(): void
     {
         $rawState = $this->form->getRawState();
-
-        $this->leadNoteDraft = is_array($rawState)
-            ? LeadForm::captureLeadNoteDraft($rawState)
-            : null;
 
         $this->guarantorNoteDrafts = is_array($rawState)
             ? LeadForm::captureGuarantorNoteDrafts($rawState)
@@ -130,7 +124,6 @@ class EditReturnedToMeLead extends EditRecord
     {
         $record = $this->getRecord()->refresh();
 
-        LeadForm::persistLeadNoteDraft($record, $this->leadNoteDraft);
         LeadForm::persistGuarantorNoteDrafts($record, $this->guarantorNoteDrafts);
 
         $actor = auth()->user();
@@ -142,7 +135,6 @@ class EditReturnedToMeLead extends EditRecord
         );
 
         $this->previousAdditionalUserId = $record->additional_user_id;
-        $this->leadNoteDraft = null;
         $this->guarantorNoteDrafts = [];
     }
 

@@ -29,7 +29,7 @@ use Illuminate\Support\HtmlString;
 
 class LeadForm
 {
-    public static function mutateSubmittedData(array $data): array
+    public static function mutateSubmittedData(array $data, ?Lead $record = null): array
     {
         if (array_key_exists('full_name', $data)) {
             [$firstName, $middleName, $lastName] = static::splitFullName($data['full_name'] ?? null);
@@ -40,6 +40,19 @@ class LeadForm
 
             unset($data['full_name']);
         }
+
+        $leadNoteEntries = is_array($data['lead_note_entries'] ?? null)
+            ? $data['lead_note_entries']
+            : NoteHistory::formEntries($record?->internal_notes);
+
+        $data['internal_notes'] = static::buildNoteHistoryState(
+            $record?->internal_notes,
+            $leadNoteEntries,
+            is_string($data['lead_new_internal_note'] ?? null) ? $data['lead_new_internal_note'] : null,
+        );
+
+        unset($data['lead_note_entries']);
+        unset($data['lead_new_internal_note']);
 
         return $data;
     }
@@ -246,19 +259,22 @@ class LeadForm
                 Section::make('Съобщения за клиента')
                     ->columnSpanFull()
                     ->schema([
-                        Hidden::make('lead_existing_internal_notes')
-                            ->dehydrated()
-                            ->afterStateHydrated(function (Hidden $component, mixed $state, ?Lead $record): void {
-                                $component->state(NoteHistory::normalize(
+                        Repeater::make('lead_note_entries')
+                            ->label('История на съобщенията за клиента')
+                            ->afterStateHydrated(function (Repeater $component, mixed $state, ?Lead $record): void {
+                                $component->state(NoteHistory::formEntries(
                                     is_string($record?->internal_notes) ? $record->internal_notes : null,
                                 ));
-                            }),
-                        Placeholder::make('lead_note_history')
-                            ->label('История на съобщенията за клиента')
-                            ->content(fn (Get $get): HtmlString => static::renderChatLikeNoteHistory(
-                                NoteHistory::normalize($get('lead_existing_internal_notes')),
-                                'Все още няма съобщения за този клиент.',
-                            ))
+                            })
+                            ->addable(false)
+                            ->deletable(false)
+                            ->reorderable(false)
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
+                            ->helperText(fn (Get $get): string => blank($get('lead_note_entries'))
+                                ? 'Все още няма съобщения за този клиент.'
+                                : 'Можете да редактирате вече записаните съобщения.')
+                            ->schema(static::noteEntrySchema())
                             ->columnSpanFull(),
                         Textarea::make('lead_new_internal_note')
                             ->label('Ново съобщение към клиента')
@@ -433,12 +449,22 @@ class LeadForm
                                 is_string($record?->internal_notes) ? $record->internal_notes : null,
                             ));
                         }),
-                    Placeholder::make('guarantor_note_history')
+                    Repeater::make('internal_note_entries')
                         ->label('История на съобщенията за поръчителя')
-                        ->content(fn (Get $get): HtmlString => static::renderChatLikeNoteHistory(
-                            NoteHistory::normalize($get('existing_internal_notes')),
-                            'Все още няма съобщения за този поръчител.',
-                        ))
+                        ->afterStateHydrated(function (Repeater $component, mixed $state, ?LeadGuarantor $record): void {
+                            $component->state(NoteHistory::formEntries(
+                                is_string($record?->internal_notes) ? $record->internal_notes : null,
+                            ));
+                        })
+                        ->addable(false)
+                        ->deletable(false)
+                        ->reorderable(false)
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
+                        ->helperText(fn (Get $get): string => blank($get('internal_note_entries'))
+                            ? 'Все още няма съобщения за този поръчител.'
+                            : 'Можете да редактирате вече записаните съобщения.')
+                        ->schema(static::noteEntrySchema())
                         ->columnSpanFull(),
                     Textarea::make('new_internal_note')
                         ->label('Ново съобщение към поръчителя')
@@ -572,6 +598,12 @@ class LeadForm
             $data['middle_name'] ?? null,
             $data['last_name'] ?? null,
         );
+        $data['existing_internal_notes'] = NoteHistory::normalize(
+            is_string($data['internal_notes'] ?? null) ? $data['internal_notes'] : null,
+        );
+        $data['internal_note_entries'] = NoteHistory::formEntries(
+            is_string($data['internal_notes'] ?? null) ? $data['internal_notes'] : null,
+        );
 
         return $data;
     }
@@ -588,11 +620,8 @@ class LeadForm
             unset($data['full_name']);
         }
 
-        $data['internal_notes'] = NoteHistory::normalize(
-            is_string($data['existing_internal_notes'] ?? null) ? $data['existing_internal_notes'] : null,
-        );
-
         unset($data['existing_internal_notes']);
+        unset($data['internal_note_entries']);
         unset($data['new_internal_note']);
 
         return static::pruneBlankGuarantor($data);
@@ -600,7 +629,7 @@ class LeadForm
 
     /**
      * @param  array<string, mixed>  $rawState
-     * @return array<int, array{id: int|null, fingerprint: string, note: string}>
+     * @return array<int, array{id: int|null, fingerprint: string, existing_notes: ?string, entries: array<int, array<string, mixed>>, note: ?string}>
      */
     public static function captureGuarantorNoteDrafts(array $rawState): array
     {
@@ -617,17 +646,27 @@ class LeadForm
                 continue;
             }
 
+            $existingNotes = is_string($guarantor['existing_internal_notes'] ?? null)
+                ? $guarantor['existing_internal_notes']
+                : null;
+
+            $entries = is_array($guarantor['internal_note_entries'] ?? null)
+                ? $guarantor['internal_note_entries']
+                : NoteHistory::formEntries($existingNotes);
+
             $note = NoteHistory::normalize(
                 is_string($guarantor['new_internal_note'] ?? null) ? $guarantor['new_internal_note'] : null,
             );
 
-            if ($note === null) {
+            if ($entries === [] && $note === null) {
                 continue;
             }
 
             $drafts[] = [
                 'id' => isset($guarantor['id']) ? (int) $guarantor['id'] : null,
                 'fingerprint' => static::buildGuarantorFingerprint($guarantor),
+                'existing_notes' => $existingNotes,
+                'entries' => $entries,
                 'note' => $note,
             ];
         }
@@ -636,7 +675,7 @@ class LeadForm
     }
 
     /**
-     * @param  array<int, array{id: int|null, fingerprint: string, note: string}>  $drafts
+     * @param  array<int, array{id: int|null, fingerprint: string, existing_notes: ?string, entries: array<int, array<string, mixed>>, note: ?string}>  $drafts
      */
     public static function persistGuarantorNoteDrafts(Lead $lead, array $drafts): void
     {
@@ -672,37 +711,13 @@ class LeadForm
             }
 
             $guarantor->forceFill([
-                'internal_notes' => NoteHistory::append(
-                    NoteHistory::normalize($guarantor->internal_notes),
-                    $draft['note'],
-                    auth()->user()?->name,
+                'internal_notes' => static::buildNoteHistoryState(
+                    is_string($guarantor->internal_notes) ? $guarantor->internal_notes : $draft['existing_notes'],
+                    is_array($draft['entries']) ? $draft['entries'] : [],
+                    is_string($draft['note'] ?? null) ? $draft['note'] : null,
                 ),
             ])->save();
         }
-    }
-
-    public static function captureLeadNoteDraft(array $rawState): ?string
-    {
-        return NoteHistory::normalize(
-            is_string($rawState['lead_new_internal_note'] ?? null) ? $rawState['lead_new_internal_note'] : null,
-        );
-    }
-
-    public static function persistLeadNoteDraft(Lead $lead, ?string $draft): void
-    {
-        $note = NoteHistory::normalize($draft);
-
-        if ($note === null) {
-            return;
-        }
-
-        $lead->forceFill([
-            'internal_notes' => NoteHistory::append(
-                NoteHistory::normalize($lead->internal_notes),
-                $note,
-                auth()->user()?->name,
-            ),
-        ])->save();
     }
 
     private static function hasMeaningfulGuarantorData(mixed $value): bool
@@ -722,13 +737,6 @@ class LeadForm
         }
 
         return filled($value);
-    }
-
-    private static function normalizeRichTextState(?string $state): ?string
-    {
-        return static::extractVisibleText($state) === ''
-            ? null
-            : $state;
     }
 
     private static function fullNameRule(): Closure
@@ -813,11 +821,6 @@ class LeadForm
         return trim($text);
     }
 
-    private static function normalizeLegacyNoteForTextarea(?string $value): ?string
-    {
-        return NoteHistory::normalize($value);
-    }
-
     /**
      * @param  array<string, mixed>  $data
      */
@@ -897,6 +900,86 @@ class LeadForm
             '<div class="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">%s</div>',
             $content,
         ));
+    }
+
+    /**
+     * @return array<int, \Filament\Forms\Components\Component>
+     */
+    private static function noteEntrySchema(): array
+    {
+        return [
+            Hidden::make('id'),
+            Hidden::make('author'),
+            Hidden::make('timestamp'),
+            Hidden::make('edited_at'),
+            Hidden::make('edited_by'),
+            Placeholder::make('message_meta')
+                ->label('Изпратено от')
+                ->content(fn (Get $get): string => static::noteEntryItemLabel([
+                    'author' => $get('author'),
+                    'timestamp' => $get('timestamp'),
+                ])),
+            Textarea::make('body')
+                ->label('Съобщение')
+                ->rows(3)
+                ->autosize()
+                ->required(),
+            Placeholder::make('message_edit_meta')
+                ->label('Последна редакция')
+                ->content(fn (Get $get): ?string => static::noteEntryEditedLabel([
+                    'edited_at' => $get('edited_at'),
+                    'edited_by' => $get('edited_by'),
+                ]))
+                ->visible(fn (Get $get): bool => filled($get('edited_at')) || filled($get('edited_by'))),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private static function noteEntryItemLabel(array $state): string
+    {
+        $parts = array_values(array_filter([
+            filled($state['author'] ?? null) ? (string) $state['author'] : 'Служител',
+            $state['timestamp'] ?? null,
+        ]));
+
+        return $parts !== [] ? implode(' • ', $parts) : 'Съобщение';
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private static function noteEntryEditedLabel(array $state): ?string
+    {
+        $parts = array_values(array_filter([
+            $state['edited_by'] ?? null,
+            $state['edited_at'] ?? null,
+        ]));
+
+        if ($parts === []) {
+            return null;
+        }
+
+        return implode(' • ', $parts);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $entries
+     */
+    private static function buildNoteHistoryState(?string $existingNotes, array $entries, ?string $newNote): ?string
+    {
+        $noteHistory = NoteHistory::replace(
+            $existingNotes,
+            $entries,
+            auth()->user()?->name,
+        );
+
+        return NoteHistory::append(
+            $noteHistory,
+            $newNote,
+            auth()->user()?->name,
+        );
     }
 
     private static function applicantPhoneExclusivityRule(Get $get): Closure

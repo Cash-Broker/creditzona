@@ -7,6 +7,7 @@ use App\Filament\Resources\Leads\Pages\EditLead;
 use App\Filament\Resources\Leads\Pages\ViewLead;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\Notes\NoteHistory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -118,16 +119,68 @@ class LeadEditPageBehaviorTest extends TestCase
             'record' => (string) $lead->getKey(),
         ])
             ->fillForm([
-                'lead_existing_internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+                'lead_note_entries' => NoteHistory::formEntries($lead->internal_notes),
                 'lead_new_internal_note' => 'Втора бележка',
             ])
             ->call('save')
             ->assertHasNoFormErrors();
 
         $lead->refresh();
+        $entries = NoteHistory::entries($lead->internal_notes);
 
-        $this->assertStringContainsString('Първа бележка', (string) $lead->internal_notes);
-        $this->assertStringContainsString('Рената: Втора бележка', (string) $lead->internal_notes);
+        $this->assertSame('Първа бележка', $entries[0]['body']);
+        $this->assertSame('Втора бележка', $entries[1]['body']);
+        $this->assertSame('Рената', $entries[1]['author']);
+    }
+
+    public function test_edit_lead_page_can_edit_existing_client_note_message(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+            'name' => 'Рената',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010001',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'new',
+            'assigned_user_id' => $operator->id,
+            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+        ]);
+
+        $this->actingAs($admin);
+
+        $entries = NoteHistory::formEntries($lead->internal_notes);
+        $entries[0]['body'] = 'Редактирана първа бележка';
+
+        Livewire::test(EditLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->fillForm([
+                'lead_note_entries' => $entries,
+                'lead_new_internal_note' => null,
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $lead->refresh();
+        $entries = NoteHistory::entries($lead->internal_notes);
+
+        $this->assertSame('Редактирана първа бележка', $entries[0]['body']);
+        $this->assertSame('Рената', $entries[0]['edited_by']);
+        $this->assertNotNull($entries[0]['edited_at']);
     }
 
     public function test_edit_lead_page_notifies_new_additional_assignee_after_save(): void
