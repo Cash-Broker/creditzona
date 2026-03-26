@@ -33,7 +33,10 @@ class LeadsTable
         bool $showReturnedMeta = false,
         bool $showAttachedArchiveMeta = false,
         bool $showReturnedToMeArchiveMeta = false,
+        ?string $defaultSortColumn = null,
     ): Table {
+        $defaultSortColumn ??= 'created_at';
+
         return $table
             ->poll('5s')
             ->recordClasses(fn (Lead $record): array => $record->isMarkedForLater() ? ['lead-record-later'] : [])
@@ -221,7 +224,7 @@ class LeadsTable
                 shouldOpenInNewTab: true,
             )
             ->defaultSort(fn (Builder $query): Builder => $query
-                ->orderByDesc('created_at')
+                ->orderByDesc($defaultSortColumn)
                 ->orderByDesc('id'))
             ->toolbarActions([
                 BulkAction::make('mark_selected_for_later')

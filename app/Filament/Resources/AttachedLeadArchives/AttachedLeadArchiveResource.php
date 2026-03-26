@@ -79,7 +79,12 @@ class AttachedLeadArchiveResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table, static::class, showAttachedArchiveMeta: true);
+        return LeadsTable::configure(
+            $table,
+            static::class,
+            showAttachedArchiveMeta: true,
+            defaultSortColumn: 'attached_archived_at',
+        );
     }
 
     public static function getRelations(): array

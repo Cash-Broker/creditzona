@@ -87,7 +87,12 @@ class ReturnedLeadArchiveResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table, static::class, showReturnedMeta: true);
+        return LeadsTable::configure(
+            $table,
+            static::class,
+            showReturnedMeta: true,
+            defaultSortColumn: 'returned_to_primary_at',
+        );
     }
 
     public static function getRelations(): array

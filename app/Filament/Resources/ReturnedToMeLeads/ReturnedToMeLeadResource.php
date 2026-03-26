@@ -93,7 +93,13 @@ class ReturnedToMeLeadResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table, static::class, isReturnedToMeResource: true, showReturnedMeta: true);
+        return LeadsTable::configure(
+            $table,
+            static::class,
+            isReturnedToMeResource: true,
+            showReturnedMeta: true,
+            defaultSortColumn: 'returned_to_primary_at',
+        );
     }
 
     public static function makeArchiveAction(): Action
