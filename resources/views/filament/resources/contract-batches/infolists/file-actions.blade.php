@@ -36,17 +36,23 @@
                             </div>
 
                             <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $document['download_name'] }}
+                                Налични формати: {{ implode(', ', array_map(static fn (array $variant): string => strtoupper($variant['format']), $document['variants'] ?? [])) }}
                             </div>
                         </div>
 
                         @if ($document['is_available'])
-                            <a
-                                href="{{ route('admin.contract-batches.documents.download', [$record, $document['document_key']]) }}"
-                                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm transition hover:border-primary-200 hover:text-primary-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary-500/40 dark:hover:text-primary-200"
-                            >
-                                <span>Свали</span>
-                            </a>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach (($document['variants'] ?? []) as $variant)
+                                    @if ($variant['is_available'] ?? false)
+                                        <a
+                                            href="{{ route('admin.contract-batches.documents.download', [$record, $document['document_key'], 'format' => $variant['format']]) }}"
+                                            class="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm transition hover:border-primary-200 hover:text-primary-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary-500/40 dark:hover:text-primary-200"
+                                        >
+                                            <span>Свали {{ strtoupper($variant['format']) }}</span>
+                                        </a>
+                                    @endif
+                                @endforeach
+                            </div>
                         @else
                             <div class="text-xs text-red-600 dark:text-red-300">
                                 Файлът не е наличен в хранилището.

@@ -7,10 +7,15 @@ use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use DOMDocument;
+use DOMElement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mpdf\Mpdf;
+use PhpOffice\PhpWord\IOFactory as WordIOFactory;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\Shared\Html as WordHtml;
 use RuntimeException;
 use Throwable;
 use ZipArchive;
@@ -39,6 +44,19 @@ class ContractGenerationService
         ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
         ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
         ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+    ];
+
+    /**
+     * @var array<string, string>
+     */
+    private const WORD_CLASS_STYLES = [
+        'title' => 'margin-bottom: 18px; font-size: 15pt; font-weight: bold; text-align: center; text-transform: uppercase;',
+        'subtitle' => 'margin-bottom: 16px; font-size: 11pt; font-weight: bold; text-align: center;',
+        'section-title' => 'margin-top: 16px; margin-bottom: 10px; font-weight: bold; text-align: center;',
+        'signature-block' => 'margin-top: 22px;',
+        'signature-row' => 'margin-top: 28px;',
+        'small' => 'font-size: 9.8pt;',
+        'spacer' => 'margin-bottom: 18px;',
     ];
 
     public function __construct(
@@ -651,26 +669,41 @@ class ContractGenerationService
                 continue;
             }
 
-            $relativePath = 'generated/'.$directoryKey.'/'.$documentKey.'-'.Str::uuid().'.pdf';
-            $html = view('contracts.pdf.layout', [
-                'contentView' => $view,
-                'submitted' => $submitted,
-                'derived' => $derived,
-                'documentType' => $documentType,
-                'documentCopyNumber' => $copyNumber,
-            ])->render();
+            $contentHtml = $this->renderDocumentContentHtml($view, $submitted, $derived, $documentType, $copyNumber);
+            $pdfHtml = $this->renderPdfHtml($view, $submitted, $derived, $documentType, $copyNumber);
+            $pdfRelativePath = 'generated/'.$directoryKey.'/'.$documentKey.'-'.Str::uuid().'.pdf';
+            $docxRelativePath = 'generated/'.$directoryKey.'/'.$documentKey.'-'.Str::uuid().'.docx';
 
-            Storage::disk('legal')->put($relativePath, $this->renderPdf($html));
+            Storage::disk('legal')->put($pdfRelativePath, $this->renderPdf($pdfHtml));
+            $this->renderDocx($contentHtml, $docxRelativePath);
 
             $documents[] = [
                 'document_key' => $documentKey,
                 'document_type' => $documentType,
                 'copy_number' => $copyNumber,
                 'label' => $label,
-                'path' => $relativePath,
-                'download_name' => $this->buildDownloadFileName($label, $submitted['client']['full_name']),
-                'mime_type' => 'application/pdf',
-                'file_size' => Storage::disk('legal')->size($relativePath),
+                'variants' => [
+                    ContractBatch::DOCUMENT_VARIANT_PDF => [
+                        'path' => $pdfRelativePath,
+                        'download_name' => $this->buildDownloadFileName(
+                            $label,
+                            $submitted['client']['full_name'],
+                            ContractBatch::DOCUMENT_VARIANT_PDF,
+                        ),
+                        'mime_type' => 'application/pdf',
+                        'file_size' => Storage::disk('legal')->size($pdfRelativePath),
+                    ],
+                    ContractBatch::DOCUMENT_VARIANT_DOCX => [
+                        'path' => $docxRelativePath,
+                        'download_name' => $this->buildDownloadFileName(
+                            $label,
+                            $submitted['client']['full_name'],
+                            ContractBatch::DOCUMENT_VARIANT_DOCX,
+                        ),
+                        'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'file_size' => Storage::disk('legal')->size($docxRelativePath),
+                    ],
+                ],
             ];
         }
 
@@ -732,14 +765,16 @@ class ContractGenerationService
         }
 
         foreach ($documents as $document) {
-            if (! Storage::disk('legal')->exists($document['path'])) {
-                continue;
-            }
+            foreach (($document['variants'] ?? []) as $variant) {
+                if (! is_array($variant) || ! Storage::disk('legal')->exists($variant['path'] ?? '')) {
+                    continue;
+                }
 
-            $archive->addFile(
-                Storage::disk('legal')->path($document['path']),
-                $document['download_name'],
-            );
+                $archive->addFile(
+                    Storage::disk('legal')->path($variant['path']),
+                    $variant['download_name'] ?? basename((string) $variant['path']),
+                );
+            }
         }
 
         $archive->close();
@@ -758,12 +793,23 @@ class ContractGenerationService
         $directories = [];
 
         foreach ($generatedDocuments ?? [] as $document) {
-            if (! is_array($document) || blank($document['path'] ?? null)) {
+            if (! is_array($document)) {
                 continue;
             }
 
-            $directories[] = dirname($document['path']);
-            Storage::disk('legal')->delete($document['path']);
+            foreach (($document['variants'] ?? []) as $variant) {
+                if (! is_array($variant) || blank($variant['path'] ?? null)) {
+                    continue;
+                }
+
+                $directories[] = dirname($variant['path']);
+                Storage::disk('legal')->delete($variant['path']);
+            }
+
+            if (filled($document['path'] ?? null)) {
+                $directories[] = dirname($document['path']);
+                Storage::disk('legal')->delete($document['path']);
+            }
         }
 
         if (filled($archivePath)) {
@@ -793,6 +839,137 @@ class ContractGenerationService
         $mpdf->WriteHTML($html);
 
         return $mpdf->OutputBinaryData();
+    }
+
+    private function renderDocx(string $contentHtml, string $relativePath): void
+    {
+        Storage::disk('legal')->makeDirectory(dirname($relativePath));
+
+        $phpWord = new PhpWord;
+        $section = $phpWord->addSection([
+            'marginLeft' => 1020,
+            'marginRight' => 1020,
+            'marginTop' => 900,
+            'marginBottom' => 1020,
+        ]);
+
+        WordHtml::addHtml(
+            $section,
+            $this->prepareHtmlForWord($contentHtml),
+            false,
+            false,
+        );
+
+        WordIOFactory::createWriter($phpWord, 'Word2007')
+            ->save(Storage::disk('legal')->path($relativePath));
+    }
+
+    private function renderPdfHtml(
+        string $view,
+        array $submitted,
+        array $derived,
+        string $documentType,
+        ?int $copyNumber,
+    ): string {
+        return view('contracts.pdf.layout', [
+            'contentView' => $view,
+            'submitted' => $submitted,
+            'derived' => $derived,
+            'documentType' => $documentType,
+            'documentCopyNumber' => $copyNumber,
+        ])->render();
+    }
+
+    private function renderDocumentContentHtml(
+        string $view,
+        array $submitted,
+        array $derived,
+        string $documentType,
+        ?int $copyNumber,
+    ): string {
+        return view($view, [
+            'submitted' => $submitted,
+            'derived' => $derived,
+            'documentType' => $documentType,
+            'documentCopyNumber' => $copyNumber,
+        ])->render();
+    }
+
+    private function prepareHtmlForWord(string $html): string
+    {
+        $dom = new DOMDocument('1.0', 'UTF-8');
+
+        libxml_use_internal_errors(true);
+
+        $dom->loadHTML(
+            '<?xml encoding="utf-8" ?><!DOCTYPE html><html><body>'.$html.'</body></html>',
+            LIBXML_HTML_NODEFDTD | LIBXML_HTML_NOIMPLIED,
+        );
+
+        libxml_clear_errors();
+
+        $body = $dom->getElementsByTagName('body')->item(0);
+
+        if (! $body instanceof DOMElement) {
+            return $html;
+        }
+
+        $this->appendInlineStyle(
+            $body,
+            'font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #111827;',
+        );
+
+        foreach ($body->getElementsByTagName('*') as $element) {
+            if (! $element instanceof DOMElement) {
+                continue;
+            }
+
+            $this->applyWordElementStyle($element);
+        }
+
+        return $this->getElementInnerHtml($body);
+    }
+
+    private function applyWordElementStyle(DOMElement $element): void
+    {
+        if ($element->tagName === 'p') {
+            $this->appendInlineStyle($element, 'margin-bottom: 10px; text-align: justify;');
+        }
+
+        $classes = preg_split('/\s+/', trim((string) $element->getAttribute('class'))) ?: [];
+
+        foreach ($classes as $class) {
+            if (! isset(self::WORD_CLASS_STYLES[$class])) {
+                continue;
+            }
+
+            $this->appendInlineStyle($element, self::WORD_CLASS_STYLES[$class]);
+        }
+
+        if (in_array('spacer', $classes, true) && $element->childNodes->length === 0) {
+            $element->nodeValue = ' ';
+        }
+
+        if ($element->hasAttribute('class')) {
+            $element->removeAttribute('class');
+        }
+    }
+
+    private function appendInlineStyle(DOMElement $element, string $style): void
+    {
+        $existingStyle = trim((string) $element->getAttribute('style'));
+        $element->setAttribute('style', trim($existingStyle.' '.$style));
+    }
+
+    private function getElementInnerHtml(DOMElement $element): string
+    {
+        $html = '';
+
+        foreach ($element->childNodes as $childNode) {
+            $html .= $element->ownerDocument?->saveHTML($childNode) ?? '';
+        }
+
+        return $html;
     }
 
     private function resolveTempDir(): string
@@ -888,15 +1065,21 @@ class ContractGenerationService
         return in_array(ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT, $documentTypes, true);
     }
 
-    private function buildDownloadFileName(string $label, ?string $clientFullName): string
-    {
+    private function buildDownloadFileName(
+        string $label,
+        ?string $clientFullName,
+        string $format = ContractBatch::DOCUMENT_VARIANT_PDF,
+    ): string {
         $baseName = Str::slug($label);
         $clientSegment = Str::slug((string) $clientFullName);
+        $extension = $format === ContractBatch::DOCUMENT_VARIANT_DOCX
+            ? 'docx'
+            : 'pdf';
 
         return trim(implode('-', array_filter([
             $baseName !== '' ? $baseName : 'document',
             $clientSegment !== '' ? $clientSegment : null,
-        ])), '-').'.pdf';
+        ])), '-').'.'.$extension;
     }
 
     private function buildArchiveDownloadName(?string $clientFullName): string

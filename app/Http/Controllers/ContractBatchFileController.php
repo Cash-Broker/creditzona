@@ -27,7 +27,14 @@ class ContractBatchFileController extends Controller
     {
         abort_unless($request->user()?->can('view', $contractBatch), 403);
 
-        $document = $contractBatch->findGeneratedDocument($documentKey);
+        $format = in_array($request->string('format')->toString(), [
+            ContractBatch::DOCUMENT_VARIANT_PDF,
+            ContractBatch::DOCUMENT_VARIANT_DOCX,
+        ], true)
+            ? $request->string('format')->toString()
+            : ContractBatch::DOCUMENT_VARIANT_PDF;
+
+        $document = $contractBatch->findGeneratedDocument($documentKey, $format);
 
         abort_unless($document !== null, 404);
         abort_unless($document['is_available'] ?? false, 404);

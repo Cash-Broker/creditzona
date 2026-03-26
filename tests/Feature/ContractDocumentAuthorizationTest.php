@@ -24,6 +24,7 @@ class ContractDocumentAuthorizationTest extends TestCase
     public function test_only_staff_users_can_access_contract_batch_downloads(): void
     {
         Storage::disk('legal')->put('generated/test/document.pdf', 'pdf');
+        Storage::disk('legal')->put('generated/test/document.docx', 'docx');
 
         $operator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
@@ -51,9 +52,18 @@ class ContractDocumentAuthorizationTest extends TestCase
                     'document_key' => $documentKey,
                     'document_type' => ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
                     'label' => ContractBatch::getDocumentTypeLabel(ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT),
-                    'path' => 'generated/test/document.pdf',
-                    'download_name' => 'dogovor.pdf',
-                    'mime_type' => 'application/pdf',
+                    'variants' => [
+                        ContractBatch::DOCUMENT_VARIANT_PDF => [
+                            'path' => 'generated/test/document.pdf',
+                            'download_name' => 'dogovor.pdf',
+                            'mime_type' => 'application/pdf',
+                        ],
+                        ContractBatch::DOCUMENT_VARIANT_DOCX => [
+                            'path' => 'generated/test/document.docx',
+                            'download_name' => 'dogovor.docx',
+                            'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        ],
+                    ],
                 ],
             ],
             'archive_path' => null,
@@ -73,8 +83,16 @@ class ContractDocumentAuthorizationTest extends TestCase
             ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey]))
             ->assertOk();
 
+        $this->actingAs($operator)
+            ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey, 'format' => ContractBatch::DOCUMENT_VARIANT_DOCX]))
+            ->assertOk();
+
         $this->actingAs($nonStaff)
             ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey]))
+            ->assertForbidden();
+
+        $this->actingAs($nonStaff)
+            ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey, 'format' => ContractBatch::DOCUMENT_VARIANT_DOCX]))
             ->assertForbidden();
     }
 }
