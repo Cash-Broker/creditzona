@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AttachedLeads\Pages;
 
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
+use App\Filament\Resources\ContractBatches\ContractBatchResource;
 use App\Filament\Resources\Leads\Schemas\LeadForm;
 use App\Models\User;
 use App\Services\LeadService;
@@ -39,7 +40,11 @@ class EditAttachedLead extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Action::make('generateContracts')
+                ->label('Генерирай договори')
+                ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey()),
+        ];
     }
 
     public function saveAndRedirect(): void
