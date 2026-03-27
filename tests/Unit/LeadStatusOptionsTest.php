@@ -13,7 +13,7 @@ class LeadStatusOptionsTest extends TestCase
     {
         $this->assertSame([
             'new' => 'Нова',
-            'twenty_four_months' => '24 Месеца',
+            'twenty_four_months' => '24 месеца',
             'sms' => 'SMS',
             'email' => 'Имейл',
             'in_progress' => 'В обработка',
@@ -25,7 +25,7 @@ class LeadStatusOptionsTest extends TestCase
 
     public function test_lead_status_label_returns_human_readable_value(): void
     {
-        $this->assertSame('24 Месеца', LeadResource::getStatusLabel('twenty_four_months'));
+        $this->assertSame('24 месеца', LeadResource::getStatusLabel('twenty_four_months'));
         $this->assertSame('Одобрена', LeadResource::getStatusLabel('approved'));
         $this->assertSame('Отказана', LeadResource::getStatusLabel('rejected'));
         $this->assertSame('SMS', LeadResource::getStatusLabel('sms'));
