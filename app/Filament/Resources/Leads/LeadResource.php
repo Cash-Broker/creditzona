@@ -85,7 +85,7 @@ class LeadResource extends Resource
     {
         return [
             'new' => 'Нова',
-            'twenty_four_months' => '24 МЕСЕЦА',
+            'twenty_four_months' => '24 Месеца',
             'sms' => 'SMS',
             'email' => 'Имейл',
             'in_progress' => 'В обработка',
