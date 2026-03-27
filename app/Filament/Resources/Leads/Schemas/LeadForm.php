@@ -272,16 +272,12 @@ class LeadForm
                             ->dehydrated()
                             ->collapsible()
                             ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
-                            ->helperText(fn (Get $get): string => blank($get('lead_note_entries'))
-                                ? 'Все още няма съобщения за този клиент.'
-                                : 'Можете да редактирате само своите съобщения.')
                             ->schema(static::noteEntrySchema())
                             ->columnSpanFull(),
                         Textarea::make('lead_new_internal_note')
                             ->label('Ново съобщение към клиента')
                             ->rows(4)
                             ->autosize()
-                            ->helperText('Ще се добави към историята на клиента при запазване на заявката.')
                             ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
                             ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
                             ->columnSpanFull(),
@@ -463,16 +459,12 @@ class LeadForm
                         ->dehydrated()
                         ->collapsible()
                         ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
-                        ->helperText(fn (Get $get): string => blank($get('internal_note_entries'))
-                            ? 'Все още няма съобщения за този поръчител.'
-                            : 'Можете да редактирате само своите съобщения.')
                         ->schema(static::noteEntrySchema())
                         ->columnSpanFull(),
                     Textarea::make('new_internal_note')
                         ->label('Ново съобщение към поръчителя')
                         ->rows(4)
                         ->autosize()
-                        ->helperText('Ще се добави към историята на поръчителя при запазване на заявката.')
                         ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
                         ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
                         ->columnSpanFull(),
@@ -932,12 +924,6 @@ class LeadForm
                 ]))
                 ->saved()
                 ->dehydrated()
-                ->helperText(fn (Get $get): ?string => static::canEditNoteEntry([
-                    'author' => $get('author'),
-                    'author_id' => $get('author_id'),
-                ])
-                    ? null
-                    : 'Това съобщение е само за преглед. Можеш да редактираш само своите съобщения.')
                 ->required(),
             Placeholder::make('message_edit_meta')
                 ->label('Последна редакция')
