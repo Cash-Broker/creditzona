@@ -23,8 +23,12 @@ class NoteHistory
         return static::normalizePlainText($value);
     }
 
-    public static function append(?string $existingNotes, ?string $newNote, ?string $authorName = null): ?string
-    {
+    public static function append(
+        ?string $existingNotes,
+        ?string $newNote,
+        ?string $authorName = null,
+        ?int $authorId = null,
+    ): ?string {
         $normalizedNewNote = static::normalizePlainText($newNote);
 
         if ($normalizedNewNote === null) {
@@ -35,36 +39,73 @@ class NoteHistory
         $entries[] = static::buildEntry(
             body: $normalizedNewNote,
             author: trim((string) $authorName) !== '' ? trim((string) $authorName) : 'Служител',
+            authorId: $authorId,
             timestamp: now('Europe/Sofia')->format('d.m.Y H:i'),
         );
 
         return static::serializeEntries($entries);
     }
 
-    public static function replace(?string $existingNotes, array $entries, ?string $editedByName = null): ?string
-    {
+    public static function replace(
+        ?string $existingNotes,
+        array $entries,
+        ?string $editedByName = null,
+        ?int $actorId = null,
+    ): ?string {
         $currentEntries = collect(static::entries($existingNotes))->keyBy('id');
         $normalizedEntries = [];
 
         foreach (static::normalizeEntries($entries) as $entry) {
             $existingEntry = $currentEntries->get($entry['id']);
 
-            if (is_array($existingEntry) && ($existingEntry['body'] ?? null) !== $entry['body']) {
-                $entry['edited_at'] = now('Europe/Sofia')->format('d.m.Y H:i');
-                $entry['edited_by'] = trim((string) $editedByName) !== '' ? trim((string) $editedByName) : null;
-            } else {
-                $entry['edited_at'] = $entry['edited_at'] ?? ($existingEntry['edited_at'] ?? null);
-                $entry['edited_by'] = $entry['edited_by'] ?? ($existingEntry['edited_by'] ?? null);
+            if (! is_array($existingEntry)) {
+                continue;
             }
 
-            $normalizedEntries[] = $entry;
+            $canEditEntry = static::canEditEntry($existingEntry, $actorId, $editedByName);
+            $updatedBody = $canEditEntry ? $entry['body'] : $existingEntry['body'];
+
+            $normalizedEntry = static::buildEntry(
+                body: $updatedBody,
+                author: $existingEntry['author'] ?? null,
+                authorId: $existingEntry['author_id'] ?? null,
+                timestamp: $existingEntry['timestamp'] ?? null,
+                id: $existingEntry['id'] ?? null,
+                editedAt: $existingEntry['edited_at'] ?? null,
+                editedBy: $existingEntry['edited_by'] ?? null,
+            );
+
+            if (($existingEntry['body'] ?? null) !== $updatedBody) {
+                $normalizedEntry['edited_at'] = now('Europe/Sofia')->format('d.m.Y H:i');
+                $normalizedEntry['edited_by'] = trim((string) $editedByName) !== '' ? trim((string) $editedByName) : null;
+            }
+
+            $normalizedEntries[] = $normalizedEntry;
         }
 
         return static::serializeEntries($normalizedEntries);
     }
 
     /**
-     * @return array<int, array{id: string, timestamp: ?string, author: ?string, body: string, edited_at: ?string, edited_by: ?string}>
+     * @param  array<string, mixed>  $entry
+     */
+    public static function canEditEntry(array $entry, ?int $actorId, ?string $actorName): bool
+    {
+        $entryAuthorId = static::normalizeMetaInteger($entry['author_id'] ?? null);
+        $normalizedEntryAuthor = static::normalizeComparableText($entry['author'] ?? null);
+        $normalizedActorName = static::normalizeComparableText($actorName);
+
+        if ($entryAuthorId !== null && $actorId !== null && $entryAuthorId === $actorId) {
+            return true;
+        }
+
+        return $normalizedEntryAuthor !== null
+            && $normalizedActorName !== null
+            && $normalizedEntryAuthor === $normalizedActorName;
+    }
+
+    /**
+     * @return array<int, array{id: string, timestamp: ?string, author: ?string, author_id: ?int, body: string, edited_at: ?string, edited_by: ?string}>
      */
     public static function entries(?string $notes): array
     {
@@ -106,7 +147,7 @@ class NoteHistory
     }
 
     /**
-     * @return array<int, array{id: string, timestamp: ?string, author: ?string, body: string, edited_at: ?string, edited_by: ?string}>
+     * @return array<int, array{id: string, timestamp: ?string, author: ?string, author_id: ?int, body: string, edited_at: ?string, edited_by: ?string}>
      */
     public static function formEntries(?string $notes): array
     {
@@ -114,7 +155,7 @@ class NoteHistory
     }
 
     /**
-     * @return array{timestamp: ?string, author: ?string, body: string, id?: string, edited_at?: ?string, edited_by?: ?string}|null
+     * @return array{timestamp: ?string, author: ?string, author_id?: ?int, body: string, id?: string, edited_at?: ?string, edited_by?: ?string}|null
      */
     public static function latestEntry(?string $notes): ?array
     {
@@ -167,7 +208,7 @@ class NoteHistory
 
     /**
      * @param  array<int, array<string, mixed>>  $entries
-     * @return array<int, array{id: string, timestamp: ?string, author: ?string, body: string, edited_at: ?string, edited_by: ?string}>
+     * @return array<int, array{id: string, timestamp: ?string, author: ?string, author_id: ?int, body: string, edited_at: ?string, edited_by: ?string}>
      */
     public static function normalizeEntries(array $entries): array
     {
@@ -187,6 +228,7 @@ class NoteHistory
             $normalizedEntries[] = static::buildEntry(
                 body: $body,
                 author: isset($entry['author']) ? static::normalizeMetaText($entry['author']) : null,
+                authorId: static::normalizeMetaInteger($entry['author_id'] ?? null),
                 timestamp: isset($entry['timestamp']) ? static::normalizeMetaText($entry['timestamp']) : null,
                 id: isset($entry['id']) && filled($entry['id']) ? (string) $entry['id'] : null,
                 editedAt: isset($entry['edited_at']) ? static::normalizeMetaText($entry['edited_at']) : null,
@@ -198,7 +240,7 @@ class NoteHistory
     }
 
     /**
-     * @return array<int, array{id: string, timestamp: ?string, author: ?string, body: string, edited_at: ?string, edited_by: ?string}>|null
+     * @return array<int, array{id: string, timestamp: ?string, author: ?string, author_id: ?int, body: string, edited_at: ?string, edited_by: ?string}>|null
      */
     private static function parseStructuredPayload(?string $value): ?array
     {
@@ -251,12 +293,29 @@ class NoteHistory
         return $text !== '' ? $text : null;
     }
 
+    private static function normalizeMetaInteger(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    private static function normalizeComparableText(mixed $value): ?string
+    {
+        $text = static::normalizeMetaText($value);
+
+        return $text !== null ? mb_strtolower($text) : null;
+    }
+
     /**
-     * @return array{id: string, timestamp: ?string, author: ?string, body: string, edited_at: ?string, edited_by: ?string}
+     * @return array{id: string, timestamp: ?string, author: ?string, author_id: ?int, body: string, edited_at: ?string, edited_by: ?string}
      */
     private static function buildEntry(
         string $body,
         ?string $author = null,
+        ?int $authorId = null,
         ?string $timestamp = null,
         ?string $id = null,
         ?string $editedAt = null,
@@ -266,6 +325,7 @@ class NoteHistory
             'id' => $id ?? (string) Str::uuid(),
             'timestamp' => $timestamp,
             'author' => $author,
+            'author_id' => $authorId,
             'body' => $body,
             'edited_at' => $editedAt,
             'edited_by' => $editedBy,

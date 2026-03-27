@@ -388,7 +388,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'last_name' => 'Петрова',
             'phone' => '0888000111',
             'status' => null,
-            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+            'internal_notes' => NoteHistory::append(null, 'Първа бележка', $admin->name, $admin->id),
         ]);
 
         $this->actingAs($admin);
@@ -452,13 +452,71 @@ class AttachedLeadEditActionsTest extends TestCase
             'last_name' => 'Петрова',
             'phone' => '0888000111',
             'status' => null,
-            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+            'internal_notes' => NoteHistory::append(null, 'Първа бележка', $admin->name, $admin->id),
         ]);
 
         $this->actingAs($admin);
 
         $entries = NoteHistory::formEntries($guarantor->internal_notes);
         $entries[0]['body'] = 'Редактирана бележка за поръчителя';
+
+        $guarantor->forceFill([
+            'internal_notes' => NoteHistory::replace(
+                $guarantor->internal_notes,
+                $entries,
+                $admin->name,
+                $admin->id,
+            ),
+        ])->save();
+
+        $entries = NoteHistory::entries($guarantor->fresh()->internal_notes);
+
+        $this->assertSame('Редактирана бележка за поръчителя', $entries[0]['body']);
+        $this->assertSame($admin->id, $entries[0]['author_id']);
+        $this->assertSame('Рената', $entries[0]['edited_by']);
+        $this->assertNotNull($entries[0]['edited_at']);
+    }
+
+    public function test_edit_attached_lead_cannot_edit_existing_guarantor_note_message_of_other_user(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+            'name' => 'Рената',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'name' => 'Анна',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010001',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $operator->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $guarantor = $lead->guarantors()->create([
+            'first_name' => 'Мария',
+            'last_name' => 'Петрова',
+            'phone' => '0888000111',
+            'status' => null,
+            'internal_notes' => NoteHistory::append(null, 'Първа бележка', $operator->name, $operator->id),
+        ]);
+
+        $this->actingAs($admin);
+
+        $entries = NoteHistory::formEntries($guarantor->internal_notes);
+        $entries[0]['body'] = 'Опит за чужда редакция';
 
         Livewire::test(EditAttachedLead::class, [
             'record' => (string) $lead->getKey(),
@@ -469,7 +527,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'status' => null,
                     'full_name' => 'Мария Петрова',
                     'phone' => '0888000111',
-                    'existing_internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+                    'existing_internal_notes' => NoteHistory::append(null, 'Първа бележка', $operator->name, $operator->id),
                     'internal_note_entries' => $entries,
                     'new_internal_note' => null,
                     'documents' => [],
@@ -482,9 +540,10 @@ class AttachedLeadEditActionsTest extends TestCase
         $guarantor->refresh();
         $entries = NoteHistory::entries($guarantor->internal_notes);
 
-        $this->assertSame('Редактирана бележка за поръчителя', $entries[0]['body']);
-        $this->assertSame('Рената', $entries[0]['edited_by']);
-        $this->assertNotNull($entries[0]['edited_at']);
+        $this->assertSame('Първа бележка', $entries[0]['body']);
+        $this->assertSame($operator->id, $entries[0]['author_id']);
+        $this->assertNull($entries[0]['edited_by']);
+        $this->assertNull($entries[0]['edited_at']);
     }
 
     public function test_edit_attached_lead_save_splits_full_name_into_existing_name_columns(): void

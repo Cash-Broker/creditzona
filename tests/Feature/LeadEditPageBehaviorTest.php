@@ -110,7 +110,7 @@ class LeadEditPageBehaviorTest extends TestCase
             'amount' => 10000,
             'status' => 'new',
             'assigned_user_id' => $operator->id,
-            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+            'internal_notes' => NoteHistory::append(null, 'Първа бележка', $admin->name, $admin->id),
         ]);
 
         $this->actingAs($admin);
@@ -157,13 +157,63 @@ class LeadEditPageBehaviorTest extends TestCase
             'amount' => 10000,
             'status' => 'new',
             'assigned_user_id' => $operator->id,
-            'internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
+            'internal_notes' => NoteHistory::append(null, 'Първа бележка', $admin->name, $admin->id),
         ]);
 
         $this->actingAs($admin);
 
         $entries = NoteHistory::formEntries($lead->internal_notes);
         $entries[0]['body'] = 'Редактирана първа бележка';
+
+        $lead->forceFill([
+            'internal_notes' => NoteHistory::replace(
+                $lead->internal_notes,
+                $entries,
+                $admin->name,
+                $admin->id,
+            ),
+        ])->save();
+
+        $entries = NoteHistory::entries($lead->fresh()->internal_notes);
+
+        $this->assertSame('Редактирана първа бележка', $entries[0]['body']);
+        $this->assertSame($admin->id, $entries[0]['author_id']);
+        $this->assertSame('Рената', $entries[0]['edited_by']);
+        $this->assertNotNull($entries[0]['edited_at']);
+    }
+
+    public function test_edit_lead_page_cannot_edit_existing_client_note_message_of_other_user(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+            'name' => 'Рената',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'name' => 'Анна',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010001',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'new',
+            'assigned_user_id' => $operator->id,
+            'internal_notes' => NoteHistory::append(null, 'Първа бележка', $operator->name, $operator->id),
+        ]);
+
+        $this->actingAs($admin);
+
+        $entries = NoteHistory::formEntries($lead->internal_notes);
+        $entries[0]['body'] = 'Опит за чужда редакция';
 
         Livewire::test(EditLead::class, [
             'record' => (string) $lead->getKey(),
@@ -178,9 +228,10 @@ class LeadEditPageBehaviorTest extends TestCase
         $lead->refresh();
         $entries = NoteHistory::entries($lead->internal_notes);
 
-        $this->assertSame('Редактирана първа бележка', $entries[0]['body']);
-        $this->assertSame('Рената', $entries[0]['edited_by']);
-        $this->assertNotNull($entries[0]['edited_at']);
+        $this->assertSame('Първа бележка', $entries[0]['body']);
+        $this->assertSame($operator->id, $entries[0]['author_id']);
+        $this->assertNull($entries[0]['edited_by']);
+        $this->assertNull($entries[0]['edited_at']);
     }
 
     public function test_edit_lead_page_notifies_new_additional_assignee_after_save(): void

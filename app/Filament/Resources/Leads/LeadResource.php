@@ -85,6 +85,7 @@ class LeadResource extends Resource
     {
         return [
             'new' => 'Нова',
+            'twenty_four_months' => '24 МЕСЕЦА',
             'sms' => 'SMS',
             'email' => 'Имейл',
             'in_progress' => 'В обработка',
@@ -113,6 +114,7 @@ class LeadResource extends Resource
     {
         return match ($state) {
             'new' => 'warning',
+            'twenty_four_months' => Color::Indigo,
             'sms', 'email' => Color::Zinc,
             'in_progress' => 'info',
             'processed', 'approved' => 'success',

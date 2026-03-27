@@ -269,11 +269,12 @@ class LeadForm
                             ->addable(false)
                             ->deletable(false)
                             ->reorderable(false)
+                            ->dehydrated()
                             ->collapsible()
                             ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
                             ->helperText(fn (Get $get): string => blank($get('lead_note_entries'))
                                 ? 'Все още няма съобщения за този клиент.'
-                                : 'Можете да редактирате вече записаните съобщения.')
+                                : 'Можете да редактирате само своите съобщения.')
                             ->schema(static::noteEntrySchema())
                             ->columnSpanFull(),
                         Textarea::make('lead_new_internal_note')
@@ -459,11 +460,12 @@ class LeadForm
                         ->addable(false)
                         ->deletable(false)
                         ->reorderable(false)
+                        ->dehydrated()
                         ->collapsible()
                         ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
                         ->helperText(fn (Get $get): string => blank($get('internal_note_entries'))
                             ? 'Все още няма съобщения за този поръчител.'
-                            : 'Можете да редактирате вече записаните съобщения.')
+                            : 'Можете да редактирате само своите съобщения.')
                         ->schema(static::noteEntrySchema())
                         ->columnSpanFull(),
                     Textarea::make('new_internal_note')
@@ -910,6 +912,7 @@ class LeadForm
         return [
             Hidden::make('id'),
             Hidden::make('author'),
+            Hidden::make('author_id'),
             Hidden::make('timestamp'),
             Hidden::make('edited_at'),
             Hidden::make('edited_by'),
@@ -923,6 +926,18 @@ class LeadForm
                 ->label('Съобщение')
                 ->rows(3)
                 ->autosize()
+                ->disabled(fn (Get $get): bool => ! static::canEditNoteEntry([
+                    'author' => $get('author'),
+                    'author_id' => $get('author_id'),
+                ]))
+                ->saved()
+                ->dehydrated()
+                ->helperText(fn (Get $get): ?string => static::canEditNoteEntry([
+                    'author' => $get('author'),
+                    'author_id' => $get('author_id'),
+                ])
+                    ? null
+                    : 'Това съобщение е само за преглед. Можеш да редактираш само своите съобщения.')
                 ->required(),
             Placeholder::make('message_edit_meta')
                 ->label('Последна редакция')
@@ -973,11 +988,25 @@ class LeadForm
             $existingNotes,
             $entries,
             auth()->user()?->name,
+            auth()->id(),
         );
 
         return NoteHistory::append(
             $noteHistory,
             $newNote,
+            auth()->user()?->name,
+            auth()->id(),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private static function canEditNoteEntry(array $state): bool
+    {
+        return NoteHistory::canEditEntry(
+            $state,
+            auth()->id(),
             auth()->user()?->name,
         );
     }
