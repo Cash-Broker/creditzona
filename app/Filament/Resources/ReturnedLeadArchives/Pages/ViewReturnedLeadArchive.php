@@ -15,11 +15,11 @@ class ViewReturnedLeadArchive extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            EditAction::make()
+                ->label('Редакция'),
             Action::make('generateContracts')
                 ->label('Генерирай договори')
                 ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey()),
-            EditAction::make()
-                ->label('Редакция'),
         ];
     }
 }
