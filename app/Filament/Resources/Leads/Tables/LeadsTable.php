@@ -6,6 +6,7 @@ use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
 use App\Models\Lead;
+use App\Models\User;
 use App\Services\LeadService;
 use App\Support\Notes\NoteHistory;
 use Filament\Actions\BulkAction;
@@ -203,9 +204,17 @@ class LeadsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('credit_type')
-                    ->label('Тип кредит')
-                    ->options(LeadResource::getCreditTypeOptions())
+                SelectFilter::make('assigned_user_id')
+                    ->label('Служител')
+                    ->relationship(
+                        'assignedUser',
+                        'name',
+                        fn (Builder $query): Builder => $query
+                            ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_OPERATOR])
+                            ->orderBy('name'),
+                    )
+                    ->searchable()
+                    ->preload()
                     ->native(false),
 
                 SelectFilter::make('status')

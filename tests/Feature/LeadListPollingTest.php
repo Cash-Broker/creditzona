@@ -46,6 +46,19 @@ class LeadListPollingTest extends TestCase
         $this->assertContains('unmark_selected_for_later', $toolbarActionNames);
     }
 
+    public function test_leads_list_filters_by_assigned_employee_and_status_instead_of_credit_type(): void
+    {
+        $table = LeadResource::table(Table::make(app(ListLeads::class)));
+
+        $filterNames = collect($table->getFilters())
+            ->map(fn ($filter): string => $filter->getName())
+            ->values()
+            ->all();
+
+        $this->assertSame(['assigned_user_id', 'status'], $filterNames);
+        $this->assertNotContains('credit_type', $filterNames);
+    }
+
     public function test_leads_list_rows_open_the_view_page_in_a_new_tab(): void
     {
         $admin = User::factory()->create([
