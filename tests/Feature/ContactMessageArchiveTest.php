@@ -29,8 +29,10 @@ class ContactMessageArchiveTest extends TestCase
 
         $message->refresh();
 
-        $this->assertSame($admin->id, $message->archived_by_user_id);
-        $this->assertNotNull($message->archived_at);
+        $this->assertSame($admin->id, $message->admin_archived_by_user_id);
+        $this->assertNotNull($message->admin_archived_at);
+        $this->assertNull($message->archived_at);
+        $this->assertNull($message->archived_by_user_id);
     }
 
     public function test_archived_contact_messages_leave_active_admin_list_and_enter_archive_resource(): void
@@ -61,7 +63,7 @@ class ContactMessageArchiveTest extends TestCase
         ], ArchivedContactMessageResource::getEloquentQuery()->pluck('id')->all());
     }
 
-    public function test_archived_contact_message_disappears_from_operator_attached_messages(): void
+    public function test_admin_archived_contact_message_remains_visible_to_operator(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -79,7 +81,9 @@ class ContactMessageArchiveTest extends TestCase
 
         $this->actingAs($operator);
 
-        $this->assertSame([], AttachedContactMessageResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertSame([
+            $message->id,
+        ], AttachedContactMessageResource::getEloquentQuery()->pluck('id')->all());
     }
 
     public function test_operator_can_archive_own_attached_contact_message_into_personal_archive(): void

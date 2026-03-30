@@ -52,10 +52,11 @@ class ContactMessageService
 
     public function archiveMessage(ContactMessage $contactMessage, User $actor): ContactMessage
     {
-        $canArchive = $actor->isAdmin()
-            || ($actor->isOperator() && $contactMessage->assigned_user_id === $actor->id);
+        if ($actor->isAdmin()) {
+            return $this->adminArchiveMessage($contactMessage, $actor);
+        }
 
-        if (! $canArchive) {
+        if (! ($actor->isOperator() && $contactMessage->assigned_user_id === $actor->id)) {
             throw new AuthorizationException('Нямате достъп да архивирате това съобщение.');
         }
 
@@ -69,6 +70,20 @@ class ContactMessageService
         ])->save();
 
         return $contactMessage->refresh()->loadMissing(['assignedUser', 'archivedByUser']);
+    }
+
+    private function adminArchiveMessage(ContactMessage $contactMessage, User $actor): ContactMessage
+    {
+        if ($contactMessage->admin_archived_at !== null) {
+            throw new DomainException('Съобщението вече е архивирано.');
+        }
+
+        $contactMessage->forceFill([
+            'admin_archived_by_user_id' => $actor->id,
+            'admin_archived_at' => now(),
+        ])->save();
+
+        return $contactMessage->refresh()->loadMissing(['assignedUser', 'adminArchivedByUser']);
     }
 
     public function createLeadFromMessage(ContactMessage $contactMessage, User $actor): Lead

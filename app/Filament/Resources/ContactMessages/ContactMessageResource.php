@@ -227,7 +227,7 @@ class ContactMessageResource extends Resource
         return $user instanceof User
             && $user->isAdmin()
             && $record instanceof ContactMessage
-            && $record->archived_at === null;
+            && $record->admin_archived_at === null;
     }
 
     public static function canEdit($record): bool
@@ -246,6 +246,6 @@ class ContactMessageResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->active();
+        return $query->adminActive();
     }
 }

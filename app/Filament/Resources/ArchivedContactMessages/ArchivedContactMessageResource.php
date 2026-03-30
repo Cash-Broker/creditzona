@@ -79,7 +79,7 @@ class ArchivedContactMessageResource extends Resource
         return $user instanceof User
             && $user->isAdmin()
             && $record instanceof ContactMessage
-            && $record->archived_at !== null;
+            && $record->admin_archived_at !== null;
     }
 
     public static function getEloquentQuery(): Builder
@@ -91,6 +91,6 @@ class ArchivedContactMessageResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->archived()->with(['assignedUser', 'archivedByUser']);
+        return $query->adminArchived()->with(['assignedUser', 'adminArchivedByUser']);
     }
 }

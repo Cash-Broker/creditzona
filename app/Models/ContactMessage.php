@@ -23,11 +23,14 @@ class ContactMessage extends Model
         'lead_generated_at',
         'archived_by_user_id',
         'archived_at',
+        'admin_archived_by_user_id',
+        'admin_archived_at',
     ];
 
     protected $casts = [
         'lead_generated_at' => 'datetime',
         'archived_at' => 'datetime',
+        'admin_archived_at' => 'datetime',
     ];
 
     public function scopeActive(Builder $query): Builder
@@ -40,10 +43,20 @@ class ContactMessage extends Model
         return $query->whereNotNull('archived_at');
     }
 
+    public function scopeAdminActive(Builder $query): Builder
+    {
+        return $query->whereNull('admin_archived_at');
+    }
+
+    public function scopeAdminArchived(Builder $query): Builder
+    {
+        return $query->whereNotNull('admin_archived_at');
+    }
+
     public function scopeVisibleToUser(Builder $query, User $user): Builder
     {
         if ($user->isAdmin()) {
-            return $query->active();
+            return $query->adminActive();
         }
 
         return $query->active()->where('assigned_user_id', $user->id);
@@ -62,6 +75,11 @@ class ContactMessage extends Model
     public function archivedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by_user_id');
+    }
+
+    public function adminArchivedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_archived_by_user_id');
     }
 
     public function assignedUser(): BelongsTo
