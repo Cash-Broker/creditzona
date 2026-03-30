@@ -393,27 +393,20 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $this->actingAs($admin);
 
-        Livewire::test(EditAttachedLead::class, [
+        $component = Livewire::test(EditAttachedLead::class, [
             'record' => (string) $lead->getKey(),
-        ])
-            ->fillForm([
-                'guarantors' => [[
-                    'id' => $guarantor->id,
-                    'status' => null,
-                    'full_name' => 'Мария Петрова',
-                    'phone' => '0888000111',
-                    'existing_internal_notes' => '[23.03.2026 10:00] Анна: Първа бележка',
-                    'internal_note_entries' => NoteHistory::formEntries($guarantor->internal_notes),
-                    'new_internal_note' => 'Втора бележка',
-                    'documents' => [],
-                    'document_file_names' => [],
-                ]],
-            ])
+        ]);
+
+        $guarantorsState = $component->get('data.guarantors');
+        $guarantorKey = array_key_first($guarantorsState);
+
+        $component
+            ->set("data.guarantors.{$guarantorKey}.new_internal_note", 'Втора бележка')
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $guarantor->refresh();
-        $entries = NoteHistory::entries($guarantor->internal_notes);
+        $savedGuarantor = $lead->fresh()->guarantors()->firstOrFail();
+        $entries = NoteHistory::entries($savedGuarantor->internal_notes);
 
         $this->assertSame('Първа бележка', $entries[0]['body']);
         $this->assertSame('Втора бележка', $entries[1]['body']);
@@ -515,30 +508,23 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $this->actingAs($admin);
 
-        $entries = NoteHistory::formEntries($guarantor->internal_notes);
-        $entries[0]['body'] = 'Опит за чужда редакция';
-
-        Livewire::test(EditAttachedLead::class, [
+        $component = Livewire::test(EditAttachedLead::class, [
             'record' => (string) $lead->getKey(),
-        ])
-            ->fillForm([
-                'guarantors' => [[
-                    'id' => $guarantor->id,
-                    'status' => null,
-                    'full_name' => 'Мария Петрова',
-                    'phone' => '0888000111',
-                    'existing_internal_notes' => NoteHistory::append(null, 'Първа бележка', $operator->name, $operator->id),
-                    'internal_note_entries' => $entries,
-                    'new_internal_note' => null,
-                    'documents' => [],
-                    'document_file_names' => [],
-                ]],
-            ])
+        ]);
+
+        $guarantorsState = $component->get('data.guarantors');
+        $guarantorKey = array_key_first($guarantorsState);
+
+        $entriesState = $component->get("data.guarantors.{$guarantorKey}.internal_note_entries");
+        $entryKey = array_key_first($entriesState);
+
+        $component
+            ->set("data.guarantors.{$guarantorKey}.internal_note_entries.{$entryKey}.body", 'Опит за чужда редакция')
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $guarantor->refresh();
-        $entries = NoteHistory::entries($guarantor->internal_notes);
+        $savedGuarantor = $lead->fresh()->guarantors()->firstOrFail();
+        $entries = NoteHistory::entries($savedGuarantor->internal_notes);
 
         $this->assertSame('Първа бележка', $entries[0]['body']);
         $this->assertSame($operator->id, $entries[0]['author_id']);
