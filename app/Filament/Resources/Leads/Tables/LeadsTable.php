@@ -199,13 +199,16 @@ class LeadsTable
             ->filters([
                 SelectFilter::make('assigned_user_id')
                     ->label('Служител')
-                    ->relationship(
-                        'assignedUser',
-                        'name',
-                        fn (Builder $query): Builder => $query
-                            ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_OPERATOR])
-                            ->orderBy('name'),
-                    )
+                    ->options(fn (): array => User::query()
+                        ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_OPERATOR])
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'])
+                        ? $query->where(fn (Builder $q): Builder => $q
+                            ->where('assigned_user_id', $data['value'])
+                            ->orWhere('additional_user_id', $data['value']))
+                        : $query)
                     ->searchable()
                     ->preload()
                     ->native(false),
