@@ -34,9 +34,9 @@ class LeadResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
-    protected static ?string $modelLabel = 'заявка';
+    protected static ?string $modelLabel = 'Заявка';
 
-    protected static ?string $pluralModelLabel = 'заявки';
+    protected static ?string $pluralModelLabel = 'Заявки';
 
     protected static bool $hasTitleCaseModelLabel = false;
 

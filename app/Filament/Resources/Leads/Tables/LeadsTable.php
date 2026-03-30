@@ -165,13 +165,6 @@ class LeadsTable
                     ->suffix(' €')
                     ->sortable(),
 
-                TextColumn::make('credit_type')
-                    ->label('Тип кредит')
-                    ->badge()
-                    ->color('primary')
-                    ->formatStateUsing(fn (?string $state): string => LeadResource::getCreditTypeLabel($state))
-                    ->sortable(),
-
                 TextColumn::make('salary')
                     ->label('Заплата')
                     ->numeric(0, locale: 'bg')
