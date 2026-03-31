@@ -39,6 +39,30 @@ trait SavesNotesInline
         ])->save();
     }
 
+    public function deleteNoteEntry(int $entryIndex): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $record = $this->getRecord();
+
+        if (! $record instanceof Lead) {
+            return;
+        }
+
+        $record->forceFill([
+            'internal_notes' => NoteHistory::deleteEntry(
+                $record->internal_notes,
+                $entryIndex,
+                $user->id,
+                $user->name,
+            ),
+        ])->save();
+    }
+
     public function editNoteEntry(int $entryIndex, string $newBody): void
     {
         $newBody = trim($newBody);
@@ -109,6 +133,36 @@ trait SavesNotesInline
                 $note,
                 $user->name,
                 $user->id,
+            ),
+        ])->save();
+    }
+
+    public function deleteGuarantorNoteEntry(int $guarantorId, int $entryIndex): void
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $record = $this->getRecord();
+
+        if (! $record instanceof Lead) {
+            return;
+        }
+
+        $guarantor = $record->guarantors()->find($guarantorId);
+
+        if (! $guarantor instanceof LeadGuarantor) {
+            return;
+        }
+
+        $guarantor->forceFill([
+            'internal_notes' => NoteHistory::deleteEntry(
+                $guarantor->internal_notes,
+                $entryIndex,
+                $user->id,
+                $user->name,
             ),
         ])->save();
     }

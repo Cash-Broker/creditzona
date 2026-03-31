@@ -979,6 +979,12 @@ class LeadForm
                         : '$wire.editNoteEntry('.$index.', body).then(() => { original = body; editing = false })')
                     .'" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200').'">Запази</button>'
                     .'<button type="button" @click="body = original; editing = false" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'text-white/70 hover:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300').'">Откажи</button>'
+                    .'<button type="button" @click="'
+                    .'if (!confirm(\'Сигурни ли сте, че искате да изтриете това съобщение?\')) return; '
+                    .($guarantorId !== null
+                        ? '$wire.deleteGuarantorNoteEntry('.$guarantorId.', '.$index.')'
+                        : '$wire.deleteNoteEntry('.$index.')')
+                    .'" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'text-red-300 hover:text-red-100' : 'text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300').'">Изтрий</button>'
                     .'</div>'
                     .'</div>';
 

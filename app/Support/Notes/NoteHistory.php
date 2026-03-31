@@ -86,6 +86,27 @@ class NoteHistory
         return static::serializeEntries($normalizedEntries);
     }
 
+    public static function deleteEntry(
+        ?string $existingNotes,
+        int $entryIndex,
+        ?int $actorId = null,
+        ?string $actorName = null,
+    ): ?string {
+        $entries = static::entries($existingNotes);
+
+        if (! isset($entries[$entryIndex])) {
+            return $existingNotes;
+        }
+
+        if (! static::canEditEntry($entries[$entryIndex], $actorId, $actorName)) {
+            return $existingNotes;
+        }
+
+        array_splice($entries, $entryIndex, 1);
+
+        return static::serializeEntries($entries);
+    }
+
     /**
      * @param  array<string, mixed>  $entry
      */
