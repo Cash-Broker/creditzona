@@ -438,8 +438,14 @@ class LeadForm
                                 is_string($record?->internal_notes) ? $record->internal_notes : null,
                             ));
                         }),
+                    Placeholder::make('guarantor_note_chat_display')
+                        ->hiddenLabel()
+                        ->content(fn (?LeadGuarantor $record): HtmlString => static::renderNoteChatBubbles(
+                            is_string($record?->internal_notes) ? $record->internal_notes : null,
+                        ))
+                        ->columnSpanFull(),
                     Repeater::make('internal_note_entries')
-                        ->label('История на съобщенията за поръчителя')
+                        ->hiddenLabel()
                         ->afterStateHydrated(function (Repeater $component, mixed $state, ?LeadGuarantor $record): void {
                             $component->state(NoteHistory::formEntries(
                                 is_string($record?->internal_notes) ? $record->internal_notes : null,
@@ -449,13 +455,13 @@ class LeadForm
                         ->deletable(false)
                         ->reorderable(false)
                         ->dehydrated()
-                        ->collapsible()
-                        ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
                         ->schema(static::noteEntrySchema())
+                        ->extraAttributes(['class' => '!hidden'])
                         ->columnSpanFull(),
                     Textarea::make('new_internal_note')
-                        ->label('Ново съобщение към поръчителя')
-                        ->rows(4)
+                        ->hiddenLabel()
+                        ->placeholder('Добави бележка...')
+                        ->rows(1)
                         ->autosize()
                         ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
                         ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
