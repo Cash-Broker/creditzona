@@ -42,8 +42,7 @@ class BlogForm
                                     }
                                 };
                             })
-                            ->dehydrateStateUsing(static fn (?string $state): ?string => filled($state) ? Str::slug($state) : null)
-                            ->helperText('Използвайте малки латински букви, цифри и тирета.'),
+                            ->dehydrateStateUsing(static fn (?string $state): ?string => filled($state) ? Str::slug($state) : null),
                         FileUpload::make('image_path')
                             ->label('Изображение')
                             ->image()
@@ -51,7 +50,6 @@ class BlogForm
                             ->directory('blogs')
                             ->visibility('public')
                             ->fetchFileInformation(false)
-                            ->helperText('Файлът се качва в storage/app/public/blogs и се достъпва през /storage/...')
                             ->getUploadedFileUsing(static function (string $file): ?array {
                                 $url = Blog::getPublicImageUrl($file);
 

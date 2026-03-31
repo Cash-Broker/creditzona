@@ -37,7 +37,6 @@ class ContractBatchForm
                         DatePicker::make('dates.request_date')
                             ->label('Дата на заявка')
                             ->required()
-                            ->helperText('Ползва се автоматично за молбата и договора за финансова консултантска услуга.')
                             ->native(false),
                         DatePicker::make('dates.mediation_contract_date')
                             ->label('Дата на договор за посредничество')
@@ -45,7 +44,6 @@ class ContractBatchForm
                                 ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
                                 ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
                             ]))
-                            ->helperText('Тази дата се въвежда ръчно.')
                             ->visible(fn (Get $get): bool => static::hasSelected($get, [
                                 ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
                                 ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
@@ -72,7 +70,6 @@ class ContractBatchForm
                             ->label('Гарант / съкредитоискател от заявката')
                             ->options(fn (Get $get): array => static::getLeadGuarantorOptions($get))
                             ->visible(fn (Get $get): bool => static::getLeadGuarantorOptions($get) !== [])
-                            ->helperText('Ако в заявката има повече от един гарант, изберете кой да се използва за документите.')
                             ->live()
                             ->afterStateUpdated(function (Get $get, Set $set, mixed $state): void {
                                 if (! is_numeric($state) || ! is_numeric($get('lead_id'))) {
@@ -281,7 +278,6 @@ class ContractBatchForm
                             ->maxLength(255),
                         TextInput::make('loan.creditor_name')
                             ->label('Кредитор')
-                            ->helperText('Незадължително. Ако остане празно, в документа ще се използва името на финансовата институция.')
                             ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL))
                             ->maxLength(255),
                         TextInput::make('loan.institution_name')

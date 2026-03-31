@@ -65,8 +65,8 @@ class AdminOverviewWidgetTest extends TestCase
             'phone' => '0888123000',
             'email' => 'archived@example.com',
             'message' => 'Архивирано съобщение',
-            'archived_by_user_id' => $admin->id,
-            'archived_at' => now(),
+            'admin_archived_by_user_id' => $admin->id,
+            'admin_archived_at' => now(),
         ]);
 
         Blog::query()->create([

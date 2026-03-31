@@ -41,7 +41,6 @@ class AdminDocumentForm
                                 'mimetypes:'.implode(',', AdminDocument::getSafeUploadMimeTypes()),
                             ])
                             ->maxSize(51200)
-                            ->helperText('Допустими са PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF и WEBP до 50 MB. Файлът се пази във вътрешното защитено хранилище.')
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 Storage::disk('local')->delete($file);
                             })

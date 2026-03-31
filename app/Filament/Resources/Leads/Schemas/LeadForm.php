@@ -97,7 +97,6 @@ class LeadForm
                                     $record?->last_name,
                                 ));
                             })
-                            ->helperText('Въведете имената на кирилица.')
                             ->rule(static fn (): Closure => static::fullNameRule())
                             ->columnSpan(4),
                         TextInput::make('egn')
@@ -120,7 +119,6 @@ class LeadForm
                             ->nullable()
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Адресът'))
-                            ->helperText('Не използвайте латински букви.')
                             ->columnSpan(4),
                         TextInput::make('phone')
                             ->label('Телефон')
@@ -140,14 +138,12 @@ class LeadForm
                             ->nullable()
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Местоработата'))
-                            ->helperText('Не използвайте латински букви.')
                             ->columnSpan(3),
                         TextInput::make('job_title')
                             ->label('Длъжност')
                             ->nullable()
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Длъжността'))
-                            ->helperText('Не използвайте латински букви.')
                             ->columnSpan(3),
                         TextInput::make('salary')
                             ->label('Месечен доход')
@@ -199,14 +195,12 @@ class LeadForm
                             ->nullable()
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Банката за заплатата'))
-                            ->helperText('Не използвайте латински букви.')
                             ->columnSpan(4),
                         TextInput::make('credit_bank')
                             ->label('Банка по кредита')
                             ->nullable()
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Банката по кредита'))
-                            ->helperText('Не използвайте латински букви.')
                             ->columnSpan(4),
                         FileUpload::make('documents')
                             ->label('Документи към клиента')
@@ -231,7 +225,6 @@ class LeadForm
                             ->panelLayout('compact')
                             ->maxFiles(15)
                             ->maxSize(10240)
-                            ->helperText('PDF, DOC, DOCX, XLS, XLSX, JPG, PNG и WEBP до 10 MB.')
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 Storage::disk('local')->delete($file);
                             })
@@ -259,8 +252,14 @@ class LeadForm
                 Section::make('Съобщения за клиента')
                     ->columnSpanFull()
                     ->schema([
+                        Placeholder::make('lead_note_chat_display')
+                            ->hiddenLabel()
+                            ->content(fn (?Lead $record): HtmlString => static::renderNoteChatBubbles(
+                                is_string($record?->internal_notes) ? $record->internal_notes : null,
+                            ))
+                            ->columnSpanFull(),
                         Repeater::make('lead_note_entries')
-                            ->label('История на съобщенията за клиента')
+                            ->hiddenLabel()
                             ->afterStateHydrated(function (Repeater $component, mixed $state, ?Lead $record): void {
                                 $component->state(NoteHistory::formEntries(
                                     is_string($record?->internal_notes) ? $record->internal_notes : null,
@@ -270,14 +269,15 @@ class LeadForm
                             ->deletable(false)
                             ->reorderable(false)
                             ->dehydrated()
-                            ->collapsible()
-                            ->itemLabel(fn (array $state): string => static::noteEntryItemLabel($state))
                             ->schema(static::noteEntrySchema())
+                            ->extraAttributes(['class' => '!hidden'])
                             ->columnSpanFull(),
                         Textarea::make('lead_new_internal_note')
-                            ->label('Ново съобщение към клиента')
-                            ->rows(4)
+                            ->hiddenLabel()
+                            ->placeholder('Добави бележка...')
+                            ->rows(1)
                             ->autosize()
+                            ->extraAttributes(['class' => 'mt-2 border-t border-gray-200 pt-2 dark:border-white/10'])
                             ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
                             ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
                             ->columnSpanFull(),
@@ -296,7 +296,6 @@ class LeadForm
                             ->label('Местоположение на имота')
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Местоположението на имота'))
-                            ->helperText('Не използвайте латински букви.')
                             ->nullable(),
                     ]),
                 static::communicationSection()
@@ -336,7 +335,6 @@ class LeadForm
                         ->required(fn (Get $get): bool => static::guarantorRequiresIdentityFields($get))
                         ->maxLength(180)
                         ->rule(CyrillicText::withoutLatin('Имената на поръчителя'))
-                        ->helperText('Въведете имената на кирилица.')
                         ->columnSpan(4),
                     TextInput::make('egn')
                         ->label('ЕГН')
@@ -369,7 +367,6 @@ class LeadForm
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Адресът на поръчителя'))
-                        ->helperText('Не използвайте латински букви.')
                         ->columnSpan(4),
                     TextInput::make('email')
                         ->label('Имейл')
@@ -382,14 +379,12 @@ class LeadForm
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Местоработата на поръчителя'))
-                        ->helperText('Не използвайте латински букви.')
                         ->columnSpan(3),
                     TextInput::make('job_title')
                         ->label('Длъжност')
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Длъжността на поръчителя'))
-                        ->helperText('Не използвайте латински букви.')
                         ->columnSpan(3),
                     TextInput::make('salary')
                         ->label('Месечен доход')
@@ -411,14 +406,12 @@ class LeadForm
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Банката за заплатата на поръчителя'))
-                        ->helperText('Не използвайте латински букви.')
                         ->columnSpan(4),
                     TextInput::make('credit_bank')
                         ->label('Банка по кредита')
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Банката по кредита на поръчителя'))
-                        ->helperText('Не използвайте латински букви.')
                         ->columnSpan(4),
                     FileUpload::make('documents')
                         ->label('Документи към поръчителя')
@@ -434,7 +427,6 @@ class LeadForm
                         ->panelLayout('compact')
                         ->maxFiles(15)
                         ->maxSize(10240)
-                        ->helperText('PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, WEBP и GIF до 10 MB.')
                         ->deleteUploadedFileUsing(static function (string $file): void {
                             Storage::disk('local')->delete($file);
                         })
@@ -482,8 +474,7 @@ class LeadForm
                         ->label('Местоположение на имота')
                         ->nullable()
                         ->maxLength(120)
-                        ->rule(CyrillicText::withoutLatin('Местоположението на имота на поръчителя'))
-                        ->helperText('Не използвайте латински букви.'),
+                        ->rule(CyrillicText::withoutLatin('Местоположението на имота на поръчителя')),
                 ]),
         ];
     }
@@ -894,6 +885,81 @@ class LeadForm
             '<div class="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">%s</div>',
             $content,
         ));
+    }
+
+    private static function renderNoteChatBubbles(?string $notes): HtmlString
+    {
+        $entries = NoteHistory::entries($notes);
+
+        if ($entries === []) {
+            return new HtmlString(
+                '<div class="flex h-96 items-center justify-center rounded-xl border border-gray-200 bg-gray-50/50 dark:border-white/10 dark:bg-gray-900/40">'
+                .'<span class="text-sm text-gray-400 dark:text-gray-500">Няма съобщения</span>'
+                .'</div>',
+            );
+        }
+
+        $currentUserId = auth()->id();
+        $currentUserName = auth()->user()?->name;
+        $bubbles = '';
+
+        foreach ($entries as $entry) {
+            $authorId = $entry['author_id'] ?? null;
+            $authorName = $entry['author'] ?? 'Служител';
+
+            $isMe = ($authorId !== null && $currentUserId !== null && $authorId === $currentUserId)
+                || (
+                    $currentUserName !== null
+                    && mb_strtolower(trim($authorName)) === mb_strtolower(trim($currentUserName))
+                );
+
+            $letter = e(mb_strtoupper(mb_substr($authorName, 0, 1)));
+            $displayName = e($authorName);
+            $time = e($entry['timestamp'] ?? '');
+            $body = nl2br(e($entry['body']));
+
+            $editedTag = '';
+
+            if (filled($entry['edited_at'] ?? null) || filled($entry['edited_by'] ?? null)) {
+                $editParts = array_filter([$entry['edited_by'] ?? null, $entry['edited_at'] ?? null]);
+                $editedTag = '<div class="mt-1 text-[10px] opacity-60">редактирано '.e(implode(' • ', $editParts)).'</div>';
+            }
+
+            $alignClass = $isMe ? 'justify-end' : '';
+            $rowClass = $isMe ? 'flex-row-reverse' : '';
+            $avatarClass = $isMe
+                ? 'bg-primary-600 text-white'
+                : 'bg-white text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:ring-white/10';
+            $metaClass = $isMe
+                ? 'justify-end text-primary-600 dark:text-primary-400'
+                : 'text-gray-400 dark:text-gray-500';
+            $bubbleClass = $isMe
+                ? 'rounded-br-sm bg-primary-600 text-white'
+                : 'rounded-bl-sm bg-white text-gray-800 ring-1 ring-gray-200 dark:bg-gray-950 dark:text-gray-100 dark:ring-white/10';
+
+            $bubbles .= '<div class="flex '.$alignClass.'">'
+                .'<div class="flex max-w-[80%] items-end gap-2 '.$rowClass.'">'
+                .'<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold '.$avatarClass.'">'.$letter.'</div>'
+                .'<div class="min-w-0">'
+                .'<div class="mb-0.5 flex items-center gap-1.5 text-[11px] '.$metaClass.'">'
+                .'<span class="font-medium">'.$displayName.'</span>'
+                .'<span>'.$time.'</span>'
+                .'</div>'
+                .'<div class="min-w-16 rounded-2xl px-3 py-2 text-sm leading-relaxed '.$bubbleClass.'">'
+                .'<div class="whitespace-pre-wrap wrap-break-word">'.$body.'</div>'
+                .$editedTag
+                .'</div>'
+                .'</div>'
+                .'</div>'
+                .'</div>';
+        }
+
+        return new HtmlString(
+            '<div class="h-96 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 dark:border-white/10 dark:bg-gray-900/40"'
+            .' x-data x-init="$el.scrollTop = $el.scrollHeight">'
+            .'<div class="space-y-3">'.$bubbles.'</div>'
+            .'</div>',
+        );
     }
 
     /**
