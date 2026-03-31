@@ -256,7 +256,6 @@ class LeadForm
                             ->hiddenLabel()
                             ->content(fn (?Lead $record): HtmlString => static::renderNoteChatBubbles(
                                 is_string($record?->internal_notes) ? $record->internal_notes : null,
-                                'lead_note_entries',
                             ))
                             ->columnSpanFull(),
                         Repeater::make('lead_note_entries')
@@ -448,7 +447,7 @@ class LeadForm
                         ->hiddenLabel()
                         ->content(fn (?LeadGuarantor $record): HtmlString => static::renderNoteChatBubbles(
                             is_string($record?->internal_notes) ? $record->internal_notes : null,
-                            'internal_note_entries',
+                            $record?->id,
                         ))
                         ->columnSpanFull(),
                     Repeater::make('internal_note_entries')
@@ -907,7 +906,7 @@ class LeadForm
         ));
     }
 
-    private static function renderNoteChatBubbles(?string $notes, string $repeaterName = 'lead_note_entries'): HtmlString
+    private static function renderNoteChatBubbles(?string $notes, ?int $guarantorId = null): HtmlString
     {
         $entries = NoteHistory::entries($notes);
 
@@ -960,7 +959,6 @@ class LeadForm
                 ? 'rounded-br-sm bg-primary-600 text-white'
                 : 'rounded-bl-sm bg-white text-gray-800 ring-1 ring-gray-200 dark:bg-gray-950 dark:text-gray-100 dark:ring-white/10';
 
-            $escapedRepeaterName = e($repeaterName);
             $escapedBody = e(json_encode($rawBody, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
             if ($canEdit) {
@@ -976,9 +974,9 @@ class LeadForm
                     .'<textarea x-model="body" rows="2" class="w-full rounded-lg border-0 bg-white/20 p-1 text-sm leading-relaxed focus:ring-1 focus:ring-white/40 '.($isMe ? 'text-white placeholder-white/60' : 'text-gray-800 dark:text-gray-100').'"></textarea>'
                     .'<div class="mt-1 flex gap-1">'
                     .'<button type="button" @click="'
-                    .'let keys = Object.keys($wire.data.'.$escapedRepeaterName.'); '
-                    .'if (keys['.$index.']) $wire.set(\'data.'.$escapedRepeaterName.'.\' + keys['.$index.'] + \'.body\', body); '
-                    .'editing = false'
+                    .($guarantorId !== null
+                        ? '$wire.editGuarantorNoteEntry('.$guarantorId.', '.$index.', body).then(() => { original = body; editing = false })'
+                        : '$wire.editNoteEntry('.$index.', body).then(() => { original = body; editing = false })')
                     .'" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200').'">Запази</button>'
                     .'<button type="button" @click="body = original; editing = false" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'text-white/70 hover:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300').'">Откажи</button>'
                     .'</div>'
@@ -1078,11 +1076,6 @@ class LeadForm
                 ->label('Съобщение')
                 ->rows(3)
                 ->autosize()
-                ->disabled(fn (Get $get): bool => ! static::canEditNoteEntry([
-                    'author' => $get('author'),
-                    'author_id' => $get('author_id'),
-                ]))
-                ->saved()
                 ->dehydrated()
                 ->required(),
             Placeholder::make('message_edit_meta')
