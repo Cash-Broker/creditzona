@@ -256,6 +256,7 @@ class LeadForm
                             ->hiddenLabel()
                             ->content(fn (?Lead $record): HtmlString => static::renderNoteChatBubbles(
                                 is_string($record?->internal_notes) ? $record->internal_notes : null,
+                                'lead_note_entries',
                             ))
                             ->columnSpanFull(),
                         Repeater::make('lead_note_entries')
@@ -272,14 +273,19 @@ class LeadForm
                             ->schema(static::noteEntrySchema())
                             ->extraAttributes(['class' => '!hidden'])
                             ->columnSpanFull(),
+                        Placeholder::make('lead_note_input_bar')
+                            ->hiddenLabel()
+                            ->content(new HtmlString(static::renderNoteInputBar(
+                                'lead_new_internal_note',
+                                'lead_note_entries',
+                                'lead_note_chat_display',
+                            )))
+                            ->columnSpanFull(),
                         Textarea::make('lead_new_internal_note')
                             ->hiddenLabel()
-                            ->placeholder('Добави бележка...')
-                            ->rows(1)
-                            ->autosize()
-                            ->extraAttributes(['class' => 'mt-2 border-t border-gray-200 pt-2 dark:border-white/10'])
                             ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
                             ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
+                            ->extraAttributes(['class' => '!hidden'])
                             ->columnSpanFull(),
                     ]),
                 Section::make('Данни за имота')
@@ -442,6 +448,7 @@ class LeadForm
                         ->hiddenLabel()
                         ->content(fn (?LeadGuarantor $record): HtmlString => static::renderNoteChatBubbles(
                             is_string($record?->internal_notes) ? $record->internal_notes : null,
+                            'internal_note_entries',
                         ))
                         ->columnSpanFull(),
                     Repeater::make('internal_note_entries')
@@ -458,13 +465,20 @@ class LeadForm
                         ->schema(static::noteEntrySchema())
                         ->extraAttributes(['class' => '!hidden'])
                         ->columnSpanFull(),
+                    Placeholder::make('guarantor_note_input_bar')
+                        ->hiddenLabel()
+                        ->content(fn (?LeadGuarantor $record): HtmlString => new HtmlString(static::renderNoteInputBar(
+                            'new_internal_note',
+                            'internal_note_entries',
+                            'guarantor_note_chat_display',
+                            $record?->id,
+                        )))
+                        ->columnSpanFull(),
                     Textarea::make('new_internal_note')
                         ->hiddenLabel()
-                        ->placeholder('Добави бележка...')
-                        ->rows(1)
-                        ->autosize()
                         ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
                         ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
+                        ->extraAttributes(['class' => '!hidden'])
                         ->columnSpanFull(),
                 ]),
             Section::make('Данни за имота на поръчителя')
@@ -893,7 +907,7 @@ class LeadForm
         ));
     }
 
-    private static function renderNoteChatBubbles(?string $notes): HtmlString
+    private static function renderNoteChatBubbles(?string $notes, string $repeaterName = 'lead_note_entries'): HtmlString
     {
         $entries = NoteHistory::entries($notes);
 
@@ -909,7 +923,7 @@ class LeadForm
         $currentUserName = auth()->user()?->name;
         $bubbles = '';
 
-        foreach ($entries as $entry) {
+        foreach ($entries as $index => $entry) {
             $authorId = $entry['author_id'] ?? null;
             $authorName = $entry['author'] ?? 'Служител';
 
@@ -919,10 +933,13 @@ class LeadForm
                     && mb_strtolower(trim($authorName)) === mb_strtolower(trim($currentUserName))
                 );
 
+            $canEdit = $isMe && NoteHistory::canEditEntry($entry, $currentUserId, $currentUserName);
+
             $letter = e(mb_strtoupper(mb_substr($authorName, 0, 1)));
             $displayName = e($authorName);
             $time = e($entry['timestamp'] ?? '');
-            $body = nl2br(e($entry['body']));
+            $rawBody = $entry['body'];
+            $body = nl2br(e($rawBody));
 
             $editedTag = '';
 
@@ -943,21 +960,61 @@ class LeadForm
                 ? 'rounded-br-sm bg-primary-600 text-white'
                 : 'rounded-bl-sm bg-white text-gray-800 ring-1 ring-gray-200 dark:bg-gray-950 dark:text-gray-100 dark:ring-white/10';
 
-            $bubbles .= '<div class="flex '.$alignClass.'">'
-                .'<div class="flex max-w-[80%] items-end gap-2 '.$rowClass.'">'
-                .'<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold '.$avatarClass.'">'.$letter.'</div>'
-                .'<div class="min-w-0">'
-                .'<div class="mb-0.5 flex items-center gap-1.5 text-[11px] '.$metaClass.'">'
-                .'<span class="font-medium">'.$displayName.'</span>'
-                .'<span>'.$time.'</span>'
-                .'</div>'
-                .'<div class="min-w-16 rounded-2xl px-3 py-2 text-sm leading-relaxed '.$bubbleClass.'">'
-                .'<div class="whitespace-pre-wrap wrap-break-word">'.$body.'</div>'
-                .$editedTag
-                .'</div>'
-                .'</div>'
-                .'</div>'
-                .'</div>';
+            $escapedRepeaterName = e($repeaterName);
+            $escapedBody = e(json_encode($rawBody, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+            if ($canEdit) {
+                $bubbleContent = ''
+                    .'<div x-show="!editing" class="group relative cursor-pointer" @click="editing = true">'
+                    .'<div class="whitespace-pre-wrap wrap-break-word">'.$body.'</div>'
+                    .$editedTag
+                    .'<div class="absolute -top-1 '.($isMe ? '-left-6' : '-right-6').' hidden rounded-full bg-gray-800 p-0.5 text-white group-hover:block dark:bg-gray-200 dark:text-gray-800">'
+                    .'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-3 w-3"><path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.262a1.75 1.75 0 0 0 0-2.474Z"/><path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9A.75.75 0 0 1 14 9v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z"/></svg>'
+                    .'</div>'
+                    .'</div>'
+                    .'<div x-show="editing" x-cloak>'
+                    .'<textarea x-model="body" rows="2" class="w-full rounded-lg border-0 bg-white/20 p-1 text-sm leading-relaxed focus:ring-1 focus:ring-white/40 '.($isMe ? 'text-white placeholder-white/60' : 'text-gray-800 dark:text-gray-100').'"></textarea>'
+                    .'<div class="mt-1 flex gap-1">'
+                    .'<button type="button" @click="'
+                    .'let keys = Object.keys($wire.data.'.$escapedRepeaterName.'); '
+                    .'if (keys['.$index.']) $wire.set(\'data.'.$escapedRepeaterName.'.\' + keys['.$index.'] + \'.body\', body); '
+                    .'editing = false'
+                    .'" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200').'">Запази</button>'
+                    .'<button type="button" @click="body = original; editing = false" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'text-white/70 hover:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300').'">Откажи</button>'
+                    .'</div>'
+                    .'</div>';
+
+                $bubbles .= '<div class="flex '.$alignClass.'" x-data="{ editing: false, body: '.$escapedBody.', original: '.$escapedBody.' }">'
+                    .'<div class="flex max-w-[80%] items-end gap-2 '.$rowClass.'">'
+                    .'<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold '.$avatarClass.'">'.$letter.'</div>'
+                    .'<div class="min-w-0">'
+                    .'<div class="mb-0.5 flex items-center gap-1.5 text-[11px] '.$metaClass.'">'
+                    .'<span class="font-medium">'.$displayName.'</span>'
+                    .'<span>'.$time.'</span>'
+                    .'</div>'
+                    .'<div class="min-w-16 rounded-2xl px-3 py-2 text-sm leading-relaxed '.$bubbleClass.'">'
+                    .$bubbleContent
+                    .'</div>'
+                    .'</div>'
+                    .'</div>'
+                    .'</div>';
+            } else {
+                $bubbles .= '<div class="flex '.$alignClass.'">'
+                    .'<div class="flex max-w-[80%] items-end gap-2 '.$rowClass.'">'
+                    .'<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold '.$avatarClass.'">'.$letter.'</div>'
+                    .'<div class="min-w-0">'
+                    .'<div class="mb-0.5 flex items-center gap-1.5 text-[11px] '.$metaClass.'">'
+                    .'<span class="font-medium">'.$displayName.'</span>'
+                    .'<span>'.$time.'</span>'
+                    .'</div>'
+                    .'<div class="min-w-16 rounded-2xl px-3 py-2 text-sm leading-relaxed '.$bubbleClass.'">'
+                    .'<div class="whitespace-pre-wrap wrap-break-word">'.$body.'</div>'
+                    .$editedTag
+                    .'</div>'
+                    .'</div>'
+                    .'</div>'
+                    .'</div>';
+            }
         }
 
         return new HtmlString(
@@ -966,6 +1023,37 @@ class LeadForm
             .'<div class="space-y-3">'.$bubbles.'</div>'
             .'</div>',
         );
+    }
+
+    private static function renderNoteInputBar(string $textareaField, string $repeaterName, string $chatPlaceholder, ?int $guarantorId = null): string
+    {
+        $isLeadNote = $textareaField === 'lead_new_internal_note';
+
+        $wireCall = $isLeadNote
+            ? '$wire.saveNoteOnly(msg.trim())'
+            : '$wire.saveGuarantorNoteOnly('.((int) $guarantorId).', msg.trim())';
+
+        return '<div class="mt-2 flex items-end gap-2 border-t border-gray-200 pt-2 dark:border-white/10"'
+            .' x-data="{ msg: \'\', sending: false }">'
+            .'<textarea x-model="msg" rows="2" placeholder="Добави бележка..." '
+            .'class="min-h-16 min-w-0 flex-1 resize-none rounded-xl border-gray-300 bg-gray-50/80 text-sm shadow-none focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-gray-900/70 dark:text-white" '
+            .'x-on:input="$el.style.height = \'auto\'; $el.style.height = Math.max($el.scrollHeight, 64) + \'px\'" '
+            .'x-on:keydown.enter.prevent="if (!$event.shiftKey && msg.trim() && !sending) $refs.sendBtn.click()"'
+            .'></textarea>'
+            .'<button type="button" x-ref="sendBtn" '
+            .'class="shrink-0 self-end rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50" '
+            .':disabled="!msg.trim() || sending" '
+            .'@click="'
+            .'if (!msg.trim() || sending) return; '
+            .'sending = true; '
+            .$wireCall.'.then(() => { '
+            .'msg = \'\'; '
+            .'sending = false; '
+            .'$refs.sendBtn.previousElementSibling && ($refs.sendBtn.previousElementSibling.style.height = \'auto\'); '
+            .'})'
+            .'"'
+            .'>Изпрати</button>'
+            .'</div>';
     }
 
     /**

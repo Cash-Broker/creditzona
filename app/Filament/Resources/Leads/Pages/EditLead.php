@@ -13,6 +13,7 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditLead extends EditRecord
 {
+    use \App\Filament\Resources\Leads\Concerns\SavesNotesInline;
     protected static string $resource = LeadResource::class;
 
     protected ?int $previousAdditionalUserId = null;

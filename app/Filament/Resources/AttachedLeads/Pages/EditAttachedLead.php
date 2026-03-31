@@ -20,6 +20,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditAttachedLead extends EditRecord
 {
+    use \App\Filament\Resources\Leads\Concerns\SavesNotesInline;
     protected static string $resource = AttachedLeadResource::class;
 
     protected ?int $previousAdditionalUserId = null;
