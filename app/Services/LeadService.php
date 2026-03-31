@@ -208,6 +208,30 @@ class LeadService
         return $lead->refresh();
     }
 
+    public function approveReturnedLead(Lead $lead, User $actor): Lead
+    {
+        if (! ($actor->isAdmin() || $actor->isOperator())) {
+            throw new AuthorizationException('Нямате достъп да одобрявате тази върната заявка.');
+        }
+
+        if (! $actor->isAdmin() && $lead->assigned_user_id !== $actor->id) {
+            throw new AuthorizationException('Тази върната заявка не е към вас.');
+        }
+
+        if ($lead->returned_to_primary_at === null || $lead->approved_returned_at !== null) {
+            throw new DomainException('Само върнати заявки, които все още не са одобрени, могат да бъдат одобрени.');
+        }
+
+        DB::transaction(function () use ($lead, $actor): void {
+            $lead->forceFill([
+                'approved_returned_by_user_id' => $actor->id,
+                'approved_returned_at' => now(),
+            ])->save();
+        });
+
+        return $lead->refresh();
+    }
+
     public function setMarkedForLater(Lead $lead, bool $markedForLater): Lead
     {
         $lead->forceFill([

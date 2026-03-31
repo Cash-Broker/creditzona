@@ -11,13 +11,20 @@ use App\Filament\Resources\ReturnedToMeLeadArchives\Pages\ListReturnedToMeLeadAr
 use App\Filament\Resources\ReturnedToMeLeadArchives\Pages\ViewReturnedToMeLeadArchive;
 use App\Models\Lead;
 use App\Models\User;
+use App\Services\LeadService;
 use BackedEnum;
+use DomainException;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
@@ -88,13 +95,90 @@ class ReturnedToMeLeadArchiveResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure(
+        $table = LeadsTable::configure(
             $table,
             static::class,
             showReturnedMeta: true,
             showReturnedToMeArchiveMeta: true,
             defaultSortColumn: 'returned_to_primary_at',
         );
+
+        return $table
+            ->recordActions([
+                static::makeApproveReturnedAction(),
+                ...$table->getRecordActions(),
+            ])
+            ->toolbarActions([
+                static::makeApproveReturnedBulkAction(),
+                ...$table->getToolbarActions(),
+            ]);
+    }
+
+    public static function makeApproveReturnedAction(): Action
+    {
+        return Action::make('approve_returned')
+            ->label('Премести в одобрени върнати')
+            ->icon(Heroicon::OutlinedCheckCircle)
+            ->color('success')
+            ->requiresConfirmation()
+            ->modalHeading('Преместване в одобрени върнати')
+            ->modalDescription('Заявката ще бъде преместена в "Одобрени върнати".')
+            ->visible(function (Lead $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && ($user->isAdmin() || $user->isOperator())
+                    && $record->returned_to_primary_at !== null
+                    && $record->approved_returned_at === null;
+            })
+            ->action(function (Lead $record): void {
+                $user = auth()->user();
+
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                try {
+                    app(LeadService::class)->approveReturnedLead($record, $user);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Заявката е преместена в "Одобрени върнати".')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    public static function makeApproveReturnedBulkAction(): BulkAction
+    {
+        return BulkAction::make('approve_returned_selected')
+            ->label('Премести в одобрени върнати')
+            ->icon('heroicon-m-check-circle')
+            ->color('success')
+            ->requiresConfirmation()
+            ->deselectRecordsAfterCompletion()
+            ->action(function (Collection $records): void {
+                $leadService = app(LeadService::class);
+                $user = auth()->user();
+
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                $records->each(fn (Lead $lead) => $leadService->approveReturnedLead($lead, $user));
+
+                Notification::make()
+                    ->title('Избраните заявки са преместени в "Одобрени върнати".')
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getRelations(): array

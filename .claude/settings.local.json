@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:UsersyordaDownloadsyordancreditzonaappFilamentResourcesReturnedToMeLeads -type f -name *.php)"
+    ]
+  }
+}

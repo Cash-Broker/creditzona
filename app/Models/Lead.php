@@ -69,6 +69,8 @@ class Lead extends Model implements HasRichContent
         'returned_to_primary_at',
         'returned_to_primary_archived_user_id',
         'returned_to_primary_archived_at',
+        'approved_returned_at',
+        'approved_returned_by_user_id',
         'archived_additional_user_id',
         'attached_archived_at',
         'marked_for_later_at',
@@ -340,6 +342,7 @@ class Lead extends Model implements HasRichContent
             'privacy_consent_accepted_at' => 'datetime',
             'returned_to_primary_at' => 'datetime',
             'returned_to_primary_archived_at' => 'datetime',
+            'approved_returned_at' => 'datetime',
             'attached_archived_at' => 'datetime',
             'marked_for_later_at' => 'datetime',
         ];
@@ -408,7 +411,24 @@ class Lead extends Model implements HasRichContent
             ->whereNull('additional_user_id')
             ->whereNotNull('returned_additional_user_id')
             ->whereNotNull('returned_to_primary_at')
-            ->whereNull('returned_to_primary_archived_at');
+            ->whereNull('returned_to_primary_archived_at')
+            ->whereNull('approved_returned_at');
+    }
+
+    public function scopeApprovedReturned(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('additional_user_id')
+            ->whereNotNull('returned_additional_user_id')
+            ->whereNotNull('returned_to_primary_at')
+            ->whereNotNull('approved_returned_at');
+    }
+
+    public function scopeApprovedReturnedForUser(Builder $query, User $user): Builder
+    {
+        return $query
+            ->where('assigned_user_id', $user->id)
+            ->approvedReturned();
     }
 
     public function scopeReturnedToPrimaryArchiveForUser(Builder $query, User $user): Builder
@@ -416,7 +436,8 @@ class Lead extends Model implements HasRichContent
         return $query
             ->whereNull('additional_user_id')
             ->where('returned_to_primary_archived_user_id', $user->id)
-            ->whereNotNull('returned_to_primary_archived_at');
+            ->whereNotNull('returned_to_primary_archived_at')
+            ->whereNull('approved_returned_at');
     }
 
     public function isMarkedForLater(): bool
@@ -449,6 +470,11 @@ class Lead extends Model implements HasRichContent
     public function returnedToPrimaryArchivedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'returned_to_primary_archived_user_id');
+    }
+
+    public function approvedReturnedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_returned_by_user_id');
     }
 
     public function archivedAdditionalUser(): BelongsTo

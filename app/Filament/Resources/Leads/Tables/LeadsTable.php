@@ -265,6 +265,7 @@ class LeadsTable
                             ->success()
                             ->send();
                     }),
+
             ]);
     }
 }
