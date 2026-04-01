@@ -49,6 +49,13 @@ class NoteHistoryChatWidget extends Widget
 
         $owner = $this->resolveNoteOwner();
 
+        \Illuminate\Support\Facades\Log::info('NoteChat::send', [
+            'leadId' => $this->leadId,
+            'guarantorId' => $this->guarantorId,
+            'owner' => $owner ? get_class($owner).':'.$owner->id : 'NULL',
+            'note' => mb_substr($note, 0, 30),
+        ]);
+
         if ($owner === null) {
             return;
         }
