@@ -393,17 +393,10 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $this->actingAs($admin);
 
-        $component = Livewire::test(EditAttachedLead::class, [
-            'record' => (string) $lead->getKey(),
-        ]);
-
-        $guarantorsState = $component->get('data.guarantors');
-        $guarantorKey = array_key_first($guarantorsState);
-
-        $component
-            ->set("data.guarantors.{$guarantorKey}.new_internal_note", 'Втора бележка')
-            ->call('save')
-            ->assertHasNoFormErrors();
+        Livewire::test(\App\Filament\Resources\Leads\Widgets\NoteHistoryChatWidget::class, [
+            'guarantorId' => $guarantor->id,
+        ])
+            ->call('send', 'Втора бележка');
 
         $savedGuarantor = $lead->fresh()->guarantors()->firstOrFail();
         $entries = NoteHistory::entries($savedGuarantor->internal_notes);
@@ -508,20 +501,12 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $this->actingAs($admin);
 
-        $component = Livewire::test(EditAttachedLead::class, [
-            'record' => (string) $lead->getKey(),
-        ]);
-
-        $guarantorsState = $component->get('data.guarantors');
-        $guarantorKey = array_key_first($guarantorsState);
-
-        $entriesState = $component->get("data.guarantors.{$guarantorKey}.internal_note_entries");
-        $entryKey = array_key_first($entriesState);
-
-        $component
-            ->set("data.guarantors.{$guarantorKey}.internal_note_entries.{$entryKey}.body", 'Опит за чужда редакция')
-            ->call('save')
-            ->assertHasNoFormErrors();
+        Livewire::test(\App\Filament\Resources\Leads\Widgets\NoteHistoryChatWidget::class, [
+            'guarantorId' => $guarantor->id,
+        ])
+            ->call('startEditing', 0)
+            ->set('editingBody', 'Опит за чужда редакция')
+            ->call('saveEdit');
 
         $savedGuarantor = $lead->fresh()->guarantors()->firstOrFail();
         $entries = NoteHistory::entries($savedGuarantor->internal_notes);

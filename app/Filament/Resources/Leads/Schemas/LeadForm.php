@@ -409,13 +409,6 @@ class LeadForm
                             Storage::disk('local')->delete($file);
                         })
                         ->columnSpanFull(),
-                    Hidden::make('existing_internal_notes')
-                        ->dehydrated()
-                        ->afterStateHydrated(function (Hidden $component, mixed $state, ?LeadGuarantor $record): void {
-                            $component->state(NoteHistory::normalize(
-                                is_string($record?->internal_notes) ? $record->internal_notes : null,
-                            ));
-                        }),
                     LivewireComponent::make(
                         NoteHistoryChatWidget::class,
                         fn (?LeadGuarantor $record): array => ['guarantorId' => $record?->id],
@@ -546,13 +539,6 @@ class LeadForm
             $data['middle_name'] ?? null,
             $data['last_name'] ?? null,
         );
-        $data['existing_internal_notes'] = NoteHistory::normalize(
-            is_string($data['internal_notes'] ?? null) ? $data['internal_notes'] : null,
-        );
-        $data['internal_note_entries'] = NoteHistory::formEntries(
-            is_string($data['internal_notes'] ?? null) ? $data['internal_notes'] : null,
-        );
-
         return $data;
     }
 
