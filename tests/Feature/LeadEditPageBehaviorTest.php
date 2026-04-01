@@ -115,15 +115,11 @@ class LeadEditPageBehaviorTest extends TestCase
 
         $this->actingAs($admin);
 
-        Livewire::test(EditLead::class, [
-            'record' => (string) $lead->getKey(),
+        Livewire::test(\App\Filament\Resources\Leads\Widgets\NoteHistoryChatWidget::class, [
+            'leadId' => $lead->id,
         ])
-            ->fillForm([
-                'lead_note_entries' => NoteHistory::formEntries($lead->internal_notes),
-                'lead_new_internal_note' => 'Втора бележка',
-            ])
-            ->call('save')
-            ->assertHasNoFormErrors();
+            ->set('newMessage', 'Втора бележка')
+            ->call('send');
 
         $lead->refresh();
         $entries = NoteHistory::entries($lead->internal_notes);

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Leads\Schemas;
 
 use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\Leads\Widgets\LeadCommunicationWidget;
+use App\Filament\Resources\Leads\Widgets\NoteHistoryChatWidget;
 use App\Models\AdminDocument;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
@@ -16,7 +17,6 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Livewire as LivewireComponent;
 use Filament\Schemas\Components\Section;
@@ -252,39 +252,12 @@ class LeadForm
                 Section::make('Съобщения за клиента')
                     ->columnSpanFull()
                     ->schema([
-                        Placeholder::make('lead_note_chat_display')
-                            ->hiddenLabel()
-                            ->content(fn (?Lead $record): HtmlString => static::renderNoteChatBubbles(
-                                is_string($record?->internal_notes) ? $record->internal_notes : null,
-                            ))
-                            ->columnSpanFull(),
-                        Repeater::make('lead_note_entries')
-                            ->hiddenLabel()
-                            ->afterStateHydrated(function (Repeater $component, mixed $state, ?Lead $record): void {
-                                $component->state(NoteHistory::formEntries(
-                                    is_string($record?->internal_notes) ? $record->internal_notes : null,
-                                ));
-                            })
-                            ->addable(false)
-                            ->deletable(false)
-                            ->reorderable(false)
-                            ->dehydrated()
-                            ->schema(static::noteEntrySchema())
-                            ->extraAttributes(['class' => '!hidden'])
-                            ->columnSpanFull(),
-                        Placeholder::make('lead_note_input_bar')
-                            ->hiddenLabel()
-                            ->content(new HtmlString(static::renderNoteInputBar(
-                                'lead_new_internal_note',
-                                'lead_note_entries',
-                                'lead_note_chat_display',
-                            )))
-                            ->columnSpanFull(),
-                        Textarea::make('lead_new_internal_note')
-                            ->hiddenLabel()
-                            ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
-                            ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
-                            ->extraAttributes(['class' => '!hidden'])
+                        LivewireComponent::make(
+                            NoteHistoryChatWidget::class,
+                            fn (?Lead $record): array => ['leadId' => $record?->id],
+                        )
+                            ->key('lead-note-chat')
+                            ->lazy(false)
                             ->columnSpanFull(),
                     ]),
                 Section::make('Данни за имота')
@@ -443,41 +416,12 @@ class LeadForm
                                 is_string($record?->internal_notes) ? $record->internal_notes : null,
                             ));
                         }),
-                    Placeholder::make('guarantor_note_chat_display')
-                        ->hiddenLabel()
-                        ->content(fn (?LeadGuarantor $record): HtmlString => static::renderNoteChatBubbles(
-                            is_string($record?->internal_notes) ? $record->internal_notes : null,
-                            $record?->id,
-                        ))
-                        ->columnSpanFull(),
-                    Repeater::make('internal_note_entries')
-                        ->hiddenLabel()
-                        ->afterStateHydrated(function (Repeater $component, mixed $state, ?LeadGuarantor $record): void {
-                            $component->state(NoteHistory::formEntries(
-                                is_string($record?->internal_notes) ? $record->internal_notes : null,
-                            ));
-                        })
-                        ->addable(false)
-                        ->deletable(false)
-                        ->reorderable(false)
-                        ->dehydrated()
-                        ->schema(static::noteEntrySchema())
-                        ->extraAttributes(['class' => '!hidden'])
-                        ->columnSpanFull(),
-                    Placeholder::make('guarantor_note_input_bar')
-                        ->hiddenLabel()
-                        ->content(fn (?LeadGuarantor $record): HtmlString => new HtmlString(static::renderNoteInputBar(
-                            'new_internal_note',
-                            'internal_note_entries',
-                            'guarantor_note_chat_display',
-                            $record?->id,
-                        )))
-                        ->columnSpanFull(),
-                    Textarea::make('new_internal_note')
-                        ->hiddenLabel()
-                        ->afterStateHydrated(static fn (Textarea $component): Textarea => $component->state(null))
-                        ->dehydrateStateUsing(static fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
-                        ->extraAttributes(['class' => '!hidden'])
+                    LivewireComponent::make(
+                        NoteHistoryChatWidget::class,
+                        fn (?LeadGuarantor $record): array => ['guarantorId' => $record?->id],
+                    )
+                        ->key('guarantor-note-chat')
+                        ->lazy(false)
                         ->columnSpanFull(),
                 ]),
             Section::make('Данни за имота на поръчителя')
@@ -854,275 +798,7 @@ class LeadForm
         return $existingNotes."\n\n".$entry;
     }
 
-    private static function renderNoteHistory(?string $notes, string $emptyMessage): HtmlString
-    {
-        if ($notes === null) {
-            return new HtmlString(sprintf(
-                '<div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500">%s</div>',
-                e($emptyMessage),
-            ));
-        }
 
-        return new HtmlString(sprintf(
-            '<div class="whitespace-pre-wrap rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-6 text-gray-700">%s</div>',
-            nl2br(e($notes)),
-        ));
-    }
-
-    private static function renderChatLikeNoteHistory(?string $notes, string $emptyMessage): HtmlString
-    {
-        $entries = NoteHistory::entries($notes);
-
-        if ($entries === []) {
-            return new HtmlString(sprintf(
-                '<div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500">%s</div>',
-                e($emptyMessage),
-            ));
-        }
-
-        $content = implode('', array_map(static function (array $entry): string {
-            $metaParts = array_values(array_filter([
-                $entry['author'],
-                $entry['timestamp'],
-            ]));
-
-            $meta = $metaParts !== []
-                ? sprintf(
-                    '<div class="mb-2 text-xs font-semibold text-gray-500">%s</div>',
-                    e(implode(' • ', $metaParts)),
-                )
-                : '';
-
-            return sprintf(
-                '<div class="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">%s<div class="whitespace-pre-wrap text-sm leading-6 text-gray-700">%s</div></div>',
-                $meta,
-                nl2br(e($entry['body'])),
-            );
-        }, $entries));
-
-        return new HtmlString(sprintf(
-            '<div class="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">%s</div>',
-            $content,
-        ));
-    }
-
-    private static function renderNoteChatBubbles(?string $notes, ?int $guarantorId = null): HtmlString
-    {
-        $entries = NoteHistory::entries($notes);
-
-        if ($entries === []) {
-            return new HtmlString(
-                '<div class="flex h-96 items-center justify-center rounded-xl border border-gray-200 bg-gray-50/50 dark:border-white/10 dark:bg-gray-900/40">'
-                .'<span class="text-sm text-gray-400 dark:text-gray-500">Няма съобщения</span>'
-                .'</div>',
-            );
-        }
-
-        $currentUserId = auth()->id();
-        $currentUserName = auth()->user()?->name;
-        $bubbles = '';
-
-        foreach ($entries as $index => $entry) {
-            $authorId = $entry['author_id'] ?? null;
-            $authorName = $entry['author'] ?? 'Служител';
-
-            $isMe = ($authorId !== null && $currentUserId !== null && $authorId === $currentUserId)
-                || (
-                    $currentUserName !== null
-                    && mb_strtolower(trim($authorName)) === mb_strtolower(trim($currentUserName))
-                );
-
-            $canEdit = $isMe && NoteHistory::canEditEntry($entry, $currentUserId, $currentUserName);
-
-            $letter = e(mb_strtoupper(mb_substr($authorName, 0, 1)));
-            $displayName = e($authorName);
-            $time = e($entry['timestamp'] ?? '');
-            $rawBody = $entry['body'];
-            $body = nl2br(e($rawBody));
-
-            $editedTag = '';
-
-            if (filled($entry['edited_at'] ?? null) || filled($entry['edited_by'] ?? null)) {
-                $editParts = array_filter([$entry['edited_by'] ?? null, $entry['edited_at'] ?? null]);
-                $editedTag = '<div class="mt-1 text-[10px] opacity-60">редактирано '.e(implode(' • ', $editParts)).'</div>';
-            }
-
-            $alignClass = $isMe ? 'justify-end' : '';
-            $rowClass = $isMe ? 'flex-row-reverse' : '';
-            $avatarClass = $isMe
-                ? 'bg-primary-600 text-white'
-                : 'bg-white text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:ring-white/10';
-            $metaClass = $isMe
-                ? 'justify-end text-primary-600 dark:text-primary-400'
-                : 'text-gray-400 dark:text-gray-500';
-            $bubbleClass = $isMe
-                ? 'rounded-br-sm bg-primary-600 text-white'
-                : 'rounded-bl-sm bg-white text-gray-800 ring-1 ring-gray-200 dark:bg-gray-950 dark:text-gray-100 dark:ring-white/10';
-
-            $escapedBody = e(json_encode($rawBody, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-
-            if ($canEdit) {
-                $bubbleContent = ''
-                    .'<div x-show="!editing" class="group relative cursor-pointer" @click="editing = true">'
-                    .'<div class="whitespace-pre-wrap wrap-break-word">'.$body.'</div>'
-                    .$editedTag
-                    .'<div class="absolute -top-1 '.($isMe ? '-left-6' : '-right-6').' hidden rounded-full bg-gray-800 p-0.5 text-white group-hover:block dark:bg-gray-200 dark:text-gray-800">'
-                    .'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-3 w-3"><path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.262a1.75 1.75 0 0 0 0-2.474Z"/><path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9A.75.75 0 0 1 14 9v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z"/></svg>'
-                    .'</div>'
-                    .'</div>'
-                    .'<div x-show="editing" x-cloak>'
-                    .'<textarea x-model="body" rows="2" class="w-full rounded-lg border-0 bg-white/20 p-1 text-sm leading-relaxed focus:ring-1 focus:ring-white/40 '.($isMe ? 'text-white placeholder-white/60' : 'text-gray-800 dark:text-gray-100').'"></textarea>'
-                    .'<div class="mt-1 flex gap-1">'
-                    .'<button type="button" @click="'
-                    .($guarantorId !== null
-                        ? '$wire.editGuarantorNoteEntry('.$guarantorId.', '.$index.', body).then(() => { original = body; editing = false })'
-                        : '$wire.editNoteEntry('.$index.', body).then(() => { original = body; editing = false })')
-                    .'" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200').'">Запази</button>'
-                    .'<button type="button" @click="body = original; editing = false" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'text-white/70 hover:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300').'">Откажи</button>'
-                    .'<button type="button" @click="'
-                    .'if (!confirm(\'Сигурни ли сте, че искате да изтриете това съобщение?\')) return; '
-                    .($guarantorId !== null
-                        ? '$wire.deleteGuarantorNoteEntry('.$guarantorId.', '.$index.')'
-                        : '$wire.deleteNoteEntry('.$index.')')
-                    .'" class="rounded px-2 py-0.5 text-[11px] font-medium '.($isMe ? 'text-red-300 hover:text-red-100' : 'text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300').'">Изтрий</button>'
-                    .'</div>'
-                    .'</div>';
-
-                $bubbles .= '<div class="flex '.$alignClass.'" x-data="{ editing: false, body: '.$escapedBody.', original: '.$escapedBody.' }">'
-                    .'<div class="flex max-w-[80%] items-end gap-2 '.$rowClass.'">'
-                    .'<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold '.$avatarClass.'">'.$letter.'</div>'
-                    .'<div class="min-w-0">'
-                    .'<div class="mb-0.5 flex items-center gap-1.5 text-[11px] '.$metaClass.'">'
-                    .'<span class="font-medium">'.$displayName.'</span>'
-                    .'<span>'.$time.'</span>'
-                    .'</div>'
-                    .'<div class="min-w-16 rounded-2xl px-3 py-2 text-sm leading-relaxed '.$bubbleClass.'">'
-                    .$bubbleContent
-                    .'</div>'
-                    .'</div>'
-                    .'</div>'
-                    .'</div>';
-            } else {
-                $bubbles .= '<div class="flex '.$alignClass.'">'
-                    .'<div class="flex max-w-[80%] items-end gap-2 '.$rowClass.'">'
-                    .'<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold '.$avatarClass.'">'.$letter.'</div>'
-                    .'<div class="min-w-0">'
-                    .'<div class="mb-0.5 flex items-center gap-1.5 text-[11px] '.$metaClass.'">'
-                    .'<span class="font-medium">'.$displayName.'</span>'
-                    .'<span>'.$time.'</span>'
-                    .'</div>'
-                    .'<div class="min-w-16 rounded-2xl px-3 py-2 text-sm leading-relaxed '.$bubbleClass.'">'
-                    .'<div class="whitespace-pre-wrap wrap-break-word">'.$body.'</div>'
-                    .$editedTag
-                    .'</div>'
-                    .'</div>'
-                    .'</div>'
-                    .'</div>';
-            }
-        }
-
-        return new HtmlString(
-            '<div class="h-96 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 dark:border-white/10 dark:bg-gray-900/40"'
-            .' x-data x-init="$el.scrollTop = $el.scrollHeight">'
-            .'<div class="space-y-3">'.$bubbles.'</div>'
-            .'</div>',
-        );
-    }
-
-    private static function renderNoteInputBar(string $textareaField, string $repeaterName, string $chatPlaceholder, ?int $guarantorId = null): string
-    {
-        $isLeadNote = $textareaField === 'lead_new_internal_note';
-
-        $wireCall = $isLeadNote
-            ? '$wire.saveNoteOnly(msg.trim())'
-            : '$wire.saveGuarantorNoteOnly('.((int) $guarantorId).', msg.trim())';
-
-        return '<div class="mt-2 flex items-end gap-2 border-t border-gray-200 pt-2 dark:border-white/10"'
-            .' x-data="{ msg: \'\', sending: false }">'
-            .'<textarea x-model="msg" rows="2" placeholder="Добави бележка..." '
-            .'class="min-h-16 min-w-0 flex-1 resize-none rounded-xl border-gray-300 bg-gray-50/80 text-sm shadow-none focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-gray-900/70 dark:text-white" '
-            .'x-on:input="$el.style.height = \'auto\'; $el.style.height = Math.max($el.scrollHeight, 64) + \'px\'" '
-            .'x-on:keydown.enter.prevent="if (!$event.shiftKey && msg.trim() && !sending) $refs.sendBtn.click()"'
-            .'></textarea>'
-            .'<button type="button" x-ref="sendBtn" '
-            .'class="shrink-0 self-end rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50" '
-            .':disabled="!msg.trim() || sending" '
-            .'@click="'
-            .'if (!msg.trim() || sending) return; '
-            .'sending = true; '
-            .$wireCall.'.then(() => { '
-            .'msg = \'\'; '
-            .'sending = false; '
-            .'$refs.sendBtn.previousElementSibling && ($refs.sendBtn.previousElementSibling.style.height = \'auto\'); '
-            .'})'
-            .'"'
-            .'>Изпрати</button>'
-            .'</div>';
-    }
-
-    /**
-     * @return array<int, \Filament\Forms\Components\Component>
-     */
-    private static function noteEntrySchema(): array
-    {
-        return [
-            Hidden::make('id'),
-            Hidden::make('author'),
-            Hidden::make('author_id'),
-            Hidden::make('timestamp'),
-            Hidden::make('edited_at'),
-            Hidden::make('edited_by'),
-            Placeholder::make('message_meta')
-                ->label('Изпратено от')
-                ->content(fn (Get $get): string => static::noteEntryItemLabel([
-                    'author' => $get('author'),
-                    'timestamp' => $get('timestamp'),
-                ])),
-            Textarea::make('body')
-                ->label('Съобщение')
-                ->rows(3)
-                ->autosize()
-                ->dehydrated()
-                ->required(),
-            Placeholder::make('message_edit_meta')
-                ->label('Последна редакция')
-                ->content(fn (Get $get): ?string => static::noteEntryEditedLabel([
-                    'edited_at' => $get('edited_at'),
-                    'edited_by' => $get('edited_by'),
-                ]))
-                ->visible(fn (Get $get): bool => filled($get('edited_at')) || filled($get('edited_by'))),
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    private static function noteEntryItemLabel(array $state): string
-    {
-        $parts = array_values(array_filter([
-            filled($state['author'] ?? null) ? (string) $state['author'] : 'Служител',
-            $state['timestamp'] ?? null,
-        ]));
-
-        return $parts !== [] ? implode(' • ', $parts) : 'Съобщение';
-    }
-
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    private static function noteEntryEditedLabel(array $state): ?string
-    {
-        $parts = array_values(array_filter([
-            $state['edited_by'] ?? null,
-            $state['edited_at'] ?? null,
-        ]));
-
-        if ($parts === []) {
-            return null;
-        }
-
-        return implode(' • ', $parts);
-    }
 
     /**
      * @param  array<int, array<string, mixed>>  $entries
@@ -1141,18 +817,6 @@ class LeadForm
             $newNote,
             auth()->user()?->name,
             auth()->id(),
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    private static function canEditNoteEntry(array $state): bool
-    {
-        return NoteHistory::canEditEntry(
-            $state,
-            auth()->id(),
-            auth()->user()?->name,
         );
     }
 
