@@ -33,9 +33,9 @@ class NoteHistoryChatWidget extends Widget
         $this->guarantorId = $guarantorId;
     }
 
-    public function send(): void
+    public function send(?string $message = null): void
     {
-        $note = trim($this->newMessage);
+        $note = trim($message ?? $this->newMessage);
 
         if ($note === '') {
             return;

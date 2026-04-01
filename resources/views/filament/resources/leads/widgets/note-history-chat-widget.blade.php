@@ -104,25 +104,25 @@
         </div>
 
         {{-- Input bar --}}
-        <div class="border-t border-gray-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-gray-950">
+        <div
+            class="border-t border-gray-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-gray-950"
+            x-data="{ msg: '' }"
+        >
             <div class="flex items-end gap-2">
                 <textarea
-                    wire:model="newMessage"
+                    x-model="msg"
                     rows="5"
                     placeholder="Добави бележка..."
                     style="height: 8rem; min-height: 8rem"
                     class="min-w-0 flex-1 resize-none rounded-xl border-gray-300 bg-gray-50/80 text-sm shadow-none focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-gray-900/70 dark:text-white"
-                    x-on:keydown.enter.prevent="if (!$event.shiftKey) $wire.send()"
+                    x-on:keydown.enter.prevent="if (!$event.shiftKey && msg.trim()) { $wire.send(msg.trim()); msg = ''; }"
                 ></textarea>
                 <button
                     type="button"
-                    wire:click="send"
+                    x-on:click="if (msg.trim()) { $wire.send(msg.trim()); msg = ''; }"
                     class="shrink-0 self-end rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50"
-                    wire:loading.attr="disabled"
-                >
-                    <span wire:loading.remove wire:target="send">Изпрати</span>
-                    <span wire:loading wire:target="send">...</span>
-                </button>
+                    x-bind:disabled="!msg.trim()"
+                >Изпрати</button>
             </div>
         </div>
     </div>
