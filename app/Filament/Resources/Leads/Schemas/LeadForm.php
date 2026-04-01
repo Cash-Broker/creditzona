@@ -420,7 +420,7 @@ class LeadForm
                         NoteHistoryChatWidget::class,
                         fn (?LeadGuarantor $record): array => ['guarantorId' => $record?->id],
                     )
-                        ->key('guarantor-note-chat')
+                        ->key(fn (?LeadGuarantor $record): string => 'guarantor-note-chat-'.($record?->id ?? 'new'))
                         ->lazy(false)
                         ->columnSpanFull(),
                 ]),

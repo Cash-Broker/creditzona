@@ -107,7 +107,7 @@
         <div class="border-t border-gray-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-gray-950">
             <div class="flex items-end gap-2">
                 <textarea
-                    wire:model.defer="newMessage"
+                    wire:model="newMessage"
                     rows="5"
                     placeholder="Добави бележка..."
                     style="height: 8rem; min-height: 8rem"
