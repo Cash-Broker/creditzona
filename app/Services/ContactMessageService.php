@@ -117,7 +117,7 @@ class ContactMessageService
             'phone' => $normalizedPhone,
             'normalized_phone' => $normalizedPhone,
             'email' => $contactMessage->email,
-            'city' => '',
+            'city' => null,
             'workplace' => null,
             'job_title' => null,
             'salary' => null,

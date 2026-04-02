@@ -44,7 +44,7 @@ class ContactMessageLeadGenerationTest extends TestCase
         $this->assertSame('0888123456', $lead->phone);
         $this->assertSame('0888123456', $lead->normalized_phone);
         $this->assertSame('ivan@example.com', $lead->email);
-        $this->assertSame('', $lead->city);
+        $this->assertNull($lead->city);
         $this->assertSame(5000, $lead->amount);
         $this->assertSame('new', $lead->status);
         $this->assertSame('contact_message', $lead->source);
