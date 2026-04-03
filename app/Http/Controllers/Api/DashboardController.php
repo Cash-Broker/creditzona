@@ -66,6 +66,7 @@ class DashboardController extends Controller
                 'marked_for_later_count' => $markedForLaterCount,
                 'contact_messages_count' => $contactMessagesCount,
                 'calendar_events_today' => $calendarEventsToday,
+                'attached_leads_count' => $user->isAdmin() ? 0 : Lead::query()->attachedToUser($user)->count(),
             ],
         ]);
     }

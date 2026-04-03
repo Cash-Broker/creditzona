@@ -8,6 +8,7 @@ use App\Http\Requests\Api\UpdateLeadStatusRequest;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Models\User;
+use App\Services\LeadService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class LeadApiController extends Controller
 {
     public function __construct(
         private readonly NotificationService $notificationService,
+        private readonly LeadService $leadService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -177,6 +179,57 @@ class LeadApiController extends Controller
         return response()->json([
             'data' => $this->formatLeadDetail($lead),
             'message' => $lead->isMarkedForLater() ? 'Маркирано за по-късно.' : 'Премахнато от по-късно.',
+        ]);
+    }
+
+    public function attached(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $query = Lead::query()
+            ->attachedToUser($user)
+            ->with([
+                'assignedUser:id,name',
+                'additionalUser:id,name',
+                'messages' => fn ($q) => $q->latest()->limit(1)->with('author:id,name'),
+            ])
+            ->orderByDesc('created_at');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $leads = $query->paginate(15);
+        $leads->getCollection()->transform(fn (Lead $lead) => $this->formatLead($lead));
+
+        return response()->json($leads);
+    }
+
+    public function returnToPrimary(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+
+        $lead = Lead::query()
+            ->attachedToUser($user)
+            ->findOrFail($id);
+
+        $lead = $this->leadService->returnAttachedLeadToPrimary($lead, $user);
+
+        $lead->load(['assignedUser:id,name', 'additionalUser:id,name']);
+
+        return response()->json([
+            'data' => $this->formatLead($lead),
+            'message' => 'Заявката е върната към основния служител.',
         ]);
     }
 

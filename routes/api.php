@@ -32,12 +32,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Leads
     Route::get('/leads', [LeadApiController::class, 'index']);
+    Route::get('/leads/attached', [LeadApiController::class, 'attached']);
     Route::get('/leads/statuses', [LeadApiController::class, 'statuses']);
     Route::get('/leads/{id}', [LeadApiController::class, 'show'])->where('id', '[0-9]+');
     Route::patch('/leads/{id}/status', [LeadApiController::class, 'updateStatus'])->where('id', '[0-9]+');
     Route::patch('/leads/{id}', [LeadApiController::class, 'update'])->where('id', '[0-9]+');
     Route::patch('/leads/{id}/mark-for-later', [LeadApiController::class, 'markForLater'])->where('id', '[0-9]+');
     Route::get('/leads/{id}/privacy-consent', [LeadApiController::class, 'privacyConsent'])->where('id', '[0-9]+');
+    Route::patch('/leads/{id}/return', [LeadApiController::class, 'returnToPrimary'])->where('id', '[0-9]+');
 
     // Lead Guarantors
     Route::get('/leads/{id}/guarantors', [LeadGuarantorApiController::class, 'index'])->where('id', '[0-9]+');
