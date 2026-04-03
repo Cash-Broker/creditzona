@@ -9,6 +9,7 @@
         "php": "^8.2",
         "filament/filament": "^5.3.5",
         "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.3",
         "laravel/tinker": "^2.10.1",
         "mpdf/mpdf": "^8.3",
         "phpoffice/phpword": "^1.4"

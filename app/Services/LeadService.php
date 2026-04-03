@@ -34,6 +34,7 @@ class LeadService
 
     public function __construct(
         private readonly LeadPrivacyConsentPdfService $leadPrivacyConsentPdfService,
+        private readonly NotificationService $notificationService,
     ) {}
 
     public function createLead(array $data): Lead
@@ -415,6 +416,8 @@ class LeadService
             $notification,
             self::LEAD_ASSIGNED_NOTIFICATION_TYPE,
         );
+
+        $this->notificationService->notifyNewLead($lead);
     }
 
     private function sendReturnedLeadNotification(Lead $lead, User $actor): void
