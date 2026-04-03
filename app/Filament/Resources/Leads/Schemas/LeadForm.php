@@ -104,9 +104,13 @@ class LeadForm
                             ->autocomplete('off')
                             ->stripCharacters([' ', '-'])
                             ->rule('digits:10')
+                            ->rule(new \App\Rules\ValidEgn)
                             ->minLength(10)
                             ->maxLength(10)
                             ->required(fn (Get $get): bool => static::requiresFullApplication($get('status')))
+                            ->live(onBlur: true)
+                            ->hint(fn (Get $get): ?string => static::egnValidationHint($get('egn')))
+                            ->hintColor(fn (Get $get): ?string => static::egnValidationColor($get('egn')))
                             ->columnSpan(2),
                         Select::make('marital_status')
                             ->label('Семейно положение')
@@ -319,8 +323,12 @@ class LeadForm
                         ->autocomplete('off')
                         ->stripCharacters([' ', '-'])
                         ->rule('digits:10')
+                        ->rule(new \App\Rules\ValidEgn)
                         ->minLength(10)
                         ->maxLength(10)
+                        ->live(onBlur: true)
+                        ->hint(fn (Get $get): ?string => static::egnValidationHint($get('egn')))
+                        ->hintColor(fn (Get $get): ?string => static::egnValidationColor($get('egn')))
                         ->columnSpan(2),
                     Select::make('marital_status')
                         ->label('Семейно положение')
@@ -463,6 +471,28 @@ class LeadForm
             '<a href="%s" class="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-primary-500/20 dark:bg-white/5 dark:text-primary-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200 dark:focus:ring-offset-gray-950">Генерирай декларация</a>',
             e($url),
         ));
+    }
+
+    private static function egnValidationHint(?string $egn): ?string
+    {
+        if (! is_string($egn) || preg_match('/^\d{10}$/', trim($egn)) !== 1) {
+            return null;
+        }
+
+        $validator = validator(['egn' => trim($egn)], ['egn' => [new \App\Rules\ValidEgn]]);
+
+        return $validator->fails() ? '✗ Невалидно ЕГН' : '✓ Валидно ЕГН';
+    }
+
+    private static function egnValidationColor(?string $egn): ?string
+    {
+        if (! is_string($egn) || preg_match('/^\d{10}$/', trim($egn)) !== 1) {
+            return null;
+        }
+
+        $validator = validator(['egn' => trim($egn)], ['egn' => [new \App\Rules\ValidEgn]]);
+
+        return $validator->fails() ? 'danger' : 'success';
     }
 
     private static function requiresFullApplication(?string $status): bool

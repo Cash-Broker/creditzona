@@ -29,6 +29,8 @@ class LeadPrivacyConsentPdfService
             (string) Str::ulid(),
         );
 
+        $consentDateTime = now('Europe/Sofia')->format('d.m.Y H:i');
+
         Storage::disk('local')->put($path, $this->buildPdf(
             $this->formatParticipantIdentity(
                 $lead->first_name,
@@ -39,6 +41,7 @@ class LeadPrivacyConsentPdfService
                 $lead->email,
                 $lead->city,
             ),
+            $consentDateTime,
         ));
 
         return [
@@ -52,21 +55,28 @@ class LeadPrivacyConsentPdfService
      */
     public function buildGuarantorDownload(LeadGuarantor $guarantor): array
     {
+        $consentDateTime = ($guarantor->privacy_consent_accepted_at ?? now())
+            ->timezone('Europe/Sofia')
+            ->format('d.m.Y H:i');
+
         return [
-            'content' => $this->buildPdf($this->formatParticipantIdentity(
-                $guarantor->first_name,
-                $guarantor->middle_name,
-                $guarantor->last_name,
-                $guarantor->egn,
-                $guarantor->phone,
-                $guarantor->email,
-                $guarantor->city,
-            )),
+            'content' => $this->buildPdf(
+                $this->formatParticipantIdentity(
+                    $guarantor->first_name,
+                    $guarantor->middle_name,
+                    $guarantor->last_name,
+                    $guarantor->egn,
+                    $guarantor->phone,
+                    $guarantor->email,
+                    $guarantor->city,
+                ),
+                $consentDateTime,
+            ),
             'download_name' => $guarantor->buildPrivacyConsentDownloadFileName(),
         ];
     }
 
-    private function buildPdf(string $participantIdentity): string
+    private function buildPdf(string $participantIdentity, ?string $consentDateTime = null): string
     {
         $templatePath = public_path(Lead::getPrivacyConsentTemplatePath());
 
@@ -80,6 +90,7 @@ class LeadPrivacyConsentPdfService
         ]);
 
         $pageCount = $mpdf->setSourceFile($templatePath);
+        $lastPageNumber = $pageCount;
 
         for ($pageNumber = 1; $pageNumber <= $pageCount; $pageNumber++) {
             $template = $mpdf->importPage($pageNumber);
@@ -99,7 +110,26 @@ class LeadPrivacyConsentPdfService
             $mpdf->useTemplate($template);
         }
 
+        if ($consentDateTime !== null) {
+            $this->writeConsentDateTime($mpdf, $consentDateTime);
+        }
+
         return $mpdf->OutputBinaryData();
+    }
+
+    private function writeConsentDateTime(Mpdf $mpdf, string $consentDateTime): void
+    {
+        $mpdf->WriteFixedPosHTML(
+            sprintf(
+                '<div style="font-family: dejavuserif; font-size: 7.5pt; color: #555;">Дата и час на съгласие: %s</div>',
+                e($consentDateTime),
+            ),
+            self::FIELD_X,
+            270.0,
+            self::FIELD_MAX_WIDTH,
+            self::FIELD_HEIGHT,
+            'visible',
+        );
     }
 
     private function writeParticipantIdentity(Mpdf $mpdf, string $participantIdentity): void

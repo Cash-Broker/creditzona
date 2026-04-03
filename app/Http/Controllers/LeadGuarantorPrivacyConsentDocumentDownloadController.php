@@ -21,6 +21,10 @@ class LeadGuarantorPrivacyConsentDocumentDownloadController extends Controller
         abort_unless($user?->can('view', $lead), 403);
         abort_unless($guarantor->lead_id === $lead->id, 404);
 
+        if ($guarantor->privacy_consent_accepted_at === null) {
+            $guarantor->forceFill(['privacy_consent_accepted_at' => now()])->save();
+        }
+
         $document = $leadPrivacyConsentPdfService->buildGuarantorDownload($guarantor);
 
         return response()->streamDownload(

@@ -42,6 +42,7 @@ class LeadGuarantor extends Model implements HasRichContent
         'document_file_names',
         'internal_notes',
         'status',
+        'privacy_consent_accepted_at',
     ];
 
     public static function getStatusOptions(): array
@@ -183,6 +184,7 @@ class LeadGuarantor extends Model implements HasRichContent
             'amount' => 'integer',
             'documents' => 'array',
             'document_file_names' => 'array',
+            'privacy_consent_accepted_at' => 'datetime',
         ];
     }
 
