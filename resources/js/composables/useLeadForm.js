@@ -617,6 +617,12 @@ export function useLeadForm(options = {}) {
             success.value = true;
             resetForm();
 
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'conversion', {
+                    'send_to': 'AW-17854641886/2TJhCJiz--cbEN7t4MFC'
+                });
+            }
+
             return { status: "submitted" };
         } catch (error) {
             submitError.value =
