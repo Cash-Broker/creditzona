@@ -31,7 +31,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -68,7 +68,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -104,7 +104,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -151,7 +151,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -211,7 +211,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -230,7 +230,7 @@ class AttachedLeadEditActionsTest extends TestCase
                 'guarantors' => [[
                     'status' => null,
                     'full_name' => 'Антон Колев',
-                    'egn' => '9001010002',
+                    'egn' => '9002010004',
                     'phone' => '0876997981',
                     'documents' => [],
                     'document_file_names' => [],
@@ -250,7 +250,7 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $guarantor = $lead->fresh()->guarantors()->first();
 
-        $this->assertSame('9001010002', $guarantor?->egn);
+        $this->assertSame('9002010004', $guarantor?->egn);
     }
 
     public function test_edit_attached_lead_save_prunes_guarantor_with_only_status_and_no_identity_fields(): void
@@ -269,7 +269,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -314,7 +314,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -333,7 +333,7 @@ class AttachedLeadEditActionsTest extends TestCase
                 'guarantors' => [[
                     'status' => null,
                     'full_name' => 'Мария Николова Георгиева',
-                    'egn' => '9001010003',
+                    'egn' => '9003010009',
                     'phone' => '0876997981',
                     'documents' => [],
                     'document_file_names' => [],
@@ -353,7 +353,7 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $guarantor = $lead->fresh()->guarantors()->first();
 
-        $this->assertSame('9001010003', $guarantor?->egn);
+        $this->assertSame('9003010009', $guarantor?->egn);
     }
 
     public function test_edit_attached_lead_save_appends_new_guarantor_note_to_history(): void
@@ -373,7 +373,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -423,7 +423,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -481,7 +481,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -534,7 +534,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'first_name' => 'Иван',
             'middle_name' => 'Петров',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',

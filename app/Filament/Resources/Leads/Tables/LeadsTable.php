@@ -9,6 +9,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Services\LeadService;
 use App\Support\Notes\NoteHistory;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -223,6 +224,22 @@ class LeadsTable
                 $isReturnedToMeResource ? ReturnedToMeLeadResource::makeArchiveAction() : null,
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('delete')
+                    ->label('Изтрий')
+                    ->icon('heroicon-m-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Изтриване на заявка')
+                    ->modalDescription('Сигурни ли сте? Заявката и всички свързани данни ще бъдат изтрити безвъзвратно.')
+                    ->visible(fn (): bool => auth()->user() instanceof User && auth()->user()->isAdmin())
+                    ->action(function (Lead $record): void {
+                        $record->delete();
+
+                        Notification::make()
+                            ->title('Заявката е изтрита.')
+                            ->success()
+                            ->send();
+                    }),
             ])))
             ->recordUrl(
                 fn (Lead $record): string => $resourceClass::getUrl('view', ['record' => $record]),
@@ -231,7 +248,25 @@ class LeadsTable
             ->defaultSort(fn (Builder $query): Builder => $query
                 ->orderByDesc($defaultSortColumn)
                 ->orderByDesc('id'))
-            ->toolbarActions([
+            ->toolbarActions(array_values(array_filter([
+                auth()->user() instanceof User && auth()->user()->isAdmin()
+                    ? BulkAction::make('delete_selected')
+                        ->label('Изтрий избраните')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Изтриване на избраните заявки')
+                        ->modalDescription('Сигурни ли сте? Всички избрани заявки и свързаните им данни ще бъдат изтрити безвъзвратно.')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records): void {
+                            $records->each(fn (Lead $lead) => $lead->delete());
+
+                            Notification::make()
+                                ->title('Избраните заявки са изтрити.')
+                                ->success()
+                                ->send();
+                        })
+                    : null,
                 BulkAction::make('mark_selected_for_later')
                     ->label('Маркирай за по-късно')
                     ->icon('heroicon-m-clock')
@@ -266,6 +301,6 @@ class LeadsTable
                             ->send();
                     }),
 
-            ]);
+            ])));
     }
 }
