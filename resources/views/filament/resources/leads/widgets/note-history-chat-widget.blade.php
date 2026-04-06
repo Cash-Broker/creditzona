@@ -13,7 +13,7 @@
             @else
                 <div class="space-y-3">
                     @foreach ($messages as $msg)
-                        <div class="flex {{ $msg['isMe'] ? 'justify-end' : '' }}">
+                        <div class="group flex {{ $msg['isMe'] ? 'justify-end' : '' }}">
                             <div class="flex max-w-[80%] items-end gap-2 {{ $msg['isMe'] ? 'flex-row-reverse' : '' }}">
                                 {{-- Avatar --}}
                                 <div @class([
