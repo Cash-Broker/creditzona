@@ -599,45 +599,7 @@ class LeadForm
      */
     public static function captureGuarantorNoteDrafts(array $rawState): array
     {
-        $guarantors = $rawState['guarantors'] ?? [];
-
-        if (! is_array($guarantors)) {
-            return [];
-        }
-
-        $drafts = [];
-
-        foreach ($guarantors as $guarantor) {
-            if (! is_array($guarantor)) {
-                continue;
-            }
-
-            $existingNotes = is_string($guarantor['existing_internal_notes'] ?? null)
-                ? $guarantor['existing_internal_notes']
-                : null;
-
-            $entries = is_array($guarantor['internal_note_entries'] ?? null)
-                ? $guarantor['internal_note_entries']
-                : NoteHistory::formEntries($existingNotes);
-
-            $note = NoteHistory::normalize(
-                is_string($guarantor['new_internal_note'] ?? null) ? $guarantor['new_internal_note'] : null,
-            );
-
-            if ($entries === [] && $note === null) {
-                continue;
-            }
-
-            $drafts[] = [
-                'id' => isset($guarantor['id']) ? (int) $guarantor['id'] : null,
-                'fingerprint' => static::buildGuarantorFingerprint($guarantor),
-                'existing_notes' => $existingNotes,
-                'entries' => $entries,
-                'note' => $note,
-            ];
-        }
-
-        return $drafts;
+        return [];
     }
 
     /**
