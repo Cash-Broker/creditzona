@@ -23,19 +23,20 @@ class LeadSubmissionTest extends TestCase
         Storage::fake('local');
     }
 
-    public function test_public_submission_rejects_legacy_consumer_credit_type(): void
+    public function test_public_submission_accepts_consumer_credit_type_without_guarantor(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
             'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
             'guarantors' => [],
         ]));
 
-        $response
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['credit_type']);
+        $response->assertSuccessful();
 
-        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('leads', 1);
         $this->assertDatabaseCount('lead_guarantors', 0);
+        $this->assertDatabaseHas('leads', [
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+        ]);
     }
 
     public function test_successful_submission_sends_confirmation_email_to_client_without_queueing(): void

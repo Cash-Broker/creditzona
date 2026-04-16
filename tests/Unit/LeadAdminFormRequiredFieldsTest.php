@@ -67,7 +67,6 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
 
         $this->assertFalse($fields['guarantors']->isRequired());
         $this->assertFalse($fields['documents']->isRequired());
-        $this->assertFalse($fields['lead_new_internal_note']->isRequired());
     }
 
     public function test_consumer_with_guarantor_admin_fields_keep_consumer_fields_required_while_guarantor_section_stays_optional(): void

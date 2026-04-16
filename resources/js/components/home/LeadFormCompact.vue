@@ -124,6 +124,7 @@
                             @blur="handleBlur('credit_type')"
                         >
                             <option value="" disabled>Изберете</option>
+                            <option value="consumer">Потребителски кредит</option>
                             <option value="consumer_with_guarantor">
                                 Финансиране с поръчител
                             </option>
@@ -554,6 +555,56 @@
                 </div>
             </div>
         </transition>
+
+        <transition name="guard-pop">
+            <div
+                v-if="showConsumerUpsell"
+                class="guard-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="consumer-upsell-title"
+            >
+                <div
+                    class="guard-backdrop"
+                    @click="showConsumerUpsell = false"
+                ></div>
+
+                <div class="guard-dialog">
+                    <div class="guard-grid" aria-hidden="true"></div>
+                    <div class="guard-glow guard-glow-primary"></div>
+                    <div class="guard-glow guard-glow-secondary"></div>
+
+                    <div class="guard-pill">ВАЖНО</div>
+                    <h3 id="consumer-upsell-title" class="guard-title">
+                        Увеличи шанса си!
+                    </h3>
+
+                    <p class="guard-note">
+                        Добавянето на поръчител значително увеличава шансовете за
+                        одобрение на вашия кредит. Искате ли да добавите поръчител?
+                    </p>
+
+                    <div class="guard-actions">
+                        <button
+                            type="button"
+                            class="guard-secondary"
+                            :disabled="loading"
+                            @click="declineGuarantorUpsell"
+                        >
+                            <span v-if="!loading">Не, изпрати без поръчител</span>
+                            <span v-else>Изпращане...</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="guard-primary"
+                            @click="acceptGuarantorUpsell"
+                        >
+                            Да, добавям поръчител
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
     </div>
 </template>
 
@@ -575,6 +626,7 @@ const props = defineProps({
 
 const successPanel = ref(null);
 const showGuarantorGuard = ref(false);
+const showConsumerUpsell = ref(false);
 const leadConsentDocument = getInitialData("leadConsentDocument", {
     name: "Съгласие за обработка на лични данни",
     url: "/documents/legal/lead-personal-data-consent-v1.pdf",
@@ -616,6 +668,16 @@ async function handleSubmit() {
         return;
     }
 
+    if (form.credit_type === "consumer") {
+        if (!validateForm()) {
+            return;
+        }
+
+        showConsumerUpsell.value = true;
+
+        return;
+    }
+
     await submitForm();
 }
 
@@ -630,6 +692,16 @@ function closeGuarantorGuard() {
 async function confirmGuarantorGuard() {
     await submitForm();
     showGuarantorGuard.value = false;
+}
+
+function acceptGuarantorUpsell() {
+    form.credit_type = "consumer_with_guarantor";
+    showConsumerUpsell.value = false;
+}
+
+async function declineGuarantorUpsell() {
+    showConsumerUpsell.value = false;
+    await submitForm();
 }
 
 watch(success, async (isSuccess) => {
@@ -648,6 +720,12 @@ watch(success, async (isSuccess) => {
 watch(isConsumerWithGuarantor, (value) => {
     if (!value) {
         showGuarantorGuard.value = false;
+    }
+});
+
+watch(() => form.credit_type, (value) => {
+    if (value !== "consumer") {
+        showConsumerUpsell.value = false;
     }
 });
 </script>
