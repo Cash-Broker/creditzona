@@ -154,6 +154,38 @@ class LeadService
         });
     }
 
+    public function reassignLead(Lead $lead, User $newOperator, User $actor): Lead
+    {
+        if (! $actor->isAdmin() && $actor->id !== $lead->assigned_user_id) {
+            throw new AuthorizationException('Нямате достъп да прехвърлите тази заявка.');
+        }
+
+        if ($newOperator->role !== User::ROLE_OPERATOR) {
+            throw new DomainException('Заявката може да бъде прехвърлена само към оператор.');
+        }
+
+        if ($newOperator->isAvailableForLeadAssignment()) {
+            throw new DomainException('Заявката може да бъде прехвърлена само към офлайн оператор.');
+        }
+
+        if ($newOperator->id === $lead->assigned_user_id) {
+            throw new DomainException('Заявката вече е зачислена на този оператор.');
+        }
+
+        return DB::transaction(function () use ($lead, $newOperator): Lead {
+            $lead->forceFill([
+                'assigned_user_id' => $newOperator->id,
+            ])->save();
+
+            $lead = $lead->refresh();
+
+            $this->deleteLeadNotifications($lead);
+            $this->sendAssignedLeadNotification($lead);
+
+            return $lead;
+        });
+    }
+
     public function returnAttachedLeadToPrimary(Lead $lead, User $actor): Lead
     {
         return $this->returnLead($lead, $actor);

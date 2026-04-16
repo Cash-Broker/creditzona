@@ -32,6 +32,7 @@ class LeadGuarantor extends Model implements HasRichContent
         'job_title',
         'salary',
         'marital_status',
+        'marital_status_note',
         'children_under_18',
         'salary_bank',
         'credit_bank',

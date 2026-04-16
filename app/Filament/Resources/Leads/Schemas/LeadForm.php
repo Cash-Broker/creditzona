@@ -17,6 +17,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Livewire as LivewireComponent;
 use Filament\Schemas\Components\Section;
@@ -338,6 +339,13 @@ class LeadForm
                         ->nullable()
                         ->native(false)
                         ->columnSpan(2),
+                    Textarea::make('marital_status_note')
+                        ->label('Бележка към семейното положение')
+                        ->nullable()
+                        ->rows(2)
+                        ->autosize()
+                        ->maxLength(500)
+                        ->columnSpan(4),
                     Placeholder::make('privacy_consent_declaration_download')
                         ->label('Декларация за съгласие')
                         ->content(fn (?LeadGuarantor $record): HtmlString => static::renderGuarantorPrivacyConsentAction($record))

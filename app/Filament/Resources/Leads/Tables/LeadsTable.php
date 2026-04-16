@@ -9,16 +9,20 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Services\LeadService;
 use App\Support\Notes\NoteHistory;
+use DomainException;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\CheckboxColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -224,6 +228,7 @@ class LeadsTable
                 $isReturnedToMeResource ? ReturnedToMeLeadResource::makeArchiveAction() : null,
                 ViewAction::make(),
                 EditAction::make(),
+                static::makeReassignLeadAction(),
                 Action::make('delete')
                     ->label('Изтрий')
                     ->icon('heroicon-m-trash')
@@ -302,5 +307,74 @@ class LeadsTable
                     }),
 
             ])));
+    }
+
+    private static function makeReassignLeadAction(): Action
+    {
+        return Action::make('reassign_lead')
+            ->label('Смени служител')
+            ->icon(Heroicon::OutlinedArrowsRightLeft)
+            ->color('warning')
+            ->modalHeading('Прехвърляне на заявката')
+            ->modalDescription('Изберете офлайн служител, към когото ще бъде прехвърлена заявката.')
+            ->modalSubmitActionLabel('Прехвърли')
+            ->visible(function (Lead $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && ($user->isAdmin() || $user->id === $record->assigned_user_id);
+            })
+            ->schema(fn (Lead $record): array => [
+                Select::make('new_operator_id')
+                    ->label('Нов служител')
+                    ->options(fn (): array => User::query()
+                        ->where('role', User::ROLE_OPERATOR)
+                        ->where('is_available_for_lead_assignment', false)
+                        ->when(
+                            $record->assigned_user_id !== null,
+                            fn (Builder $query): Builder => $query
+                                ->where('id', '!=', $record->assigned_user_id),
+                        )
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->required()
+                    ->searchable()
+                    ->native(false),
+            ])
+            ->action(function (array $data, Lead $record): void {
+                $actor = auth()->user();
+
+                if (! $actor instanceof User) {
+                    return;
+                }
+
+                $newOperator = User::query()->find($data['new_operator_id'] ?? null);
+
+                if (! $newOperator instanceof User) {
+                    Notification::make()
+                        ->title('Изберете служител.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                try {
+                    app(LeadService::class)->reassignLead($record, $newOperator, $actor);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title(sprintf('Заявката е прехвърлена към %s.', $newOperator->name))
+                    ->success()
+                    ->send();
+            });
     }
 }

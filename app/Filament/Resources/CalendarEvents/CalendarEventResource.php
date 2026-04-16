@@ -8,7 +8,6 @@ use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
-use UnitEnum;
 
 class CalendarEventResource extends Resource
 {
@@ -16,11 +15,9 @@ class CalendarEventResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Организация';
-
     protected static ?string $navigationLabel = 'Календар';
 
-    protected static ?int $navigationSort = 1;
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $modelLabel = 'събитие';
 
