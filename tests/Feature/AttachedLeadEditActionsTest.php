@@ -135,6 +135,39 @@ class AttachedLeadEditActionsTest extends TestCase
         $this->assertNotNull($lead->returned_to_primary_at);
     }
 
+    public function test_primary_assignment_options_include_offline_operators_for_manual_reassignment(): void
+    {
+        User::factory()->create([
+            'name' => 'Анна',
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'is_available_for_lead_assignment' => true,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Елена',
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+            'is_available_for_lead_assignment' => true,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Красимира',
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'krasimira@creditzona.test',
+            'is_available_for_lead_assignment' => false,
+        ]);
+
+        $options = \App\Filament\Resources\Leads\LeadResource::getPrimaryAssignmentOptions();
+
+        $this->assertCount(3, $options);
+        $labels = array_values($options);
+
+        $this->assertContains('Анна', $labels);
+        $this->assertContains('Елена', $labels);
+        $this->assertContains('Красимира (офлайн)', $labels);
+    }
+
     public function test_edit_attached_lead_save_and_return_works_when_primary_operator_is_offline(): void
     {
         $admin = User::factory()->create([

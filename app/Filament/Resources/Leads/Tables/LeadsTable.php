@@ -316,7 +316,7 @@ class LeadsTable
             ->icon(Heroicon::OutlinedArrowsRightLeft)
             ->color('warning')
             ->modalHeading('Прехвърляне на заявката')
-            ->modalDescription('Изберете офлайн служител, към когото ще бъде прехвърлена заявката.')
+            ->modalDescription('Изберете служител, към когото ще бъде прехвърлена заявката.')
             ->modalSubmitActionLabel('Прехвърли')
             ->visible(function (Lead $record): bool {
                 $user = auth()->user();
@@ -327,17 +327,15 @@ class LeadsTable
             ->schema(fn (Lead $record): array => [
                 Select::make('new_operator_id')
                     ->label('Нов служител')
-                    ->options(fn (): array => User::query()
-                        ->where('role', User::ROLE_OPERATOR)
-                        ->where('is_available_for_lead_assignment', false)
-                        ->when(
-                            $record->assigned_user_id !== null,
-                            fn (Builder $query): Builder => $query
-                                ->where('id', '!=', $record->assigned_user_id),
-                        )
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all())
+                    ->options(function () use ($record): array {
+                        $options = LeadResource::getPrimaryAssignmentOptions();
+
+                        if ($record->assigned_user_id !== null) {
+                            unset($options[$record->assigned_user_id]);
+                        }
+
+                        return $options;
+                    })
                     ->required()
                     ->searchable()
                     ->native(false),

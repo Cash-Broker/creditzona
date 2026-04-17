@@ -164,10 +164,6 @@ class LeadService
             throw new DomainException('Заявката може да бъде прехвърлена само към оператор.');
         }
 
-        if ($newOperator->isAvailableForLeadAssignment()) {
-            throw new DomainException('Заявката може да бъде прехвърлена само към офлайн оператор.');
-        }
-
         if ($newOperator->id === $lead->assigned_user_id) {
             throw new DomainException('Заявката вече е зачислена на този оператор.');
         }

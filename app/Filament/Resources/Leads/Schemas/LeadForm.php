@@ -347,7 +347,6 @@ class LeadForm
                         ->validationMessages([
                             'required' => 'Посочете свързаността с кредитоискателя.',
                         ])
-                        ->extraFieldWrapperAttributes(['class' => 'lead-guarantor-relationship-field'])
                         ->columnSpan(2),
                     Placeholder::make('privacy_consent_declaration_download')
                         ->label('Декларация за съгласие')
