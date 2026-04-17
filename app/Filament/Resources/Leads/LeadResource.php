@@ -143,13 +143,30 @@ class LeadResource extends Resource
         return LeadGuarantor::getStatusLabel($state);
     }
 
-    public static function getPrimaryAssignmentOptions(): array
+    public static function getPrimaryAssignmentOptions(?int $includeUserId = null): array
     {
-        return User::query()
+        $options = User::query()
             ->eligibleForLeadPrimaryAssignment()
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();
+
+        if ($includeUserId !== null && ! array_key_exists($includeUserId, $options)) {
+            $currentAssignee = User::query()->find($includeUserId);
+
+            if ($currentAssignee instanceof User) {
+                $label = $currentAssignee->name;
+
+                if (! $currentAssignee->isAvailableForLeadAssignment()) {
+                    $label .= ' (офлайн)';
+                }
+
+                $options[$currentAssignee->id] = $label;
+                asort($options, SORT_FLAG_CASE | SORT_NATURAL);
+            }
+        }
+
+        return $options;
     }
 
     public static function getAdditionalAssignmentOptions(): array

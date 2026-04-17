@@ -17,7 +17,6 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Livewire as LivewireComponent;
 use Filament\Schemas\Components\Section;
@@ -68,7 +67,7 @@ class LeadForm
                     ->schema([
                         Select::make('assigned_user_id')
                             ->label('Основен служител')
-                            ->options(LeadResource::getPrimaryAssignmentOptions())
+                            ->options(fn (?Lead $record): array => LeadResource::getPrimaryAssignmentOptions($record?->assigned_user_id))
                             ->required()
                             ->searchable()
                             ->preload()
@@ -339,13 +338,17 @@ class LeadForm
                         ->nullable()
                         ->native(false)
                         ->columnSpan(2),
-                    Textarea::make('marital_status_note')
-                        ->label('Бележка към семейното положение')
-                        ->nullable()
-                        ->rows(2)
-                        ->autosize()
-                        ->maxLength(500)
-                        ->columnSpan(4),
+                    TextInput::make('marital_status_note')
+                        ->label('Свързаност с кредитоискателя')
+                        ->maxLength(120)
+                        ->required(fn (Get $get): bool => filled($get('marital_status'))
+                            && static::guarantorRequiresIdentityFields($get))
+                        ->markAsRequired()
+                        ->validationMessages([
+                            'required' => 'Посочете свързаността с кредитоискателя.',
+                        ])
+                        ->extraFieldWrapperAttributes(['class' => 'lead-guarantor-relationship-field'])
+                        ->columnSpan(2),
                     Placeholder::make('privacy_consent_declaration_download')
                         ->label('Декларация за съгласие')
                         ->content(fn (?LeadGuarantor $record): HtmlString => static::renderGuarantorPrivacyConsentAction($record))

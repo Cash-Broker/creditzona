@@ -135,6 +135,50 @@ class AttachedLeadEditActionsTest extends TestCase
         $this->assertNotNull($lead->returned_to_primary_at);
     }
 
+    public function test_edit_attached_lead_save_and_return_works_when_primary_operator_is_offline(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $offlinePrimary = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'is_available_for_lead_assignment' => false,
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010000',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $offlinePrimary->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->call('saveAndReturn')
+            ->assertHasNoFormErrors()
+            ->assertRedirect(AttachedLeadResource::getUrl('index'));
+
+        $lead->refresh();
+
+        $this->assertSame($offlinePrimary->id, $lead->assigned_user_id);
+        $this->assertNull($lead->additional_user_id);
+        $this->assertSame($admin->id, $lead->returned_additional_user_id);
+        $this->assertNotNull($lead->returned_to_primary_at);
+    }
+
     public function test_edit_attached_lead_save_prunes_effectively_empty_guarantor_rows(): void
     {
         $admin = User::factory()->create([
