@@ -47,10 +47,10 @@ class CalendarEventForm
                         ->seconds(false)
                         ->native(false),
                     DateTimePicker::make('ends_at')
-                        ->label('Край')
-                        ->required()
+                        ->label('Край (по избор)')
                         ->seconds(false)
-                        ->native(false),
+                        ->native(false)
+                        ->after('starts_at'),
                     $canManageUsers
                         ? Select::make('user_id')
                             ->label('Потребител')

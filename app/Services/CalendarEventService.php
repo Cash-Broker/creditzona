@@ -43,7 +43,7 @@ class CalendarEventService
      */
     public function createEvent(array $data, User $actor): CalendarEvent
     {
-        [$startsAt, $endsAt] = $this->normalizeDateRange($data);
+        [$startsAt, $endsAt, $allDay] = $this->normalizeDateRange($data);
         $ownerId = $this->resolveOwnerId($data, $actor);
 
         $event = new CalendarEvent;
@@ -53,7 +53,7 @@ class CalendarEventService
             'location' => $this->nullableTrim($data['location'] ?? null),
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'all_day' => (bool) ($data['all_day'] ?? false),
+            'all_day' => $allDay,
             'event_type' => $data['event_type'] ?? CalendarEvent::TYPE_APPOINTMENT,
             'status' => $data['status'] ?? CalendarEvent::STATUS_SCHEDULED,
             'color' => $this->nullableTrim($data['color'] ?? null),
@@ -73,13 +73,13 @@ class CalendarEventService
      */
     public function updateEvent(CalendarEvent $event, array $data, User $actor): CalendarEvent
     {
-        [$startsAt, $endsAt] = $this->normalizeDateRange($data);
+        [$startsAt, $endsAt, $allDay] = $this->normalizeDateRange($data);
         $ownerId = $this->resolveOwnerId($data + ['user_id' => $event->user_id], $actor);
         $reminderMinutes = $this->normalizeReminderMinutes($data['reminder_minutes_before'] ?? $event->reminder_minutes_before);
         $previousUserId = $event->user_id;
         $shouldResetReminderState = $event->starts_at?->ne($startsAt)
             || $event->ends_at?->ne($endsAt)
-            || ((bool) $event->all_day !== (bool) ($data['all_day'] ?? $event->all_day))
+            || ((bool) $event->all_day !== $allDay)
             || ($event->reminder_minutes_before !== $reminderMinutes)
             || ($previousUserId !== $ownerId)
             || (($data['status'] ?? $event->status) !== CalendarEvent::STATUS_SCHEDULED);
@@ -90,7 +90,7 @@ class CalendarEventService
             'location' => $this->nullableTrim($data['location'] ?? $event->location),
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'all_day' => (bool) ($data['all_day'] ?? $event->all_day),
+            'all_day' => $allDay,
             'event_type' => $data['event_type'] ?? $event->event_type,
             'status' => $data['status'] ?? $event->status,
             'color' => $this->nullableTrim($data['color'] ?? $event->color),
@@ -112,15 +112,15 @@ class CalendarEventService
      */
     public function updateTiming(CalendarEvent $event, array $data, User $actor): CalendarEvent
     {
-        [$startsAt, $endsAt] = $this->normalizeDateRange($data);
+        [$startsAt, $endsAt, $allDay] = $this->normalizeDateRange($data);
         $shouldResetReminderState = $event->starts_at?->ne($startsAt)
             || $event->ends_at?->ne($endsAt)
-            || ((bool) $event->all_day !== (bool) ($data['all_day'] ?? $event->all_day));
+            || ((bool) $event->all_day !== $allDay);
 
         $event->forceFill([
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'all_day' => (bool) ($data['all_day'] ?? $event->all_day),
+            'all_day' => $allDay,
             'updated_by_user_id' => $actor->id,
         ])->save();
 
@@ -139,7 +139,7 @@ class CalendarEventService
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{0: Carbon, 1: Carbon}
+     * @return array{0: Carbon, 1: Carbon, 2: bool}
      */
     private function normalizeDateRange(array $data): array
     {
@@ -150,6 +150,12 @@ class CalendarEventService
             ? Carbon::parse((string) $data['ends_at'], $timezone)
             : null;
         $allDay = (bool) ($data['all_day'] ?? false);
+
+        // If the user set a specific start time (not midnight), treat as a timed event
+        // even if the "all day" toggle is still on from a previous state.
+        if ($allDay && $startsAt->format('H:i:s') !== '00:00:00') {
+            $allDay = false;
+        }
 
         if ($allDay) {
             $startsAt = $startsAt->copy()->startOfDay();
@@ -168,18 +174,16 @@ class CalendarEventService
                 $endsAt = $startsAt->copy()->endOfDay();
             }
 
-            return [$startsAt, $endsAt];
+            return [$startsAt, $endsAt, $allDay];
         }
 
-        $endsAt ??= $startsAt->copy()->addHour();
-
-        if ($endsAt->lte($startsAt)) {
-            throw ValidationException::withMessages([
-                'ends_at' => 'Краят на събитието трябва да е след началото.',
-            ]);
+        // Timed event: end time is optional. If missing or invalid, auto-fill with
+        // starts + 1 hour so the range query still locates the event.
+        if ($endsAt === null || $endsAt->lte($startsAt)) {
+            $endsAt = $startsAt->copy()->addHour();
         }
 
-        return [$startsAt, $endsAt];
+        return [$startsAt, $endsAt, $allDay];
     }
 
     /**

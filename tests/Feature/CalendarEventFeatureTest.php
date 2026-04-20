@@ -146,4 +146,88 @@ class CalendarEventFeatureTest extends TestCase
         $this->assertSame('00:00:00', $event->starts_at?->format('H:i:s'));
         $this->assertSame('23:59:59', $event->ends_at?->format('H:i:s'));
     }
+
+    public function test_service_demotes_event_to_timed_when_start_has_specific_time(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $service = app(CalendarEventService::class);
+
+        $event = $service->createEvent([
+            'title' => 'Среща с клиент',
+            'starts_at' => '2026-04-21T14:30:00+03:00',
+            'ends_at' => null,
+            'all_day' => true,
+            'event_type' => CalendarEvent::TYPE_APPOINTMENT,
+            'status' => CalendarEvent::STATUS_SCHEDULED,
+            'user_id' => $admin->id,
+        ], $admin);
+
+        $this->assertFalse($event->all_day);
+        $this->assertSame('14:30:00', $event->starts_at?->format('H:i:s'));
+        $this->assertNotNull($event->ends_at);
+        $this->assertSame('15:30:00', $event->ends_at?->format('H:i:s'));
+    }
+
+    public function test_service_accepts_timed_event_without_explicit_end(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $service = app(CalendarEventService::class);
+
+        $event = $service->createEvent([
+            'title' => 'Бърза среща',
+            'starts_at' => '2026-04-22T10:00:00+03:00',
+            'all_day' => false,
+            'event_type' => CalendarEvent::TYPE_APPOINTMENT,
+            'status' => CalendarEvent::STATUS_SCHEDULED,
+            'user_id' => $admin->id,
+        ], $admin);
+
+        $this->assertFalse($event->all_day);
+        $this->assertSame('10:00:00', $event->starts_at?->format('H:i:s'));
+        $this->assertSame('11:00:00', $event->ends_at?->format('H:i:s'));
+    }
+
+    public function test_service_demotes_all_day_to_timed_on_update_when_time_is_set(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $service = app(CalendarEventService::class);
+
+        $event = $service->createEvent([
+            'title' => 'Ивелина Димитрова - Варна банка',
+            'starts_at' => '2026-04-21T00:00:00+03:00',
+            'ends_at' => '2026-04-22T00:00:00+03:00',
+            'all_day' => true,
+            'event_type' => CalendarEvent::TYPE_APPOINTMENT,
+            'status' => CalendarEvent::STATUS_SCHEDULED,
+            'user_id' => $admin->id,
+        ], $admin);
+
+        $this->assertTrue($event->all_day);
+
+        $updated = $service->updateEvent($event, [
+            'title' => $event->title,
+            'starts_at' => '2026-04-21T09:30:00+03:00',
+            'ends_at' => null,
+            'all_day' => true,
+            'event_type' => CalendarEvent::TYPE_APPOINTMENT,
+            'status' => CalendarEvent::STATUS_SCHEDULED,
+            'user_id' => $admin->id,
+        ], $admin);
+
+        $this->assertFalse($updated->all_day);
+        $this->assertSame('09:30:00', $updated->starts_at?->format('H:i:s'));
+        $this->assertSame('10:30:00', $updated->ends_at?->format('H:i:s'));
+    }
 }
