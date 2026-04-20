@@ -312,3 +312,63 @@
 .fi-ta-record.lead-record-later.fi-clickable:not(.fi-selected):hover {
     background-color: rgba(51, 65, 85, 0.14);
 }
+
+.fi-admin-calendar-topbar-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: 1rem;
+    padding: 0.55rem 1.4rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+}
+
+.fi-admin-calendar-topbar-link:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(220, 38, 38, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+}
+
+.fi-admin-calendar-topbar-link:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.55), 0 8px 20px rgba(220, 38, 38, 0.35);
+}
+
+.fi-admin-calendar-topbar-link-active {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    box-shadow: 0 6px 14px rgba(153, 27, 27, 0.55), inset 0 2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.fi-admin-calendar-topbar-link-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+    flex-shrink: 0;
+}
+
+.fi-admin-calendar-topbar-link-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .fi-admin-calendar-topbar-link {
+        margin-left: 0.5rem;
+        padding: 0.45rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .fi-admin-calendar-topbar-link-icon {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+}

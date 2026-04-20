@@ -75,7 +75,7 @@ class LeadListPollingTest extends TestCase
             'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',

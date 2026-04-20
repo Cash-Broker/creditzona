@@ -147,6 +147,10 @@ class LeadInfolist
                                                 ]),
                                             ])
                                             ->columnStart(3),
+                                        TextEntry::make('privacy_consent_accepted_at')
+                                            ->label('Съгласие дадено на')
+                                            ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                                            ->placeholder('Няма'),
                                         TextEntry::make('phone')
                                             ->label('Телефон')
                                             ->placeholder('Няма'),

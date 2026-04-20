@@ -9,15 +9,20 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Services\LeadService;
 use App\Support\Notes\NoteHistory;
+use DomainException;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\CheckboxColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -223,6 +228,23 @@ class LeadsTable
                 $isReturnedToMeResource ? ReturnedToMeLeadResource::makeArchiveAction() : null,
                 ViewAction::make(),
                 EditAction::make(),
+                static::makeReassignLeadAction(),
+                Action::make('delete')
+                    ->label('Изтрий')
+                    ->icon('heroicon-m-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Изтриване на заявка')
+                    ->modalDescription('Сигурни ли сте? Заявката и всички свързани данни ще бъдат изтрити безвъзвратно.')
+                    ->visible(fn (): bool => auth()->user() instanceof User && auth()->user()->isAdmin())
+                    ->action(function (Lead $record): void {
+                        $record->delete();
+
+                        Notification::make()
+                            ->title('Заявката е изтрита.')
+                            ->success()
+                            ->send();
+                    }),
             ])))
             ->recordUrl(
                 fn (Lead $record): string => $resourceClass::getUrl('view', ['record' => $record]),
@@ -231,7 +253,25 @@ class LeadsTable
             ->defaultSort(fn (Builder $query): Builder => $query
                 ->orderByDesc($defaultSortColumn)
                 ->orderByDesc('id'))
-            ->toolbarActions([
+            ->toolbarActions(array_values(array_filter([
+                auth()->user() instanceof User && auth()->user()->isAdmin()
+                    ? BulkAction::make('delete_selected')
+                        ->label('Изтрий избраните')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Изтриване на избраните заявки')
+                        ->modalDescription('Сигурни ли сте? Всички избрани заявки и свързаните им данни ще бъдат изтрити безвъзвратно.')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records): void {
+                            $records->each(fn (Lead $lead) => $lead->delete());
+
+                            Notification::make()
+                                ->title('Избраните заявки са изтрити.')
+                                ->success()
+                                ->send();
+                        })
+                    : null,
                 BulkAction::make('mark_selected_for_later')
                     ->label('Маркирай за по-късно')
                     ->icon('heroicon-m-clock')
@@ -266,6 +306,73 @@ class LeadsTable
                             ->send();
                     }),
 
-            ]);
+            ])));
+    }
+
+    private static function makeReassignLeadAction(): Action
+    {
+        return Action::make('reassign_lead')
+            ->label('Смени служител')
+            ->icon(Heroicon::OutlinedArrowsRightLeft)
+            ->color('warning')
+            ->modalHeading('Прехвърляне на заявката')
+            ->modalDescription('Изберете служител, към когото ще бъде прехвърлена заявката.')
+            ->modalSubmitActionLabel('Прехвърли')
+            ->visible(function (Lead $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && ($user->isAdmin() || $user->id === $record->assigned_user_id);
+            })
+            ->schema(fn (Lead $record): array => [
+                Select::make('new_operator_id')
+                    ->label('Нов служител')
+                    ->options(function () use ($record): array {
+                        $options = LeadResource::getPrimaryAssignmentOptions();
+
+                        if ($record->assigned_user_id !== null) {
+                            unset($options[$record->assigned_user_id]);
+                        }
+
+                        return $options;
+                    })
+                    ->required()
+                    ->searchable()
+                    ->native(false),
+            ])
+            ->action(function (array $data, Lead $record): void {
+                $actor = auth()->user();
+
+                if (! $actor instanceof User) {
+                    return;
+                }
+
+                $newOperator = User::query()->find($data['new_operator_id'] ?? null);
+
+                if (! $newOperator instanceof User) {
+                    Notification::make()
+                        ->title('Изберете служител.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                try {
+                    app(LeadService::class)->reassignLead($record, $newOperator, $actor);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title(sprintf('Заявката е прехвърлена към %s.', $newOperator->name))
+                    ->success()
+                    ->send();
+            });
     }
 }

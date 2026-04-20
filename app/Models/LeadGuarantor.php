@@ -32,6 +32,7 @@ class LeadGuarantor extends Model implements HasRichContent
         'job_title',
         'salary',
         'marital_status',
+        'marital_status_note',
         'children_under_18',
         'salary_bank',
         'credit_bank',
@@ -42,6 +43,7 @@ class LeadGuarantor extends Model implements HasRichContent
         'document_file_names',
         'internal_notes',
         'status',
+        'privacy_consent_accepted_at',
     ];
 
     public static function getStatusOptions(): array
@@ -183,6 +185,7 @@ class LeadGuarantor extends Model implements HasRichContent
             'amount' => 'integer',
             'documents' => 'array',
             'document_file_names' => 'array',
+            'privacy_consent_accepted_at' => 'datetime',
         ];
     }
 

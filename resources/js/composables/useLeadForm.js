@@ -5,9 +5,10 @@ const amountDefault = 5500;
 const amountMax = 50000;
 const amountStep = 500;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const defaultCreditType = "consumer_with_guarantor";
+const defaultCreditType = "consumer";
 const allowedCreditTypes = new Set([
     defaultCreditType,
+    "consumer_with_guarantor",
     // "mortgage",
 ]);
 const allowedPropertyTypes = new Set(["house", "apartment"]);
@@ -616,6 +617,12 @@ export function useLeadForm(options = {}) {
 
             success.value = true;
             resetForm();
+
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'conversion', {
+                    'send_to': 'AW-17854641886/2TJhCJiz--cbEN7t4MFC'
+                });
+            }
 
             return { status: "submitted" };
         } catch (error) {

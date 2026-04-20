@@ -31,7 +31,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -68,7 +68,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -104,7 +104,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -135,6 +135,83 @@ class AttachedLeadEditActionsTest extends TestCase
         $this->assertNotNull($lead->returned_to_primary_at);
     }
 
+    public function test_primary_assignment_options_include_offline_operators_for_manual_reassignment(): void
+    {
+        User::factory()->create([
+            'name' => 'Анна',
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'is_available_for_lead_assignment' => true,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Елена',
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+            'is_available_for_lead_assignment' => true,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Красимира',
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'krasimira@creditzona.test',
+            'is_available_for_lead_assignment' => false,
+        ]);
+
+        $options = \App\Filament\Resources\Leads\LeadResource::getPrimaryAssignmentOptions();
+
+        $this->assertCount(3, $options);
+        $labels = array_values($options);
+
+        $this->assertContains('Анна', $labels);
+        $this->assertContains('Елена', $labels);
+        $this->assertContains('Красимира (офлайн)', $labels);
+    }
+
+    public function test_edit_attached_lead_save_and_return_works_when_primary_operator_is_offline(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $offlinePrimary = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+            'is_available_for_lead_assignment' => false,
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => 'consumer',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'egn' => '9001010000',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'sms',
+            'assigned_user_id' => $offlinePrimary->id,
+            'additional_user_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditAttachedLead::class, [
+            'record' => (string) $lead->getKey(),
+        ])
+            ->call('saveAndReturn')
+            ->assertHasNoFormErrors()
+            ->assertRedirect(AttachedLeadResource::getUrl('index'));
+
+        $lead->refresh();
+
+        $this->assertSame($offlinePrimary->id, $lead->assigned_user_id);
+        $this->assertNull($lead->additional_user_id);
+        $this->assertSame($admin->id, $lead->returned_additional_user_id);
+        $this->assertNotNull($lead->returned_to_primary_at);
+    }
+
     public function test_edit_attached_lead_save_prunes_effectively_empty_guarantor_rows(): void
     {
         $admin = User::factory()->create([
@@ -151,7 +228,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -211,7 +288,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -230,7 +307,7 @@ class AttachedLeadEditActionsTest extends TestCase
                 'guarantors' => [[
                     'status' => null,
                     'full_name' => 'Антон Колев',
-                    'egn' => '9001010002',
+                    'egn' => '9002010004',
                     'phone' => '0876997981',
                     'documents' => [],
                     'document_file_names' => [],
@@ -250,7 +327,7 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $guarantor = $lead->fresh()->guarantors()->first();
 
-        $this->assertSame('9001010002', $guarantor?->egn);
+        $this->assertSame('9002010004', $guarantor?->egn);
     }
 
     public function test_edit_attached_lead_save_prunes_guarantor_with_only_status_and_no_identity_fields(): void
@@ -269,7 +346,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -314,7 +391,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -333,7 +410,7 @@ class AttachedLeadEditActionsTest extends TestCase
                 'guarantors' => [[
                     'status' => null,
                     'full_name' => 'Мария Николова Георгиева',
-                    'egn' => '9001010003',
+                    'egn' => '9003010009',
                     'phone' => '0876997981',
                     'documents' => [],
                     'document_file_names' => [],
@@ -353,7 +430,7 @@ class AttachedLeadEditActionsTest extends TestCase
 
         $guarantor = $lead->fresh()->guarantors()->first();
 
-        $this->assertSame('9001010003', $guarantor?->egn);
+        $this->assertSame('9003010009', $guarantor?->egn);
     }
 
     public function test_edit_attached_lead_save_appends_new_guarantor_note_to_history(): void
@@ -373,7 +450,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -423,7 +500,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -481,7 +558,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'credit_type' => 'consumer',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
@@ -534,7 +611,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'first_name' => 'Иван',
             'middle_name' => 'Петров',
             'last_name' => 'Иванов',
-            'egn' => '9001010001',
+            'egn' => '9001010000',
             'phone' => '0888123456',
             'email' => 'ivan@example.com',
             'city' => 'Пловдив',
