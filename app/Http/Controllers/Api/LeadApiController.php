@@ -233,6 +233,36 @@ class LeadApiController extends Controller
         ]);
     }
 
+    public function reassign(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'assigned_user_id' => 'required|integer|exists:users,id',
+        ]);
+
+        $user = $request->user();
+
+        $lead = Lead::query()
+            ->visibleToUser($user)
+            ->findOrFail($id);
+
+        $newOperator = User::findOrFail($validated['assigned_user_id']);
+
+        $lead = $this->leadService->reassignLead($lead, $newOperator, $user);
+
+        $lead->load([
+            'assignedUser:id,name,email',
+            'additionalUser:id,name,email',
+            'returnedAdditionalUser:id,name',
+            'guarantors',
+            'messages.author:id,name',
+        ]);
+
+        return response()->json([
+            'data' => $this->formatLeadDetail($lead),
+            'message' => 'Заявката е прехвърлена.',
+        ]);
+    }
+
     public function privacyConsent(Request $request, int $id): StreamedResponse|JsonResponse
     {
         $lead = Lead::query()
