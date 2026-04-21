@@ -19,18 +19,12 @@ class NotificationService
 
     public function notifyNewLead(Lead $lead): array
     {
-        $lead->loadMissing('assignedUser');
-
-        if (! $lead->assignedUser instanceof User) {
-            return [];
-        }
-
         $name = $this->formatLeadName($lead);
         $amount = number_format((float) $lead->amount, 0, ',', ' ');
         $creditTypeLabel = Lead::getCreditTypeLabel($lead->credit_type);
 
-        return $this->sendToUser(
-            $lead->assignedUser,
+        return $this->sendToUsers(
+            $this->getStaffRecipients(),
             '🔔 Нова заявка за кредит!',
             "{$name} · {$amount} лв. · {$creditTypeLabel}",
             ['type' => 'new_lead', 'lead_id' => $lead->id],
@@ -39,18 +33,12 @@ class NotificationService
 
     public function notifyStatusChanged(Lead $lead, string $oldStatus, string $newStatus): array
     {
-        $lead->loadMissing('assignedUser');
-
-        if (! $lead->assignedUser instanceof User) {
-            return [];
-        }
-
         $name = $this->formatLeadName($lead);
         $oldLabel = LeadResource::getStatusLabel($oldStatus);
         $newLabel = LeadResource::getStatusLabel($newStatus);
 
-        return $this->sendToUser(
-            $lead->assignedUser,
+        return $this->sendToUsers(
+            $this->getStaffRecipients(),
             '📋 Статус обновен',
             "{$name}: {$oldLabel} → {$newLabel}",
             ['type' => 'status_changed', 'lead_id' => $lead->id],
@@ -59,16 +47,10 @@ class NotificationService
 
     public function notifyMarkedForLater(Lead $lead): array
     {
-        $lead->loadMissing('assignedUser');
-
-        if (! $lead->assignedUser instanceof User) {
-            return [];
-        }
-
         $name = $this->formatLeadName($lead);
 
-        return $this->sendToUser(
-            $lead->assignedUser,
+        return $this->sendToUsers(
+            $this->getStaffRecipients(),
             '⏰ Отложен lead',
             "{$name} е отложен за по-късно",
             ['type' => 'marked_for_later', 'lead_id' => $lead->id],
@@ -77,18 +59,23 @@ class NotificationService
 
     public function notifyNewContactMessage(ContactMessage $contactMessage): array
     {
-        $contactMessage->loadMissing('assignedUser');
-
-        if (! $contactMessage->assignedUser instanceof User) {
-            return [];
-        }
-
-        return $this->sendToUser(
-            $contactMessage->assignedUser,
+        return $this->sendToUsers(
+            $this->getStaffRecipients(),
             '💬 Ново съобщение',
             "{$contactMessage->full_name} · {$contactMessage->phone}",
             ['type' => 'new_contact_message', 'contact_message_id' => $contactMessage->id],
         );
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function getStaffRecipients(): Collection
+    {
+        return User::query()
+            ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_OPERATOR])
+            ->whereNotNull('expo_push_token')
+            ->get();
     }
 
     public function notifyCalendarReminder(CalendarEvent $event): array
