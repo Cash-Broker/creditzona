@@ -10,6 +10,7 @@ class LeadMessage extends Model
     protected $fillable = [
         'lead_id',
         'user_id',
+        'guarantor_id',
         'body',
     ];
 
@@ -21,5 +22,10 @@ class LeadMessage extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function guarantor(): BelongsTo
+    {
+        return $this->belongsTo(LeadGuarantor::class, 'guarantor_id');
     }
 }
