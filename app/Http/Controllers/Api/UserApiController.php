@@ -40,6 +40,7 @@ class UserApiController extends Controller
             'email' => $user->email,
             'role' => $user->role,
             'is_available' => (bool) $user->is_available_for_lead_assignment,
+            'can_be_primary' => $user->canBeLeadPrimaryAssignee(),
         ];
     }
 }
