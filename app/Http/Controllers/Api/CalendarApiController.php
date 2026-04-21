@@ -34,7 +34,6 @@ class CalendarApiController extends Controller
 
         $events = CalendarEvent::query()
             ->visibleToUser($user)
-            ->where('user_id', $user->id)
             ->with('user:id,name')
             ->where('starts_at', '<', $to)
             ->where(function ($q) use ($from) {
@@ -115,7 +114,6 @@ class CalendarApiController extends Controller
 
         $events = CalendarEvent::query()
             ->visibleToUser($user)
-            ->where('user_id', $user->id)
             ->with('user:id,name')
             ->where('starts_at', '<', now()->endOfDay())
             ->where(function ($q) {

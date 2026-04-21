@@ -49,7 +49,6 @@ class DashboardController extends Controller
             : ContactMessage::query()->active()->where('assigned_user_id', $user->id)->count();
 
         $calendarEventsToday = CalendarEvent::query()
-            ->where('user_id', $user->id)
             ->where('starts_at', '<', now()->endOfDay())
             ->where(function ($q) {
                 $q->where('ends_at', '>', now()->startOfDay())
