@@ -203,6 +203,65 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
         }
     }
 
+    public function test_recurring_status_makes_all_fields_optional_in_admin(): void
+    {
+        $component = new class extends Component implements HasForms
+        {
+            use InteractsWithForms;
+
+            public ?array $data = [];
+
+            public function form(Schema $schema): Schema
+            {
+                return LeadForm::configure($schema)
+                    ->model(Lead::class)
+                    ->statePath('data');
+            }
+
+            public function render(): string
+            {
+                return '';
+            }
+        };
+
+        $form = $component->form(Schema::make($component));
+        $form->fill([
+            'status' => 'recurring',
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+        ]);
+
+        $fields = $form->getFlatFields(withHidden: true);
+
+        foreach ([
+            'assigned_user_id',
+            'full_name',
+            'egn',
+            'credit_type',
+            'amount',
+            'workplace',
+            'job_title',
+            'salary',
+            'marital_status',
+            'children_under_18',
+            'salary_bank',
+            'credit_bank',
+            'phone',
+            'email',
+            'city',
+            'guarantors',
+            'documents',
+        ] as $field) {
+            $this->assertArrayHasKey($field, $fields);
+            $this->assertFalse(
+                $fields[$field]->isRequired(),
+                "Expected [{$field}] to be optional for status [recurring].",
+            );
+        }
+
+        // Status itself stays required — the operator must explicitly pick it.
+        $this->assertTrue($fields['status']->isRequired());
+    }
+
     public function test_status_field_is_live_in_admin_form(): void
     {
         $component = new class extends Component implements HasForms

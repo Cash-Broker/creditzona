@@ -68,7 +68,7 @@ class LeadForm
                         Select::make('assigned_user_id')
                             ->label('Основен служител')
                             ->options(fn (?Lead $record): array => LeadResource::getPrimaryAssignmentOptions($record?->assigned_user_id))
-                            ->required()
+                            ->required(fn (Get $get): bool => ! static::isRecurringStatus($get('status')))
                             ->searchable()
                             ->preload()
                             ->native(false)
@@ -88,7 +88,7 @@ class LeadForm
                             ->columnSpan(2),
                         TextInput::make('full_name')
                             ->label('Имена')
-                            ->required()
+                            ->required(fn (Get $get): bool => ! static::isRecurringStatus($get('status')))
                             ->maxLength(180)
                             ->afterStateHydrated(function (TextInput $component, ?Lead $record): void {
                                 $component->state(static::composeFullName(
@@ -161,7 +161,7 @@ class LeadForm
                         Select::make('credit_type')
                             ->label('Тип кредит')
                             ->options(LeadResource::getCreditTypeOptions())
-                            ->required()
+                            ->required(fn (Get $get): bool => ! static::isRecurringStatus($get('status')))
                             ->native(false)
                             ->live()
                             ->columnSpan(2)
@@ -181,7 +181,7 @@ class LeadForm
                             ->columnSpan(2),
                         TextInput::make('amount')
                             ->label('Сума')
-                            ->required()
+                            ->required(fn (Get $get): bool => ! static::isRecurringStatus($get('status')))
                             ->numeric()
                             ->integer()
                             ->minValue(5000)
@@ -509,7 +509,12 @@ class LeadForm
 
     private static function requiresFullApplication(?string $status): bool
     {
-        return ! in_array($status, ['sms', 'email', 'rejected'], true);
+        return ! in_array($status, ['sms', 'email', 'rejected', 'recurring'], true);
+    }
+
+    private static function isRecurringStatus(?string $status): bool
+    {
+        return $status === 'recurring';
     }
 
     private static function guarantorHasPropertyData(Get $get): bool
