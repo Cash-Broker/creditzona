@@ -225,6 +225,54 @@ class AdminAuthorizationTest extends TestCase
         $this->assertSame([], AttachedLeadResource::getEloquentQuery()->pluck('id')->all());
     }
 
+    public function test_re_returning_a_previously_approved_lead_lands_back_in_returned_to_me_not_approved(): void
+    {
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'phone' => '0888888888',
+            'email' => 'second-cycle@example.com',
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $renata->id,
+        ]));
+
+        $service = app(LeadService::class);
+
+        $service->returnAttachedLeadToPrimary($lead, $renata);
+        $service->archiveReturnedToPrimaryLead($lead->refresh(), $anna);
+        $service->approveReturnedLead($lead->refresh(), $anna);
+
+        $this->assertNotNull($lead->refresh()->approved_returned_at);
+        $this->assertSame($anna->id, $lead->approved_returned_by_user_id);
+
+        $lead->refresh()->forceFill([
+            'additional_user_id' => $renata->id,
+        ])->save();
+
+        $service->returnAttachedLeadToPrimary($lead->refresh(), $renata);
+
+        $lead->refresh();
+
+        $this->assertNull($lead->approved_returned_at);
+        $this->assertNull($lead->approved_returned_by_user_id);
+        $this->assertNotNull($lead->returned_to_primary_at);
+
+        $this->actingAs($anna);
+        $this->assertContains($lead->id, ReturnedToMeLeadResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertNotContains(
+            $lead->id,
+            \App\Filament\Resources\ApprovedReturnedLeads\ApprovedReturnedLeadResource::getEloquentQuery()->pluck('id')->all(),
+        );
+    }
+
     public function test_returned_lead_archive_resource_is_scoped_to_the_user_who_returned_the_lead(): void
     {
         $renata = User::factory()->create([

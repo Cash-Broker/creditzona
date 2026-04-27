@@ -9,9 +9,14 @@ use App\Services\LeadService;
 use DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class LeadServiceTest extends TestCase
@@ -38,6 +43,57 @@ class LeadServiceTest extends TestCase
 
         $this->assertSame($operator->id, $lead->assigned_user_id);
         $this->assertTrue($lead->assignedUser->is($operator));
+    }
+
+    public function test_smtp_recipient_rejection_is_logged_as_warning(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $this->mockMailToThrow(
+            'Expected response code "250/251/252" but got code "550", with message "550 Mailbox unavailable".'
+        );
+
+        Log::spy();
+
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'assigned_user_id' => $operator->id,
+            'email' => 'broken@example.com',
+        ]));
+
+        $this->assertNotNull($lead);
+
+        Log::shouldHaveReceived('log')
+            ->withArgs(fn (string $level, string $message): bool =>
+                $level === 'warning' && $message === 'Failed to send lead confirmation email.'
+            )
+            ->once();
+    }
+
+    public function test_other_smtp_errors_are_logged_as_error(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $this->mockMailToThrow('Connection could not be established with host smtp.example.com: Operation timed out.');
+
+        Log::spy();
+
+        $lead = app(LeadService::class)->createLead($this->leadData([
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        $this->assertNotNull($lead);
+
+        Log::shouldHaveReceived('log')
+            ->withArgs(fn (string $level, string $message): bool =>
+                $level === 'error' && $message === 'Failed to send lead confirmation email.'
+            )
+            ->once();
     }
 
     public function test_create_lead_stores_database_notification_for_assigned_operator(): void
@@ -953,6 +1009,18 @@ class LeadServiceTest extends TestCase
         return $this->notificationsForLead($lead)
             ->filter(fn (array $notification): bool => $notification['record']->read_at === null)
             ->values();
+    }
+
+    private function mockMailToThrow(string $exceptionMessage): void
+    {
+        $pendingMail = Mockery::mock(PendingMail::class);
+        $pendingMail->shouldReceive('send')
+            ->once()
+            ->andThrow(new RuntimeException($exceptionMessage));
+
+        Mail::shouldReceive('to')
+            ->once()
+            ->andReturn($pendingMail);
     }
 
     /**

@@ -144,6 +144,8 @@ class LeadService
                 'returned_to_primary_at' => now(),
                 'returned_to_primary_archived_user_id' => null,
                 'returned_to_primary_archived_at' => null,
+                'approved_returned_by_user_id' => null,
+                'approved_returned_at' => null,
             ])->save();
 
             $lead = $lead->refresh();
@@ -406,10 +408,13 @@ class LeadService
             Mail::to($lead->email)
                 ->send(new LeadSubmittedConfirmation($lead));
         } catch (\Throwable $exception) {
-            Log::error('Failed to send lead confirmation email.', [
+            $message = $exception->getMessage();
+            $isInvalidRecipient = (bool) preg_match('/got code "55[0-4]"/', $message);
+
+            Log::log($isInvalidRecipient ? 'warning' : 'error', 'Failed to send lead confirmation email.', [
                 'lead_id' => $lead->id,
                 'email' => $lead->email,
-                'error' => $exception->getMessage(),
+                'error' => $message,
             ]);
         }
     }
