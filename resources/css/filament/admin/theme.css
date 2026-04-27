@@ -536,7 +536,7 @@
 }
 
 .fi-admin-status-team-panel {
-    width: 17rem;
-    max-width: calc(100vw - 1rem);
+    width: 16rem;
+    max-width: calc(100vw - 1.5rem);
     padding: 0.85rem;
 }

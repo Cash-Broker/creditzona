@@ -55,7 +55,7 @@
         @if ($canViewTeamAvailability)
             {{-- Mobile/tablet: Filament dropdown (handles open/close, click-outside, morph) --}}
             <div class="fi-admin-status-team-mobile">
-                <x-filament::dropdown placement="bottom-end" :offset="8" wire:key="admin-status-team-dropdown">
+                <x-filament::dropdown placement="bottom-end" :offset="8" :shift="true" :teleport="true" wire:key="admin-status-team-dropdown">
                     <x-slot name="trigger">
                         <button type="button" class="fi-admin-status-team-trigger" title="Екип за нови заявки">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="fi-admin-status-team-trigger-icon">
@@ -74,16 +74,16 @@
                             @foreach ($primaryOperatorStatuses as $member)
                                 <span
                                     @class([
-                                        'inline-flex items-center justify-between gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1',
+                                        'flex w-full items-center justify-between gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1',
                                         'bg-green-50 text-green-700 ring-green-200' => $member['is_online'],
                                         'bg-gray-100 text-gray-700 ring-gray-200' => ! $member['is_online'],
                                     ])
                                 >
-                                    <span class="flex items-center gap-2">
-                                        <span>{{ $member['is_online'] ? '🟢' : '⚪' }}</span>
-                                        <span>{{ $member['name'] }}</span>
+                                    <span class="flex min-w-0 items-center gap-2">
+                                        <span class="shrink-0">{{ $member['is_online'] ? '🟢' : '⚪' }}</span>
+                                        <span class="truncate">{{ $member['name'] }}</span>
                                     </span>
-                                    <span>{{ $member['is_online'] ? 'Онлайн' : 'Офлайн' }}</span>
+                                    <span class="shrink-0">{{ $member['is_online'] ? 'Онлайн' : 'Офлайн' }}</span>
                                 </span>
                             @endforeach
                         </div>
