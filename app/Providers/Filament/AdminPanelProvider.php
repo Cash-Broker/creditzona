@@ -36,6 +36,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Кредит Зона')
+            ->globalSearch(false)
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->databaseNotifications(
                 condition: fn (): bool => Schema::hasTable('notifications'),
@@ -43,7 +44,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->databaseNotificationsPolling('5s')
             ->renderHook(
-                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                PanelsRenderHook::TOPBAR_LOGO_AFTER,
                 fn (): View => view('filament.components.admin-calendar-topbar-link'),
             )
             ->renderHook(
