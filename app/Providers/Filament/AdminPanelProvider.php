@@ -43,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->databaseNotificationsPolling('5s')
             ->renderHook(
-                PanelsRenderHook::TOPBAR_LOGO_AFTER,
+                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
                 fn (): View => view('filament.components.admin-calendar-topbar-link'),
             )
             ->renderHook(
