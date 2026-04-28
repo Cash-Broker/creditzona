@@ -26,15 +26,18 @@
 <p>„БЕЗ ПРОТЕСТ", съгласно чл. 500, ал. 1 от Търговския закон на Република България.</p>
 
 <div class="signature-row">
-    <p><strong>ИЗДАТЕЛ</strong>: __________________________________________________________________</p>
+    <p><strong>ИЗДАТЕЛ</strong>:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
     <p class="small">(трите имена - собственоръчно) (подпис)</p>
 </div>
 
 @if (filled($submitted['co_applicant']['full_name']))
-    <div class="spacer"></div>
-    <p>Подписаният:</p>
-    <p>{{ $derived['identities']['co_applicant'] }}</p>
-    <p>в качеството си на ПОРЪЧИТЕЛ /авалист/, поръчителствам за изпълнението на задълженията на {{ $submitted['client']['full_name'] }} по настоящия Запис на заповед.</p>
-    <p>ПОРЪЧИТЕЛ/АВАЛИСТ: _______________________________________________________</p>
-    <p class="small">(трите имена - собственоръчно) (подпис)</p>
+    <div style="margin-top: 18px; page-break-inside: avoid;">
+        <p>Подписаният:</p>
+        <p>{{ $derived['identities']['co_applicant'] }}</p>
+        <p>в качеството си на ПОРЪЧИТЕЛ /авалист/, поръчителствам за изпълнението на задълженията на {{ $submitted['client']['full_name'] }} по настоящия Запис на заповед.</p>
+        <p>ПОРЪЧИТЕЛ/АВАЛИСТ:</p>
+        <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
+        <p class="small">(трите имена - собственоръчно) (подпис)</p>
+    </div>
 @endif

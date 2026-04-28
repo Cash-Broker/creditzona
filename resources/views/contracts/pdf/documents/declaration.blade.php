@@ -18,11 +18,13 @@
 
 <div class="signature-row">
     <p>Дата: {{ $derived['dates']['declaration_date_formatted'] }}</p>
-    <p>ДЕКЛАРАТОР: _______________________________________________________________</p>
+    <p>ДЕКЛАРАТОР:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
     <p>/{{ $submitted['client']['full_name'] }}/</p>
 </div>
 
 <div class="signature-row">
-    <p>ДЕКЛАРАТОР: _______________________________________________________________</p>
+    <p>ДЕКЛАРАТОР:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
     <p>/{{ $submitted['co_applicant']['full_name'] }}/</p>
 </div>

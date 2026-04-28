@@ -36,6 +36,7 @@
 
 <div class="signature-block">
     <p>{{ $requestDate }}</p>
-    <p>С уважение: _________________________________________________________________</p>
+    <p>С уважение:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
     <p class="small">(трите имена и подпис, положени собственоръчно)</p>
 </div>

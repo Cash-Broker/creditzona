@@ -24,19 +24,23 @@
 <p>Чл. 4. Настоящият протокол се състави и подписа в два еднообразни екземпляра, по един за всяка от страните, и представлява неразделна част от Договора за посредничество.</p>
 
 <div style="margin-top: 30px;">
-    <p>ЗА <strong>ВЪЗЛОЖИТЕЛЯ</strong>: _________________________________________________</p>
+    <p>ЗА <strong>ВЪЗЛОЖИТЕЛЯ</strong>:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
 </div>
 @if (filled($submitted['co_applicant']['full_name']))
     <div style="margin-top: 30px;">
-        <p>ЗА <strong>СЪКРЕДИТОИСКАТЕЛЯ</strong> (ако е приложимо): ________________________________________</p>
+        <p>ЗА <strong>СЪКРЕДИТОИСКАТЕЛЯ</strong> (ако е приложимо):</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
     </div>
 @endif
 <div style="margin-top: 30px;">
-    <p>ЗА <strong>ПОСРЕДНИКА</strong>: _________________________________________________</p>
+    <p>ЗА <strong>ПОСРЕДНИКА</strong>:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
 </div>
 
 <div class="declaration-box" style="border: 1px solid #4472c4; padding: 15px;">
     <p><strong>Възложителят</strong></p>
     <p>Декларирам, че преди извършването на услугата по договора за посредничество имам {{ $submitted['financial']['active_credit_count'] }} броя кредити с обща месечна вноска от {{ data_get($derived, 'financial.monthly_repayment_burden.eur.formatted') }} € ({{ data_get($derived, 'financial.monthly_repayment_burden.eur.words') }}) /{{ data_get($derived, 'financial.monthly_repayment_burden.bgn.formatted') }} лв. ({{ data_get($derived, 'financial.monthly_repayment_burden.bgn.words') }})/. След извършения от <strong>ПОСРЕДНИКА</strong> подробен финансов анализ и предоставеното съдействие, месечната вноска се е редуцирала до {{ data_get($derived, 'financial.post_service_monthly_repayment_burden.eur.formatted') }} € ({{ data_get($derived, 'financial.post_service_monthly_repayment_burden.eur.words') }}) /{{ data_get($derived, 'financial.post_service_monthly_repayment_burden.bgn.formatted') }} лв. ({{ data_get($derived, 'financial.post_service_monthly_repayment_burden.bgn.words') }})/, а кредитите са намалели до {{ $submitted['financial']['post_service_credit_count'] }} броя.</p>
-    <p>Подпис: ………………………………………</p>
+    <p>Подпис:</p>
+    <p style="border-bottom: 1px dotted #000; margin-bottom: 5px;">&nbsp;</p>
 </div>

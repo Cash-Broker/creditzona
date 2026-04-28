@@ -21,6 +21,7 @@
 <p>"БЕЗ ПРОТЕСТ", съгласно чл. 500, ал. 1 от Търговския закон на РБ.</p>
 
 <div class="signature-row">
-    <p><strong>ИЗДАТЕЛ</strong>: __________________________________________________________________</p>
+    <p><strong>ИЗДАТЕЛ</strong>:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
     <p class="small">(подпис и трите имена - собственоръчно)</p>
 </div>

@@ -67,9 +67,11 @@
 <p>Чл. 13. Настоящият договор се състави и подписа в два еднообразни екземпляра - по един за всяка от страните.</p>
 
 <div style="margin-top: 40px;">
-    <p><strong>КОНСУЛТАНТ</strong>: _______________________________________________________________</p>
+    <p><strong>КОНСУЛТАНТ</strong>:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
 </div>
 
 <div style="margin-top: 40px;">
-    <p><strong>ВЪЗЛОЖИТЕЛ</strong>: ______________________________________________________________</p>
+    <p><strong>ВЪЗЛОЖИТЕЛ</strong>:</p>
+    <p style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</p>
 </div>

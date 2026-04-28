@@ -908,20 +908,48 @@ CSS;
             $documentPageCounts[] = $probe->page;
         }
 
-        $allContent = '';
+        $tempPdfPaths = [];
 
         foreach ($documentContents as $index => $contentHtml) {
-            if ($index > 0) {
-                $allContent .= '<pagebreak />';
+            $pageCount = $documentPageCounts[$index];
+
+            $docMpdf = $this->createCombinedPdfInstance();
+
+            if ($pageCount > 1) {
+                $docMpdf->SetHTMLFooter($this->buildDocumentPageFooter($pageCount));
             }
 
-            $allContent .= $contentHtml;
+            $docMpdf->WriteHTML('<style>'.$css.'</style>', \Mpdf\HTMLParserMode::HEADER_CSS);
+            $docMpdf->WriteHTML($contentHtml, \Mpdf\HTMLParserMode::HTML_BODY);
+
+            $tempPath = $this->resolveTempDir().'/doc_'.$index.'_'.uniqid().'.pdf';
+            $docMpdf->Output($tempPath, \Mpdf\Output\Destination::FILE);
+            $tempPdfPaths[] = $tempPath;
         }
 
-        $mpdf = $this->createCombinedPdfInstance();
-        $mpdf->SetHTMLFooter('<div style="text-align: center; font-family: dejavuserif, serif; font-size: 9pt; color: #6b7280;">Страница {PAGENO} от {nbpg}</div>');
-        $mpdf->WriteHTML('<style>'.$css.'</style>', \Mpdf\HTMLParserMode::HEADER_CSS);
-        $mpdf->WriteHTML($allContent, \Mpdf\HTMLParserMode::HTML_BODY);
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'tempDir' => $this->resolveTempDir(),
+        ]);
+
+        foreach ($tempPdfPaths as $index => $tempPath) {
+            $pageCount = $mpdf->setSourceFile($tempPath);
+
+            for ($page = 1; $page <= $pageCount; $page++) {
+                $templateId = $mpdf->importPage($page);
+
+                if ($index > 0 || $page > 1) {
+                    $mpdf->AddPage();
+                }
+
+                $mpdf->useTemplate($templateId);
+            }
+        }
+
+        foreach ($tempPdfPaths as $tempPath) {
+            @unlink($tempPath);
+        }
 
         $relativePath = 'generated/'.$directoryKey.'/dogovori-'.Str::uuid().'.pdf';
         Storage::disk('legal')->put($relativePath, $mpdf->OutputBinaryData());
