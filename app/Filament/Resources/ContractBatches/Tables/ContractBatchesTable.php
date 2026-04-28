@@ -47,11 +47,11 @@ class ContractBatchesTable
                 //
             ])
             ->recordActions([
-                Action::make('downloadArchive')
-                    ->label('Пакет')
+                Action::make('downloadCombinedPdf')
+                    ->label('PDF')
                     ->icon(Heroicon::OutlinedArrowDownTray)
-                    ->visible(fn (ContractBatch $record): bool => $record->archiveExists())
-                    ->url(fn (ContractBatch $record): string => route('admin.contract-batches.archive.download', $record)),
+                    ->visible(fn (ContractBatch $record): bool => $record->combinedPdfExists())
+                    ->url(fn (ContractBatch $record): string => route('admin.contract-batches.combined-pdf.download', $record)),
                 ViewAction::make(),
                 EditAction::make(),
             ])

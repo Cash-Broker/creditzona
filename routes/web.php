@@ -48,6 +48,10 @@ Route::middleware([Authenticate::class])
             ->name('documents.open');
         Route::get('/documents/{adminDocument}/download', [AdminDocumentFileController::class, 'download'])
             ->name('documents.download');
+        Route::get('/contract-batches/{contractBatch}/combined-pdf/download', [ContractBatchFileController::class, 'downloadCombinedPdf'])
+            ->name('contract-batches.combined-pdf.download');
+        Route::get('/contract-batches/{contractBatch}/combined-docx/download', [ContractBatchFileController::class, 'downloadCombinedDocx'])
+            ->name('contract-batches.combined-docx.download');
         Route::get('/contract-batches/{contractBatch}/archive/download', [ContractBatchFileController::class, 'downloadArchive'])
             ->name('contract-batches.archive.download');
         Route::get('/contract-batches/{contractBatch}/documents/{documentKey}/download', [ContractBatchFileController::class, 'downloadDocument'])

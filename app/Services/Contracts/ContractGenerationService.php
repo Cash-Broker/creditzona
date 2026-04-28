@@ -118,8 +118,12 @@ class ContractGenerationService
         $directoryKey = (string) Str::uuid();
 
         $generatedDocuments = [];
+        $combinedPdf = null;
+        $combinedDocx = null;
         $archive = null;
         $previousGeneratedDocuments = $existingBatch?->generated_documents;
+        $previousCombinedPdfPath = $existingBatch?->combined_pdf_path;
+        $previousCombinedDocxPath = $existingBatch?->combined_docx_path;
         $previousArchivePath = $existingBatch?->archive_path;
 
         try {
@@ -130,13 +134,31 @@ class ContractGenerationService
                 $directoryKey,
             );
 
-            $archive = $this->createArchive($generatedDocuments, $directoryKey, $submitted['client']['full_name']);
+            $combinedPdf = $this->generateCombinedPdf(
+                $submitted['selected_document_types'],
+                $submitted,
+                $derived,
+                $directoryKey,
+                $submitted['client']['full_name'],
+            );
+
+            $combinedDocx = $this->generateCombinedDocx(
+                $submitted['selected_document_types'],
+                $submitted,
+                $derived,
+                $directoryKey,
+                $submitted['client']['full_name'],
+            );
+
+            $archive = $this->createArchive($generatedDocuments, $combinedPdf, $directoryKey, $submitted['client']['full_name']);
 
             $batch = DB::transaction(function () use (
                 $existingBatch,
                 $submitted,
                 $derived,
                 $generatedDocuments,
+                $combinedPdf,
+                $combinedDocx,
                 $archive,
                 $actor
             ): ContractBatch {
@@ -154,6 +176,10 @@ class ContractGenerationService
                         'derived' => $derived,
                     ],
                     'generated_documents' => $generatedDocuments,
+                    'combined_pdf_path' => $combinedPdf['path'] ?? null,
+                    'combined_pdf_file_name' => $combinedPdf['download_name'] ?? null,
+                    'combined_docx_path' => $combinedDocx['path'] ?? null,
+                    'combined_docx_file_name' => $combinedDocx['download_name'] ?? null,
                     'archive_path' => $archive['path'] ?? null,
                     'archive_file_name' => $archive['download_name'] ?? null,
                     'generated_at' => now(),
@@ -168,11 +194,11 @@ class ContractGenerationService
                 return $batch->fresh();
             });
 
-            $this->deleteGeneratedSnapshot($previousGeneratedDocuments, $previousArchivePath);
+            $this->deleteGeneratedSnapshot($previousGeneratedDocuments, $previousCombinedPdfPath, $previousCombinedDocxPath, $previousArchivePath);
 
             return $batch;
         } catch (Throwable $throwable) {
-            $this->deleteGeneratedSnapshot($generatedDocuments, $archive['path'] ?? null);
+            $this->deleteGeneratedSnapshot($generatedDocuments, $combinedPdf['path'] ?? null, $combinedDocx['path'] ?? null, $archive['path'] ?? null);
 
             throw $throwable;
         }
@@ -670,11 +696,8 @@ class ContractGenerationService
             }
 
             $contentHtml = $this->renderDocumentContentHtml($view, $submitted, $derived, $documentType, $copyNumber);
-            $pdfHtml = $this->renderPdfHtml($view, $submitted, $derived, $documentType, $copyNumber);
-            $pdfRelativePath = 'generated/'.$directoryKey.'/'.$documentKey.'-'.Str::uuid().'.pdf';
             $docxRelativePath = 'generated/'.$directoryKey.'/'.$documentKey.'-'.Str::uuid().'.docx';
 
-            Storage::disk('legal')->put($pdfRelativePath, $this->renderPdf($pdfHtml));
             $this->renderDocx($contentHtml, $docxRelativePath);
 
             $documents[] = [
@@ -683,16 +706,6 @@ class ContractGenerationService
                 'copy_number' => $copyNumber,
                 'label' => $label,
                 'variants' => [
-                    ContractBatch::DOCUMENT_VARIANT_PDF => [
-                        'path' => $pdfRelativePath,
-                        'download_name' => $this->buildDownloadFileName(
-                            $label,
-                            $submitted['client']['full_name'],
-                            ContractBatch::DOCUMENT_VARIANT_PDF,
-                        ),
-                        'mime_type' => 'application/pdf',
-                        'file_size' => Storage::disk('legal')->size($pdfRelativePath),
-                    ],
                     ContractBatch::DOCUMENT_VARIANT_DOCX => [
                         'path' => $docxRelativePath,
                         'download_name' => $this->buildDownloadFileName(
@@ -745,11 +758,12 @@ class ContractGenerationService
 
     /**
      * @param  array<int, array<string, mixed>>  $documents
+     * @param  array{path: string, download_name: string}|null  $combinedPdf
      * @return array<string, string>|null
      */
-    private function createArchive(array $documents, string $directoryKey, ?string $clientFullName): ?array
+    private function createArchive(array $documents, ?array $combinedPdf, string $directoryKey, ?string $clientFullName): ?array
     {
-        if (! class_exists(ZipArchive::class) || $documents === []) {
+        if (! class_exists(ZipArchive::class) || ($documents === [] && $combinedPdf === null)) {
             return null;
         }
 
@@ -762,6 +776,13 @@ class ContractGenerationService
 
         if ($archive->open($absolutePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return null;
+        }
+
+        if ($combinedPdf !== null && Storage::disk('legal')->exists($combinedPdf['path'])) {
+            $archive->addFile(
+                Storage::disk('legal')->path($combinedPdf['path']),
+                $combinedPdf['download_name'],
+            );
         }
 
         foreach ($documents as $document) {
@@ -788,7 +809,7 @@ class ContractGenerationService
     /**
      * @param  array<int, array<string, mixed>>|null  $generatedDocuments
      */
-    private function deleteGeneratedSnapshot(?array $generatedDocuments, ?string $archivePath): void
+    private function deleteGeneratedSnapshot(?array $generatedDocuments, ?string $combinedPdfPath, ?string $combinedDocxPath, ?string $archivePath): void
     {
         $directories = [];
 
@@ -812,6 +833,16 @@ class ContractGenerationService
             }
         }
 
+        if (filled($combinedPdfPath)) {
+            $directories[] = dirname($combinedPdfPath);
+            Storage::disk('legal')->delete($combinedPdfPath);
+        }
+
+        if (filled($combinedDocxPath)) {
+            $directories[] = dirname($combinedDocxPath);
+            Storage::disk('legal')->delete($combinedDocxPath);
+        }
+
         if (filled($archivePath)) {
             $directories[] = dirname($archivePath);
             Storage::disk('legal')->delete($archivePath);
@@ -822,23 +853,165 @@ class ContractGenerationService
         }
     }
 
-    private function renderPdf(string $html): string
-    {
-        $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'default_font' => 'dejavusans',
-            'tempDir' => $this->resolveTempDir(),
-            'margin_left' => 18,
-            'margin_right' => 18,
-            'margin_top' => 16,
-            'margin_bottom' => 18,
-        ]);
+    /**
+     * @return array{path: string, download_name: string}
+     */
+    private function generateCombinedPdf(
+        array $documentTypes,
+        array $submitted,
+        array $derived,
+        string $directoryKey,
+        ?string $clientFullName,
+    ): array {
+        $css = <<<'CSS'
+        body {
+            font-family: dejavuserif, serif;
+            font-size: 11pt;
+            line-height: 1.45;
+            color: #111827;
+        }
+        p { margin: 0 0 10px; text-align: justify; }
+        .title { margin-bottom: 18px; font-size: 15pt; font-weight: 700; text-align: center; text-transform: uppercase; }
+        .subtitle { margin-bottom: 16px; font-size: 11pt; font-weight: 700; text-align: center; }
+        .section-title { margin: 16px 0 10px; font-weight: 700; text-align: center; }
+        .signature-block { margin-top: 22px; }
+        .signature-row { margin-top: 28px; }
+        .small { font-size: 9.8pt; }
+        .spacer { height: 18px; }
+CSS;
 
-        $mpdf->SetCompression(false);
-        $mpdf->WriteHTML($html);
+        $documentSpecs = $this->expandDocumentSpecs($documentTypes);
+        $documentContents = [];
+        $documentPageCounts = [];
 
-        return $mpdf->OutputBinaryData();
+        foreach ($documentSpecs as $spec) {
+            $view = self::DOCUMENT_VIEWS[$spec['document_type']] ?? null;
+
+            if ($view === null) {
+                continue;
+            }
+
+            $contentHtml = $this->renderDocumentContentHtml(
+                $view,
+                $submitted,
+                $derived,
+                $spec['document_type'],
+                $spec['copy_number'],
+            );
+
+            $documentContents[] = $contentHtml;
+
+            $probe = $this->createCombinedPdfInstance();
+            $probe->SetHTMLFooter($this->buildDocumentPageFooter(2));
+            $probeHtml = '<html><head><style>'.$css.'</style></head><body>'.$contentHtml.'</body></html>';
+            $probe->WriteHTML($probeHtml);
+            $documentPageCounts[] = $probe->page;
+        }
+
+        $allContent = '';
+
+        foreach ($documentContents as $index => $contentHtml) {
+            if ($index > 0) {
+                $allContent .= '<pagebreak />';
+            }
+
+            $allContent .= $contentHtml;
+        }
+
+        $mpdf = $this->createCombinedPdfInstance();
+        $mpdf->SetHTMLFooter('<div style="text-align: center; font-family: dejavuserif, serif; font-size: 9pt; color: #6b7280;">Страница {PAGENO} от {nbpg}</div>');
+        $mpdf->WriteHTML('<style>'.$css.'</style>', \Mpdf\HTMLParserMode::HEADER_CSS);
+        $mpdf->WriteHTML($allContent, \Mpdf\HTMLParserMode::HTML_BODY);
+
+        $relativePath = 'generated/'.$directoryKey.'/dogovori-'.Str::uuid().'.pdf';
+        Storage::disk('legal')->put($relativePath, $mpdf->OutputBinaryData());
+
+        $clientSegment = Str::slug((string) $clientFullName);
+        $downloadName = trim(implode('-', array_filter([
+            'dogovori',
+            $clientSegment !== '' ? $clientSegment : null,
+        ])), '-').'.pdf';
+
+        return [
+            'path' => $relativePath,
+            'download_name' => $downloadName,
+        ];
+    }
+
+    /**
+     * @return array{path: string, download_name: string}
+     */
+    private function generateCombinedDocx(
+        array $documentTypes,
+        array $submitted,
+        array $derived,
+        string $directoryKey,
+        ?string $clientFullName,
+    ): array {
+        $documentSpecs = $this->expandDocumentSpecs($documentTypes);
+
+        $phpWord = new PhpWord;
+        $phpWord->setDefaultFontName('Times New Roman');
+        $phpWord->setDefaultFontSize(11);
+
+        $sectionBase = [
+            'marginLeft' => 1020,
+            'marginRight' => 1020,
+            'marginTop' => 900,
+            'marginBottom' => 1020,
+            'pageNumberingStart' => 1,
+            'breakType' => 'oddPage',
+        ];
+
+        foreach ($documentSpecs as $spec) {
+            $view = self::DOCUMENT_VIEWS[$spec['document_type']] ?? null;
+
+            if ($view === null) {
+                continue;
+            }
+
+            $contentHtml = $this->renderDocumentContentHtml(
+                $view,
+                $submitted,
+                $derived,
+                $spec['document_type'],
+                $spec['copy_number'],
+            );
+
+            $section = $phpWord->addSection($sectionBase);
+
+            $footer = $section->addFooter();
+            $textRun = $footer->addTextRun(['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+            $fontStyle = ['size' => 9, 'color' => '6b7280', 'name' => 'Times New Roman'];
+            $textRun->addText('Страница ', $fontStyle);
+            $textRun->addField('PAGE', [], ['PreserveFormat']);
+            $textRun->addText(' от ', $fontStyle);
+            $textRun->addField('NUMPAGES', [], ['PreserveFormat']);
+
+            WordHtml::addHtml(
+                $section,
+                $this->prepareHtmlForWord($contentHtml),
+                false,
+                false,
+            );
+        }
+
+        $relativePath = 'generated/'.$directoryKey.'/dogovori-'.Str::uuid().'.docx';
+        Storage::disk('legal')->makeDirectory(dirname($relativePath));
+
+        WordIOFactory::createWriter($phpWord, 'Word2007')
+            ->save(Storage::disk('legal')->path($relativePath));
+
+        $clientSegment = Str::slug((string) $clientFullName);
+        $downloadName = trim(implode('-', array_filter([
+            'dogovori',
+            $clientSegment !== '' ? $clientSegment : null,
+        ])), '-').'.docx';
+
+        return [
+            'path' => $relativePath,
+            'download_name' => $downloadName,
+        ];
     }
 
     private function renderDocx(string $contentHtml, string $relativePath): void
@@ -916,7 +1089,7 @@ class ContractGenerationService
 
         $this->appendInlineStyle(
             $body,
-            'font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #111827;',
+            'font-family: Times New Roman, serif; font-size: 11pt; line-height: 1.45; color: #111827;',
         );
 
         foreach ($body->getElementsByTagName('*') as $element) {
@@ -970,6 +1143,29 @@ class ContractGenerationService
         }
 
         return $html;
+    }
+
+    private function createCombinedPdfInstance(): Mpdf
+    {
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'default_font' => 'dejavuserif',
+            'tempDir' => $this->resolveTempDir(),
+            'margin_left' => 18,
+            'margin_right' => 18,
+            'margin_top' => 16,
+            'margin_bottom' => 22,
+        ]);
+
+        $mpdf->SetCompression(false);
+
+        return $mpdf;
+    }
+
+    private function buildDocumentPageFooter(int $totalPages): string
+    {
+        return '<div style="text-align: center; font-family: dejavuserif, serif; font-size: 9pt; color: #6b7280;">Страница {PAGENO} от '.$totalPages.'</div>';
     }
 
     private function resolveTempDir(): string

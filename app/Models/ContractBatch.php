@@ -46,6 +46,10 @@ class ContractBatch extends Model
         'selected_document_types',
         'input_payload',
         'generated_documents',
+        'combined_pdf_path',
+        'combined_pdf_file_name',
+        'combined_docx_path',
+        'combined_docx_file_name',
         'archive_path',
         'archive_file_name',
         'generated_at',
@@ -293,6 +297,24 @@ class ContractBatch extends Model
         return null;
     }
 
+    public function combinedPdfExists(): bool
+    {
+        if (blank($this->combined_pdf_path)) {
+            return false;
+        }
+
+        return Storage::disk('legal')->exists($this->combined_pdf_path);
+    }
+
+    public function combinedDocxExists(): bool
+    {
+        if (blank($this->combined_docx_path)) {
+            return false;
+        }
+
+        return Storage::disk('legal')->exists($this->combined_docx_path);
+    }
+
     public function archiveExists(): bool
     {
         if (blank($this->archive_path)) {
@@ -334,6 +356,16 @@ class ContractBatch extends Model
                 $directories[] = dirname($path);
                 Storage::disk('legal')->delete($path);
             }
+        }
+
+        if (filled($this->combined_pdf_path)) {
+            $directories[] = dirname($this->combined_pdf_path);
+            Storage::disk('legal')->delete($this->combined_pdf_path);
+        }
+
+        if (filled($this->combined_docx_path)) {
+            $directories[] = dirname($this->combined_docx_path);
+            Storage::disk('legal')->delete($this->combined_docx_path);
         }
 
         if (filled($this->archive_path)) {
