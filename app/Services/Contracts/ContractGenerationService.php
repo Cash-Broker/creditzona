@@ -933,17 +933,25 @@ CSS;
             'tempDir' => $this->resolveTempDir(),
         ]);
 
-        foreach ($tempPdfPaths as $index => $tempPath) {
-            $pageCount = $mpdf->setSourceFile($tempPath);
+        $currentPage = 0;
 
-            for ($page = 1; $page <= $pageCount; $page++) {
+        foreach ($tempPdfPaths as $index => $tempPath) {
+            $docPageCount = $mpdf->setSourceFile($tempPath);
+
+            if ($index > 0 && $currentPage % 2 === 1) {
+                $mpdf->AddPage();
+                $currentPage++;
+            }
+
+            for ($page = 1; $page <= $docPageCount; $page++) {
                 $templateId = $mpdf->importPage($page);
 
-                if ($index > 0 || $page > 1) {
+                if ($currentPage > 0) {
                     $mpdf->AddPage();
                 }
 
                 $mpdf->useTemplate($templateId);
+                $currentPage++;
             }
         }
 
