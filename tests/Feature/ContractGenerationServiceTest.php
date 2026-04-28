@@ -72,15 +72,9 @@ class ContractGenerationServiceTest extends TestCase
 
         foreach ($batch->generated_documents as $document) {
             $this->assertArrayHasKey('variants', $document);
-            $this->assertArrayHasKey(ContractBatch::DOCUMENT_VARIANT_PDF, $document['variants']);
             $this->assertArrayHasKey(ContractBatch::DOCUMENT_VARIANT_DOCX, $document['variants']);
 
-            $pdfVariant = $document['variants'][ContractBatch::DOCUMENT_VARIANT_PDF];
             $docxVariant = $document['variants'][ContractBatch::DOCUMENT_VARIANT_DOCX];
-
-            $this->assertSame('application/pdf', $pdfVariant['mime_type']);
-            $this->assertStringEndsWith('.pdf', $pdfVariant['download_name']);
-            Storage::disk('legal')->assertExists($pdfVariant['path']);
 
             $this->assertSame(
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -89,6 +83,10 @@ class ContractGenerationServiceTest extends TestCase
             $this->assertStringEndsWith('.docx', $docxVariant['download_name']);
             Storage::disk('legal')->assertExists($docxVariant['path']);
         }
+
+        $this->assertTrue($batch->combinedPdfExists());
+        Storage::disk('legal')->assertExists($batch->combined_pdf_path);
+        $this->assertStringEndsWith('.pdf', $batch->combined_pdf_file_name);
 
         $storedPayload = DB::table('contract_batches')
             ->where('id', $batch->id)

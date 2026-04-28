@@ -9,6 +9,34 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ContractBatchFileController extends Controller
 {
+    public function downloadCombinedPdf(Request $request, ContractBatch $contractBatch): StreamedResponse
+    {
+        abort_unless($request->user()?->can('view', $contractBatch), 403);
+        abort_unless($contractBatch->combinedPdfExists(), 404);
+
+        return Storage::disk('legal')->download(
+            $contractBatch->combined_pdf_path,
+            $contractBatch->combined_pdf_file_name ?: 'dogovori.pdf',
+            [
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            ],
+        );
+    }
+
+    public function downloadCombinedDocx(Request $request, ContractBatch $contractBatch): StreamedResponse
+    {
+        abort_unless($request->user()?->can('view', $contractBatch), 403);
+        abort_unless($contractBatch->combinedDocxExists(), 404);
+
+        return Storage::disk('legal')->download(
+            $contractBatch->combined_docx_path,
+            $contractBatch->combined_docx_file_name ?: 'dogovori.docx',
+            [
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            ],
+        );
+    }
+
     public function downloadArchive(Request $request, ContractBatch $contractBatch): StreamedResponse
     {
         abort_unless($request->user()?->can('view', $contractBatch), 403);

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <style>
         body {
-            font-family: dejavusans, sans-serif;
+            font-family: dejavuserif, serif;
             font-size: 11pt;
             line-height: 1.45;
             color: #111827;
@@ -50,6 +50,12 @@
 
         .spacer {
             height: 18px;
+        }
+
+        .declaration-box {
+            border: 1px solid #4472c4;
+            padding: 15px;
+            margin-top: 20px;
         }
     </style>
 </head>
