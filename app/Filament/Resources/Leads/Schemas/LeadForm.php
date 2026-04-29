@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Leads\Schemas;
 
+use App\Filament\Forms\UploadedFileDeletionConfirmation;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\Leads\Widgets\LeadCommunicationWidget;
 use App\Filament\Resources\Leads\Widgets\NoteHistoryChatWidget;
@@ -233,6 +234,7 @@ class LeadForm
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 Storage::disk('local')->delete($file);
                             })
+                            ->extraAlpineAttributes(UploadedFileDeletionConfirmation::alpineAttributes())
                             ->columnSpanFull(),
                     ]),
                 Section::make('Поръчители')
@@ -259,7 +261,10 @@ class LeadForm
                     ->schema([
                         LivewireComponent::make(
                             NoteHistoryChatWidget::class,
-                            fn (?Lead $record): array => ['leadId' => $record?->id],
+                            fn (?Lead $record): array => [
+                                'leadId' => $record?->id,
+                                'ownerLabel' => 'заявката',
+                            ],
                         )
                             ->key('lead-note-chat')
                             ->lazy(false)
@@ -428,10 +433,14 @@ class LeadForm
                         ->deleteUploadedFileUsing(static function (string $file): void {
                             Storage::disk('local')->delete($file);
                         })
+                        ->extraAlpineAttributes(UploadedFileDeletionConfirmation::alpineAttributes())
                         ->columnSpanFull(),
                     LivewireComponent::make(
                         NoteHistoryChatWidget::class,
-                        fn (?LeadGuarantor $record): array => ['guarantorId' => $record?->id],
+                        fn (?LeadGuarantor $record): array => [
+                            'guarantorId' => $record?->id,
+                            'ownerLabel' => 'поръчителя',
+                        ],
                     )
                         ->key(fn (?LeadGuarantor $record): string => 'guarantor-note-chat-'.($record?->id ?? 'new'))
                         ->lazy(false)
@@ -586,6 +595,7 @@ class LeadForm
             $data['middle_name'] ?? null,
             $data['last_name'] ?? null,
         );
+
         return $data;
     }
 
@@ -792,8 +802,6 @@ class LeadForm
 
         return $existingNotes."\n\n".$entry;
     }
-
-
 
     /**
      * @param  array<int, array<string, mixed>>  $entries

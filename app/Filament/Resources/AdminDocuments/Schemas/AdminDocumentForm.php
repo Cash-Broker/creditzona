@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AdminDocuments\Schemas;
 
+use App\Filament\Forms\UploadedFileDeletionConfirmation;
 use App\Models\AdminDocument;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
@@ -44,6 +45,7 @@ class AdminDocumentForm
                             ->deleteUploadedFileUsing(static function (string $file): void {
                                 Storage::disk('local')->delete($file);
                             })
+                            ->extraAlpineAttributes(UploadedFileDeletionConfirmation::alpineAttributes())
                             ->columnSpanFull(),
                     ]),
             ]);

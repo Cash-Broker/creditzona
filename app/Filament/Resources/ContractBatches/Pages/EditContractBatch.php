@@ -20,8 +20,17 @@ class EditContractBatch extends EditRecord
     {
         return [
             ViewAction::make(),
-            DeleteAction::make(),
+            static::makeDeleteAction(),
         ];
+    }
+
+    public static function makeDeleteAction(): DeleteAction
+    {
+        return DeleteAction::make()
+            ->requiresConfirmation()
+            ->modalHeading('Изтриване на договорен пакет')
+            ->modalDescription('Сигурни ли сте? Договорният пакет и всички генерирани файлове към него ще бъдат изтрити безвъзвратно.')
+            ->modalSubmitActionLabel('Изтрий пакета');
     }
 
     protected function mutateFormDataBeforeFill(array $data): array

@@ -58,8 +58,17 @@ class ContractBatchesTable
             ->defaultSort('generated_at', 'desc')
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    static::makeDeleteBulkAction(),
                 ]),
             ]);
+    }
+
+    public static function makeDeleteBulkAction(): DeleteBulkAction
+    {
+        return DeleteBulkAction::make()
+            ->requiresConfirmation()
+            ->modalHeading('Изтриване на избраните договорни пакети')
+            ->modalDescription('Сигурни ли сте? Всички избрани договорни пакети и генерираните им файлове ще бъдат изтрити безвъзвратно.')
+            ->modalSubmitActionLabel('Изтрий пакетите');
     }
 }

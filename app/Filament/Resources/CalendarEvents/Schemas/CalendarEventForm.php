@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CalendarEvents\Schemas;
 
+use App\Filament\Forms\ManualCalendarDateTimeInput;
 use App\Models\CalendarEvent;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -41,16 +42,16 @@ class CalendarEventForm
                         ->options(CalendarEvent::getStatusOptions())
                         ->required()
                         ->native(false),
-                    DateTimePicker::make('starts_at')
-                        ->label('Начало')
-                        ->required()
-                        ->seconds(false)
-                        ->native(false),
-                    DateTimePicker::make('ends_at')
-                        ->label('Край (по избор)')
-                        ->seconds(false)
-                        ->native(false)
-                        ->after('starts_at'),
+                    ManualCalendarDateTimeInput::configure(
+                        DateTimePicker::make('starts_at')
+                            ->label('Начало')
+                            ->required(),
+                    ),
+                    ManualCalendarDateTimeInput::configure(
+                        DateTimePicker::make('ends_at')
+                            ->label('Край (по избор)')
+                            ->after('starts_at'),
+                    ),
                     $canManageUsers
                         ? Select::make('user_id')
                             ->label('Потребител')

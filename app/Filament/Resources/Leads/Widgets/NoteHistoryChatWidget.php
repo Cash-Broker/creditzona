@@ -21,36 +21,42 @@ class NoteHistoryChatWidget extends Widget
 
     public ?int $guarantorId = null;
 
+    public string $ownerLabel = 'записа';
+
     public string $newMessage = '';
 
     public ?int $editingIndex = null;
 
     public string $editingBody = '';
 
-    public function mount(?int $leadId = null, ?int $guarantorId = null): void
+    public function mount(?int $leadId = null, ?int $guarantorId = null, ?string $ownerLabel = null): void
     {
         $this->leadId = $leadId;
         $this->guarantorId = $guarantorId;
+
+        if (filled($ownerLabel)) {
+            $this->ownerLabel = (string) $ownerLabel;
+        }
     }
 
-    public function send(?string $message = null): void
+    public function send(?string $message = null): bool
     {
         $note = trim($message ?? $this->newMessage);
 
         if ($note === '') {
-            return;
+            return false;
         }
 
         $user = Auth::user();
 
         if (! $user instanceof User) {
-            return;
+            return false;
         }
 
         $owner = $this->resolveNoteOwner();
 
         if ($owner === null) {
-            return;
+            return false;
         }
 
         $owner->forceFill([
@@ -63,6 +69,8 @@ class NoteHistoryChatWidget extends Widget
         ])->save();
 
         $this->newMessage = '';
+
+        return true;
     }
 
     public function startEditing(int $index): void
@@ -200,6 +208,9 @@ class NoteHistoryChatWidget extends Widget
 
         return [
             'messages' => $messages,
+            'canSendMessage' => $owner !== null,
+            'draftStorageKey' => $this->getDraftStorageKey($owner),
+            'inactiveMessage' => "Запазете първо {$this->ownerLabel}, за да активирате чата.",
         ];
     }
 
@@ -214,5 +225,18 @@ class NoteHistoryChatWidget extends Widget
         }
 
         return null;
+    }
+
+    private function getDraftStorageKey(Lead|LeadGuarantor|null $owner): string
+    {
+        if ($owner instanceof Lead) {
+            return "creditzona.note-chat.lead.{$owner->getKey()}";
+        }
+
+        if ($owner instanceof LeadGuarantor) {
+            return "creditzona.note-chat.guarantor.{$owner->getKey()}";
+        }
+
+        return 'creditzona.note-chat.inactive';
     }
 }
