@@ -32,6 +32,8 @@ class DashboardController extends Controller
             'count' => (int) ($byStatus[$key] ?? 0),
         ])->values();
 
+        $newLeadsCount = (int) ($byStatus['new'] ?? 0);
+
         $myLeadsCount = Lead::query()
             ->where(function ($q) use ($user) {
                 $q->where('assigned_user_id', $user->id)
@@ -59,6 +61,7 @@ class DashboardController extends Controller
         return response()->json([
             'data' => [
                 'leads_today' => $todayCount,
+                'new_leads_count' => $newLeadsCount,
                 'leads_by_status' => $leadsByStatus,
                 'my_leads_count' => $myLeadsCount,
                 'total_leads' => (clone $baseQuery)->count(),
