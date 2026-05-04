@@ -128,6 +128,8 @@
                         this.msg = localStorage.getItem(this.pendingDraftKey) || '';
                     }
 
+                    this.$nextTick(() => this.autoResize(this.$refs.textarea));
+
                     this.$watch('msg', (value) => {
                         const key = this.canSendMessage ? this.draftStorageKey : this.pendingDraftKey;
 
@@ -141,7 +143,17 @@
                             this.status = 'idle';
                             this.errorMessage = '';
                         }
+
+                        this.$nextTick(() => this.autoResize(this.$refs.textarea));
                     });
+                },
+                autoResize(el) {
+                    if (! el) {
+                        return;
+                    }
+
+                    el.style.height = 'auto';
+                    el.style.height = el.scrollHeight + 'px';
                 },
                 get hasDraft() {
                     return this.msg.trim().length > 0;
@@ -238,7 +250,9 @@
             </div>
             <div class="flex items-end gap-2">
                 <textarea
+                    x-ref="textarea"
                     x-model="msg"
+                    @input="autoResize($event.target)"
                     rows="1"
                     placeholder="{{ $canSendMessage ? 'Бележка...' : 'Бележка (ще се запише при запис на формата)...' }}"
                     class="cz-chat-input min-w-0 flex-1 resize-none rounded-xl border-gray-300 bg-gray-50/80 text-sm leading-snug shadow-none focus:border-gray-300 focus:ring-0 focus:outline-none dark:border-white/10 dark:bg-gray-900/70 dark:text-white"

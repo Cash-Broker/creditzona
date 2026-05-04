@@ -21,13 +21,11 @@
 
 .cz-chat-input {
     caret-color: #0e7490;
-    caret-shape: block;
     min-height: 1.75rem !important;
-    max-height: 5.5rem;
-    overflow-y: auto;
-    padding-top: 0.25rem !important;
-    padding-bottom: 0.25rem !important;
-    line-height: 1.35 !important;
+    overflow-y: hidden;
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+    line-height: 1.4 !important;
 }
 
 .cz-chat-input,
