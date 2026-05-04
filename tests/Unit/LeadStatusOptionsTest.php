@@ -20,6 +20,7 @@ class LeadStatusOptionsTest extends TestCase
             'in_progress' => 'В обработка',
             'processed' => 'Обработена',
             'approved' => 'Одобрена',
+            'disbursed' => 'Усвоен кредит',
             'rejected' => 'Отказана',
         ], LeadResource::getStatusOptions());
     }
@@ -29,6 +30,7 @@ class LeadStatusOptionsTest extends TestCase
         $this->assertSame('24 месеца', LeadResource::getStatusLabel('twenty_four_months'));
         $this->assertSame('Повтарящ се', LeadResource::getStatusLabel('recurring'));
         $this->assertSame('Одобрена', LeadResource::getStatusLabel('approved'));
+        $this->assertSame('Усвоен кредит', LeadResource::getStatusLabel('disbursed'));
         $this->assertSame('Отказана', LeadResource::getStatusLabel('rejected'));
         $this->assertSame('SMS', LeadResource::getStatusLabel('sms'));
         $this->assertSame('Имейл', LeadResource::getStatusLabel('email'));
@@ -44,6 +46,7 @@ class LeadStatusOptionsTest extends TestCase
         $this->assertSame('info', LeadResource::getStatusBadgeColor('in_progress'));
         $this->assertSame('success', LeadResource::getStatusBadgeColor('processed'));
         $this->assertSame('success', LeadResource::getStatusBadgeColor('approved'));
+        $this->assertSame(Color::Emerald, LeadResource::getStatusBadgeColor('disbursed'));
         $this->assertSame('danger', LeadResource::getStatusBadgeColor('rejected'));
         $this->assertSame('gray', LeadResource::getStatusBadgeColor('unknown'));
     }

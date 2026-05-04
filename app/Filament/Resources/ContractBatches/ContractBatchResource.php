@@ -10,12 +10,20 @@ use App\Filament\Resources\ContractBatches\Schemas\ContractBatchForm;
 use App\Filament\Resources\ContractBatches\Schemas\ContractBatchInfolist;
 use App\Filament\Resources\ContractBatches\Tables\ContractBatchesTable;
 use App\Models\ContractBatch;
+use App\Models\User;
+use App\Services\ContractBatchService;
 use BackedEnum;
+use DomainException;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
@@ -78,5 +86,106 @@ class ContractBatchResource extends Resource
             'view' => ViewContractBatch::route('/{record}'),
             'edit' => EditContractBatch::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User && $user->isAdmin();
+    }
+
+    public static function canView($record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canEdit($record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if (! $user instanceof User || ! $user->isAdmin()) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    public static function makeAttachAction(): Action
+    {
+        return Action::make('attach')
+            ->label('Прикачи')
+            ->icon(Heroicon::OutlinedUserPlus)
+            ->color('primary')
+            ->modalHeading('Прикачи договор към оператор')
+            ->modalDescription('Изберете оператор, който ще има достъп до този пакет. Изпразнете полето, за да премахнете прикачването.')
+            ->modalSubmitActionLabel('Запази')
+            ->modalCancelActionLabel('Отказ')
+            ->fillForm(static fn (ContractBatch $record): array => [
+                'operator_id' => $record->attached_user_id,
+            ])
+            ->schema([
+                Select::make('operator_id')
+                    ->label('Оператор')
+                    ->placeholder('— без прикачване —')
+                    ->options(static fn (): array => User::query()
+                        ->where('role', User::ROLE_OPERATOR)
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->preload()
+                    ->nullable(),
+            ])
+            ->action(function (array $data, ContractBatch $record): void {
+                $actor = auth()->user();
+
+                if (! $actor instanceof User) {
+                    return;
+                }
+
+                $operator = filled($data['operator_id'] ?? null)
+                    ? User::find($data['operator_id'])
+                    : null;
+
+                try {
+                    app(ContractBatchService::class)->attachToOperator($record, $operator, $actor);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title($operator !== null
+                        ? sprintf('Договорът е прикачен към %s.', $operator->name)
+                        : 'Прикачването е премахнато.')
+                    ->success()
+                    ->send();
+            });
     }
 }

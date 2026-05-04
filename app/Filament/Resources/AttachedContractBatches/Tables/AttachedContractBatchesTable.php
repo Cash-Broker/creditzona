@@ -1,19 +1,15 @@
 <?php
 
-namespace App\Filament\Resources\ContractBatches\Tables;
+namespace App\Filament\Resources\AttachedContractBatches\Tables;
 
-use App\Filament\Resources\ContractBatches\ContractBatchResource;
 use App\Models\ContractBatch;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class ContractBatchesTable
+class AttachedContractBatchesTable
 {
     public static function configure(Table $table): Table
     {
@@ -29,28 +25,19 @@ class ContractBatchesTable
                     ->sortable(),
                 TextColumn::make('company_key')
                     ->label('Фирма')
-                    ->formatStateUsing(static fn (?string $state): string => ContractBatch::getCompanyLabel($state))
-                    ->searchable(),
+                    ->formatStateUsing(static fn (?string $state): string => ContractBatch::getCompanyLabel($state)),
                 TextColumn::make('selected_document_types')
                     ->label('Документи')
                     ->state(fn (ContractBatch $record): string => (string) count($record->selected_document_types ?? []))
                     ->tooltip(fn (ContractBatch $record): string => implode(', ', $record->getSelectedDocumentTypeLabels()))
                     ->suffix(' бр.'),
                 TextColumn::make('createdBy.name')
-                    ->label('Генерирани от')
-                    ->placeholder('Няма'),
-                TextColumn::make('attachedUser.name')
-                    ->label('Прикачен към')
-                    ->badge()
-                    ->color('primary')
+                    ->label('Генериран от')
                     ->placeholder('Няма'),
                 TextColumn::make('generated_at')
-                    ->label('Генерирани на')
+                    ->label('Генериран на')
                     ->dateTime('d.m.Y H:i', 'Europe/Sofia')
                     ->sortable(),
-            ])
-            ->filters([
-                //
             ])
             ->recordActions([
                 Action::make('downloadCombinedPdf')
@@ -58,24 +45,8 @@ class ContractBatchesTable
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->visible(fn (ContractBatch $record): bool => $record->combinedPdfExists())
                     ->url(fn (ContractBatch $record): string => route('admin.contract-batches.combined-pdf.download', $record)),
-                ContractBatchResource::makeAttachAction(),
                 ViewAction::make(),
-                EditAction::make(),
             ])
-            ->defaultSort('generated_at', 'desc')
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    static::makeDeleteBulkAction(),
-                ]),
-            ]);
-    }
-
-    public static function makeDeleteBulkAction(): DeleteBulkAction
-    {
-        return DeleteBulkAction::make()
-            ->requiresConfirmation()
-            ->modalHeading('Изтриване на избраните договорни пакети')
-            ->modalDescription('Сигурни ли сте? Всички избрани договорни пакети и генерираните им файлове ще бъдат изтрити безвъзвратно.')
-            ->modalSubmitActionLabel('Изтрий пакетите');
+            ->defaultSort('generated_at', 'desc');
     }
 }

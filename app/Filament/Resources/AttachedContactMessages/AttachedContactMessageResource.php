@@ -8,11 +8,17 @@ use App\Filament\Resources\ContactMessages\Schemas\ContactMessageInfolist;
 use App\Filament\Resources\ContactMessages\Tables\ContactMessagesTable;
 use App\Models\ContactMessage;
 use App\Models\User;
+use App\Services\ContactMessageService;
 use BackedEnum;
+use DomainException;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
@@ -55,6 +61,64 @@ class AttachedContactMessageResource extends Resource
     public static function table(Table $table): Table
     {
         return ContactMessagesTable::configure($table, isAttachedResource: true);
+    }
+
+    public static function makeReplyAction(): Action
+    {
+        return Action::make('reply')
+            ->label('Отговори')
+            ->icon(Heroicon::OutlinedPaperAirplane)
+            ->color('primary')
+            ->modalHeading('Отговор към подателя')
+            ->modalSubmitActionLabel('Изпрати')
+            ->modalCancelActionLabel('Отказ')
+            ->modalDescription(fn (ContactMessage $record): string => sprintf(
+                'Отговорът ще бъде изпратен на %s от вашия имейл и подателят ще може да отговори директно на вас.',
+                $record->email ?? '—',
+            ))
+            ->visible(function (ContactMessage $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && $user->isOperator()
+                    && $record->assigned_user_id === $user->id
+                    && $record->archived_at === null
+                    && filled($record->email)
+                    && filled($user->email);
+            })
+            ->schema([
+                Textarea::make('body')
+                    ->label('Съобщение')
+                    ->required()
+                    ->rows(8)
+                    ->maxLength(5000)
+                    ->autosize()
+                    ->dehydrateStateUsing(static fn (?string $state): ?string => filled($state) ? trim($state) : null),
+            ])
+            ->action(function (array $data, ContactMessage $record): void {
+                $user = auth()->user();
+
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                try {
+                    app(ContactMessageService::class)->reply($record, $user, (string) ($data['body'] ?? ''));
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Отговорът е изпратен.')
+                    ->body('Съобщението замина към '.$record->email.'.')
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getPages(): array

@@ -21,14 +21,24 @@ class ContractDocumentAuthorizationTest extends TestCase
         Storage::fake('legal');
     }
 
-    public function test_only_staff_users_can_access_contract_batch_downloads(): void
+    public function test_admin_and_attached_operator_can_view_contract_batch_documents(): void
     {
         Storage::disk('legal')->put('generated/test/document.pdf', 'pdf');
         Storage::disk('legal')->put('generated/test/document.docx', 'docx');
 
-        $operator = User::factory()->create([
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $attachedOperator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
             'email' => 'anna@creditzona.test',
+        ]);
+
+        $otherOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
         ]);
 
         $nonStaff = User::factory()->create([
@@ -69,23 +79,36 @@ class ContractDocumentAuthorizationTest extends TestCase
             'archive_path' => null,
             'archive_file_name' => null,
             'generated_at' => now(),
-            'created_by_user_id' => $operator->id,
+            'created_by_user_id' => $admin->id,
+            'attached_user_id' => $attachedOperator->id,
         ]);
 
         $policy = new ContractBatchPolicy;
         $adminPanel = (new Panel)->id('admin');
 
-        $this->assertTrue($operator->canAccessPanel($adminPanel));
-        $this->assertTrue($policy->view($operator, $batch));
+        $this->assertTrue($admin->canAccessPanel($adminPanel));
+        $this->assertTrue($attachedOperator->canAccessPanel($adminPanel));
+
+        $this->assertTrue($policy->view($admin, $batch));
+        $this->assertTrue($policy->view($attachedOperator, $batch));
+        $this->assertFalse($policy->view($otherOperator, $batch));
         $this->assertFalse($policy->view($nonStaff, $batch));
 
-        $this->actingAs($operator)
+        $this->actingAs($admin)
             ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey]))
             ->assertOk();
 
-        $this->actingAs($operator)
+        $this->actingAs($attachedOperator)
+            ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey]))
+            ->assertOk();
+
+        $this->actingAs($attachedOperator)
             ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey, 'format' => ContractBatch::DOCUMENT_VARIANT_DOCX]))
             ->assertOk();
+
+        $this->actingAs($otherOperator)
+            ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey]))
+            ->assertForbidden();
 
         $this->actingAs($nonStaff)
             ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey]))
@@ -94,5 +117,45 @@ class ContractDocumentAuthorizationTest extends TestCase
         $this->actingAs($nonStaff)
             ->get(route('admin.contract-batches.documents.download', [$batch, $documentKey, 'format' => ContractBatch::DOCUMENT_VARIANT_DOCX]))
             ->assertForbidden();
+    }
+
+    public function test_only_admin_can_create_update_or_delete_contract_batches(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = ContractBatch::query()->create([
+            'company_key' => ContractBatch::COMPANY_REKREDO_KONSULT_DPK,
+            'client_full_name' => 'Иван Иванов',
+            'co_applicant_full_name' => null,
+            'request_date' => '2026-03-20',
+            'selected_document_types' => [],
+            'input_payload' => ['submitted' => [], 'derived' => []],
+            'generated_documents' => [],
+            'generated_at' => now(),
+            'created_by_user_id' => $admin->id,
+            'attached_user_id' => $operator->id,
+        ]);
+
+        $policy = new ContractBatchPolicy;
+
+        $this->assertTrue($policy->create($admin));
+        $this->assertFalse($policy->create($operator));
+
+        $this->assertTrue($policy->update($admin, $batch));
+        $this->assertFalse($policy->update($operator, $batch));
+
+        $this->assertTrue($policy->delete($admin, $batch));
+        $this->assertFalse($policy->delete($operator, $batch));
+
+        $this->assertTrue($policy->attach($admin, $batch));
+        $this->assertFalse($policy->attach($operator, $batch));
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ContactMessage extends Model
 {
@@ -90,5 +91,10 @@ class ContactMessage extends Model
     public function generatedLead(): BelongsTo
     {
         return $this->belongsTo(Lead::class, 'generated_lead_id');
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(ContactMessageReply::class)->orderBy('sent_at');
     }
 }

@@ -92,6 +92,7 @@ class LeadResource extends Resource
             'in_progress' => 'В обработка',
             'processed' => 'Обработена',
             'approved' => 'Одобрена',
+            'disbursed' => 'Усвоен кредит',
             'rejected' => 'Отказана',
         ];
     }
@@ -120,6 +121,7 @@ class LeadResource extends Resource
             'sms', 'email' => Color::Zinc,
             'in_progress' => 'info',
             'processed', 'approved' => 'success',
+            'disbursed' => Color::Emerald,
             'rejected' => 'danger',
             default => 'gray',
         };

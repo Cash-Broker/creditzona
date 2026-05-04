@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\ContactMessages\Schemas;
 
+use App\Models\ContactMessage;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -39,6 +41,15 @@ class ContactMessageInfolist
                             ->markdown()
                             ->columnSpanFull(),
                     ]),
+                Section::make('Кореспонденция')
+                    ->description('Изпратени отговори към подателя.')
+                    ->visible(fn (ContactMessage $record): bool => $record->replies()->exists())
+                    ->schema([
+                        ViewEntry::make('replies_thread')
+                            ->view('filament.resources.contact-messages.infolists.replies-thread')
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 }

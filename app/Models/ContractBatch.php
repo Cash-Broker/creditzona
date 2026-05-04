@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -54,6 +55,7 @@ class ContractBatch extends Model
         'archive_file_name',
         'generated_at',
         'created_by_user_id',
+        'attached_user_id',
     ];
 
     public static function getCompanyDefinitions(): array
@@ -206,9 +208,19 @@ class ContractBatch extends Model
         return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
+    public function attachedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'attached_user_id');
+    }
+
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function scopeAttachedToUser(Builder $query, User $user): Builder
+    {
+        return $query->where('attached_user_id', $user->id);
     }
 
     public function getDisplayTitle(): string

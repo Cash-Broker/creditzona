@@ -46,13 +46,13 @@ class LeadCommunicationWidget extends Widget implements HasForms
             ->components([
                 Textarea::make('body')
                     ->hiddenLabel()
-                    ->placeholder('Напишете вътрешно съобщение по клиента...')
+                    ->placeholder('Съобщение...')
                     ->required()
                     ->maxLength(2000)
-                    ->rows(4)
+                    ->rows(1)
                     ->autosize()
                     ->extraInputAttributes([
-                        'class' => 'min-h-28 rounded-2xl bg-gray-50/80 text-sm leading-6 shadow-none dark:bg-gray-900/70',
+                        'class' => 'cz-chat-input rounded-2xl bg-gray-50/80 text-sm leading-snug shadow-none dark:bg-gray-900/70',
                     ], merge: true)
                     ->dehydrateStateUsing(static fn (?string $state): ?string => filled($state) ? trim($state) : null),
             ])

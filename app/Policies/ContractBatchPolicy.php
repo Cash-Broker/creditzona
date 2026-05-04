@@ -9,32 +9,42 @@ class ContractBatchPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isStaff($user);
+        return $user->isAdmin() || $user->isOperator();
     }
 
     public function view(User $user, ContractBatch $contractBatch): bool
     {
-        return $this->isStaff($user);
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->isOperator()
+            && $contractBatch->attached_user_id === $user->id;
     }
 
     public function create(User $user): bool
     {
-        return $this->isStaff($user);
+        return $user->isAdmin();
     }
 
     public function update(User $user, ContractBatch $contractBatch): bool
     {
-        return $this->isStaff($user);
+        return $user->isAdmin();
     }
 
     public function delete(User $user, ContractBatch $contractBatch): bool
     {
-        return $this->isStaff($user);
+        return $user->isAdmin();
     }
 
     public function deleteAny(User $user): bool
     {
-        return $this->isStaff($user);
+        return $user->isAdmin();
+    }
+
+    public function attach(User $user, ContractBatch $contractBatch): bool
+    {
+        return $user->isAdmin();
     }
 
     public function restore(User $user, ContractBatch $contractBatch): bool
@@ -55,10 +65,5 @@ class ContractBatchPolicy
     public function forceDeleteAny(User $user): bool
     {
         return false;
-    }
-
-    private function isStaff(User $user): bool
-    {
-        return $user->isAdmin() || $user->isOperator();
     }
 }

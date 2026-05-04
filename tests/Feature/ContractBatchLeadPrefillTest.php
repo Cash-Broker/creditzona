@@ -20,8 +20,13 @@ class ContractBatchLeadPrefillTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_create_contract_batch_page_prefills_data_from_source_lead(): void
+    public function test_admin_create_contract_batch_page_prefills_data_from_source_lead(): void
     {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
         $operator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
             'email' => 'anna@creditzona.test',
@@ -30,7 +35,7 @@ class ContractBatchLeadPrefillTest extends TestCase
         $lead = $this->createLeadForContracts($operator);
         $guarantor = $lead->guarantors()->firstOrFail();
 
-        $this->actingAs($operator);
+        $this->actingAs($admin);
 
         Livewire::withQueryParams([
             'lead_id' => $lead->id,
@@ -46,24 +51,17 @@ class ContractBatchLeadPrefillTest extends TestCase
             ->assertSet('data.loan.institution_name', 'Test Bank');
     }
 
-    public function test_create_contract_batch_page_does_not_prefill_inaccessible_lead(): void
+    public function test_create_contract_batch_page_returns_empty_when_lead_id_does_not_exist(): void
     {
-        $assignedOperator = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
         ]);
 
-        $otherOperator = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'elena@creditzona.test',
-        ]);
-
-        $lead = $this->createLeadForContracts($assignedOperator);
-
-        $this->actingAs($otherOperator);
+        $this->actingAs($admin);
 
         Livewire::withQueryParams([
-            'lead_id' => $lead->id,
+            'lead_id' => 999999,
         ])->test(CreateContractBatch::class)
             ->assertSet('data.lead_id', null)
             ->assertSet('data.client.full_name', null)
@@ -95,7 +93,7 @@ class ContractBatchLeadPrefillTest extends TestCase
         ])->assertSee('Генерирай договори');
     }
 
-    public function test_attached_and_returned_lead_pages_show_generate_contracts_action(): void
+    public function test_attached_and_returned_lead_pages_hide_generate_contracts_action_from_operators(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -123,19 +121,19 @@ class ContractBatchLeadPrefillTest extends TestCase
 
         Livewire::test(ViewAttachedLead::class, [
             'record' => (string) $attachedLead->getKey(),
-        ])->assertSee('Генерирай договори');
+        ])->assertDontSee('Генерирай договори');
 
         Livewire::test(EditAttachedLead::class, [
             'record' => (string) $attachedLead->getKey(),
-        ])->assertSee('Генерирай договори');
+        ])->assertDontSee('Генерирай договори');
 
         Livewire::test(ViewReturnedToMeLead::class, [
             'record' => (string) $returnedLead->getKey(),
-        ])->assertSee('Генерирай договори');
+        ])->assertDontSee('Генерирай договори');
 
         Livewire::test(EditReturnedToMeLead::class, [
             'record' => (string) $returnedLead->getKey(),
-        ])->assertSee('Генерирай договори');
+        ])->assertDontSee('Генерирай договори');
     }
 
     private function createLeadForContracts(User $assignedUser, array $overrides = []): Lead

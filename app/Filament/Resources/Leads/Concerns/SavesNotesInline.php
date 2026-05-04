@@ -6,9 +6,20 @@ use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Models\User;
 use App\Support\Notes\NoteHistory;
+use Livewire\Attributes\On;
 
 trait SavesNotesInline
 {
+    #[On('cz-chat-request-parent-save')]
+    public function saveFormOnChatRequest(): void
+    {
+        if (! method_exists($this, 'save')) {
+            return;
+        }
+
+        $this->save(shouldRedirect: false, shouldSendSavedNotification: false);
+    }
+
     public function saveNoteOnly(string $note): void
     {
         $note = trim($note);

@@ -3,13 +3,16 @@
 namespace App\Services;
 
 use App\Mail\ContactMessageReceived;
+use App\Mail\ContactMessageReplyMail;
 use App\Models\ContactMessage;
+use App\Models\ContactMessageReply;
 use App\Models\Lead;
 use App\Models\User;
 use App\Support\Notes\NoteHistory;
 use App\Support\Phone\PhoneNormalizer;
 use DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -27,6 +30,83 @@ class ContactMessageService
         $this->sendNotificationEmail($contactMessage);
 
         return $contactMessage;
+    }
+
+    public function reply(ContactMessage $contactMessage, User $sender, string $body): ContactMessageReply
+    {
+        $body = trim($body);
+
+        if ($body === '') {
+            throw new DomainException('Съобщението не може да бъде празно.');
+        }
+
+        if (blank($contactMessage->email)) {
+            throw new DomainException('Това запитване няма имейл адрес, на който да отговорите.');
+        }
+
+        if (! ($sender->isAdmin() || $sender->isOperator())) {
+            throw new AuthorizationException('Нямате достъп да отговорите на това съобщение.');
+        }
+
+        if ($contactMessage->assigned_user_id !== $sender->id) {
+            throw new AuthorizationException('Само закаченият оператор може да отговори на това съобщение.');
+        }
+
+        if (blank($sender->email)) {
+            throw new DomainException('Личният имейл на оператора липсва — не може да се изпрати отговор.');
+        }
+
+        $previousReplies = $contactMessage->replies()->orderBy('sent_at')->get();
+        $previousMessageIds = $previousReplies
+            ->pluck('message_id')
+            ->filter()
+            ->values()
+            ->all();
+        $inReplyTo = $previousReplies->last()?->message_id;
+
+        $subject = sprintf(
+            'Re: Запитване от %s към CreditZona',
+            $contactMessage->full_name,
+        );
+
+        return DB::transaction(function () use ($contactMessage, $sender, $body, $subject, $inReplyTo, $previousMessageIds): ContactMessageReply {
+            $reply = ContactMessageReply::query()->create([
+                'contact_message_id' => $contactMessage->id,
+                'sender_user_id' => $sender->id,
+                'body' => $body,
+                'from_email' => $sender->email,
+                'to_email' => $contactMessage->email,
+                'subject' => $subject,
+                'in_reply_to' => $inReplyTo,
+                'sent_at' => now(),
+            ]);
+
+            $messageId = sprintf(
+                'contact-reply-%d.message-%d@creditzona.bg',
+                $reply->id,
+                $contactMessage->id,
+            );
+
+            $reply->forceFill(['message_id' => $messageId])->save();
+
+            $references = $previousMessageIds;
+
+            if ($inReplyTo !== null && ! in_array($inReplyTo, $references, true)) {
+                $references[] = $inReplyTo;
+            }
+
+            Mail::to($contactMessage->email)->queue(new ContactMessageReplyMail(
+                contactMessage: $contactMessage,
+                sender: $sender,
+                body: $body,
+                subjectLine: $subject,
+                messageId: $messageId,
+                inReplyTo: $inReplyTo,
+                referenceMessageIds: $references,
+            ));
+
+            return $reply->refresh();
+        });
     }
 
     public function assignToOperator(ContactMessage $contactMessage, User $operator, User $actor): ContactMessage
