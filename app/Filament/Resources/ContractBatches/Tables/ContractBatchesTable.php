@@ -44,7 +44,7 @@ class ContractBatchesTable
                     ->label('Град')
                     ->formatStateUsing(static fn (?string $state): string => filled($state) ? 'гр. '.$state : '—')
                     ->searchable(),
-                TextColumn::make('commission_bgn')
+                TextColumn::make('commission_eur')
                     ->label('Комисионна')
                     ->alignEnd()
                     ->placeholder('')
@@ -56,9 +56,7 @@ class ContractBatchesTable
                             return null;
                         }
 
-                        $bgn = ((float) $commission) * 1.95583;
-
-                        return number_format($bgn, 0, '.', ' ').' лв.';
+                        return number_format((float) $commission, 0, '.', ' ').' €';
                     }),
             ])
             ->searchable()
