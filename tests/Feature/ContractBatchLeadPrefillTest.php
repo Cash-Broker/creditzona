@@ -9,6 +9,7 @@ use App\Filament\Resources\Leads\Pages\EditLead;
 use App\Filament\Resources\Leads\Pages\ViewLead;
 use App\Filament\Resources\ReturnedToMeLeads\Pages\EditReturnedToMeLead;
 use App\Filament\Resources\ReturnedToMeLeads\Pages\ViewReturnedToMeLead;
+use App\Models\ContractBatch;
 use App\Models\Lead;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -42,8 +43,10 @@ class ContractBatchLeadPrefillTest extends TestCase
         ])->test(CreateContractBatch::class)
             ->assertSet('data.lead_id', $lead->id)
             ->assertSet('data.lead_guarantor_id', $guarantor->id)
+            ->assertSet('data.document_layout', ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY)
             ->assertSet('data.client.full_name', 'Ivan Petrov Ivanov')
             ->assertSet('data.client.egn', '8501010000')
+            ->assertSet('data.client.city', 'Plovdiv')
             ->assertSet('data.co_applicant.full_name', 'Maria Petrova Ivanova')
             ->assertSet('data.dates.request_date', fn (mixed $state): bool => is_string($state) && str_starts_with($state, '2026-03-20'))
             ->assertSet('data.financial.monthly_net_income_eur', 2600)

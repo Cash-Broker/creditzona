@@ -34,6 +34,12 @@ class ContractBatch extends Model
 
     public const DOCUMENT_TYPE_DECLARATION = 'declaration';
 
+    public const DOCUMENT_LAYOUT_FULL = 'full';
+
+    public const DOCUMENT_LAYOUT_SIMPLIFIED = 'simplified';
+
+    public const DOCUMENT_LAYOUT_LOAN_ONLY = 'loan_only';
+
     public const COMPANY_REKREDO_KONSULT_DPK = 'rekredo_konsult_dpk';
 
     public const COMPANY_D_CONSULTING_EOOD = 'd_consulting_eood';
@@ -41,7 +47,9 @@ class ContractBatch extends Model
     protected $fillable = [
         'lead_id',
         'company_key',
+        'document_layout',
         'client_full_name',
+        'client_city',
         'co_applicant_full_name',
         'request_date',
         'selected_document_types',
@@ -111,6 +119,47 @@ class ContractBatch extends Model
     public static function getDocumentTypeLabel(?string $documentType): string
     {
         return self::getDocumentTypeOptions()[$documentType] ?? ($documentType ?: 'Няма');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getLayoutOptions(): array
+    {
+        return [
+            self::DOCUMENT_LAYOUT_FULL => 'Пълен',
+            self::DOCUMENT_LAYOUT_SIMPLIFIED => 'Опростен',
+            self::DOCUMENT_LAYOUT_LOAN_ONLY => 'Договор за Заем + Заповед',
+        ];
+    }
+
+    public static function getLayoutLabel(?string $layout): string
+    {
+        return self::getLayoutOptions()[$layout] ?? ($layout ?: 'Няма');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getDocumentTypesForLayout(string $layout): array
+    {
+        return match ($layout) {
+            self::DOCUMENT_LAYOUT_LOAN_ONLY => [
+                self::DOCUMENT_TYPE_LOAN_AGREEMENT,
+                self::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE,
+            ],
+            self::DOCUMENT_LAYOUT_SIMPLIFIED => [
+                self::DOCUMENT_TYPE_APPLICATION_REQUEST,
+                self::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
+                self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
+                self::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
+                self::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
+                self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+                self::DOCUMENT_TYPE_DECLARATION,
+            ],
+            self::DOCUMENT_LAYOUT_FULL => self::getDocumentGenerationOrder(),
+            default => [],
+        };
     }
 
     public static function getGeneratedDocumentLabel(string $documentType, ?int $copyNumber = null): string

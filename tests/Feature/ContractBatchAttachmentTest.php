@@ -67,7 +67,7 @@ class ContractBatchAttachmentTest extends TestCase
         $this->assertNull($updated->attached_user_id);
     }
 
-    public function test_non_admin_cannot_attach_contract_batches(): void
+    public function test_any_user_can_attach_contract_batches(): void
     {
         $operator = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
@@ -81,12 +81,12 @@ class ContractBatchAttachmentTest extends TestCase
 
         $batch = $this->createBatch(['created_by_user_id' => $operator->id]);
 
-        $this->expectException(AuthorizationException::class);
+        $updated = app(ContractBatchService::class)->attachToOperator($batch, $otherOperator, $operator);
 
-        app(ContractBatchService::class)->attachToOperator($batch, $otherOperator, $operator);
+        $this->assertSame($otherOperator->id, $updated->attached_user_id);
     }
 
-    public function test_cannot_attach_contract_batch_to_admin(): void
+    public function test_can_attach_contract_batch_to_admin(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -100,16 +100,21 @@ class ContractBatchAttachmentTest extends TestCase
 
         $batch = $this->createBatch(['created_by_user_id' => $admin->id]);
 
-        $this->expectException(DomainException::class);
+        $updated = app(ContractBatchService::class)->attachToOperator($batch, $otherAdmin, $admin);
 
-        app(ContractBatchService::class)->attachToOperator($batch, $otherAdmin, $admin);
+        $this->assertSame($otherAdmin->id, $updated->attached_user_id);
     }
 
-    public function test_contract_batch_resource_query_is_admin_only(): void
+    public function test_contract_batch_resource_query_filters_by_creator_or_attached_user(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
             'email' => 'renata@creditzona.test',
+        ]);
+
+        $otherAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'other-admin@creditzona.test',
         ]);
 
         $operator = User::factory()->create([
@@ -117,18 +122,30 @@ class ContractBatchAttachmentTest extends TestCase
             'email' => 'anna@creditzona.test',
         ]);
 
-        $batch = $this->createBatch([
+        $myBatch = $this->createBatch([
             'created_by_user_id' => $admin->id,
             'attached_user_id' => $operator->id,
         ]);
 
+        $otherAdminsBatch = $this->createBatch([
+            'created_by_user_id' => $otherAdmin->id,
+            'attached_user_id' => null,
+        ]);
+
+        // Each authenticated user can access the resource
         $this->actingAs($admin);
-        $this->assertSame([$batch->id], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
         $this->assertTrue(ContractBatchResource::canViewAny());
+        // Sees only batches they created or are attached to
+        $this->assertSame([$myBatch->id], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertTrue(ContractBatchResource::canView($myBatch));
+        $this->assertFalse(ContractBatchResource::canView($otherAdminsBatch));
+
+        $this->actingAs($otherAdmin);
+        $this->assertSame([$otherAdminsBatch->id], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
 
         $this->actingAs($operator);
-        $this->assertSame([], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
-        $this->assertFalse(ContractBatchResource::canViewAny());
+        $this->assertSame([$myBatch->id], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertTrue(ContractBatchResource::canView($myBatch));
     }
 
     public function test_attached_resource_query_returns_only_contracts_attached_to_current_operator(): void
@@ -174,7 +191,7 @@ class ContractBatchAttachmentTest extends TestCase
         $this->assertFalse(AttachedContractBatchResource::canViewAny());
     }
 
-    public function test_operator_with_view_all_flag_sees_every_contract_but_cannot_edit(): void
+    public function test_user_with_view_all_flag_sees_every_contract(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -212,14 +229,9 @@ class ContractBatchAttachmentTest extends TestCase
         );
         $this->assertTrue(ContractBatchResource::canView($attachedToAnna));
         $this->assertTrue(ContractBatchResource::canView($unattached));
-
-        $this->assertFalse(ContractBatchResource::canCreate());
-        $this->assertFalse(ContractBatchResource::canEdit($attachedToAnna));
-        $this->assertFalse(ContractBatchResource::canDelete($attachedToAnna));
-        $this->assertFalse(ContractBatchResource::canDeleteAny());
     }
 
-    public function test_operator_without_view_all_flag_cannot_see_contract_batch_resource(): void
+    public function test_user_without_view_all_flag_sees_only_own_or_attached_contracts(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -231,15 +243,22 @@ class ContractBatchAttachmentTest extends TestCase
             'email' => 'anna@creditzona.test',
         ]);
 
-        $this->createBatch([
+        $attachedToAnna = $this->createBatch([
             'created_by_user_id' => $admin->id,
             'attached_user_id' => $anna->id,
         ]);
 
+        $createdByAdmin = $this->createBatch([
+            'created_by_user_id' => $admin->id,
+            'attached_user_id' => null,
+        ]);
+
         $this->actingAs($anna);
 
-        $this->assertFalse(ContractBatchResource::canViewAny());
-        $this->assertSame([], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertTrue(ContractBatchResource::canViewAny());
+        $this->assertSame([$attachedToAnna->id], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertTrue(ContractBatchResource::canView($attachedToAnna));
+        $this->assertFalse(ContractBatchResource::canView($createdByAdmin));
     }
 
     public function test_attached_resource_disallows_create_edit_delete(): void

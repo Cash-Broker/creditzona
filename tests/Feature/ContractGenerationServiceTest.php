@@ -264,6 +264,98 @@ class ContractGenerationServiceTest extends TestCase
         $this->assertCount(6, $batch->generated_documents ?? []);
     }
 
+    public function test_loan_only_layout_generates_loan_agreement_and_promissory_note(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY,
+            'client' => [
+                'city' => 'Пловдив',
+            ],
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY, $batch->document_layout);
+        $this->assertSame('Пловдив', $batch->client_city);
+        $this->assertSame([
+            ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
+            ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE,
+        ], $batch->selected_document_types);
+        $this->assertCount(3, $batch->generated_documents ?? []);
+    }
+
+    public function test_simplified_layout_generates_application_protocol_loan_and_promissory_note(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+            'client' => [
+                'city' => 'Пловдив',
+            ],
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'credit_count_in_institutions' => 2,
+                'institution_count' => 2,
+                'credit_count_in_banks' => 1,
+                'bank_count' => 1,
+                'total_loan_amount_eur' => 12000,
+                'commission_eur' => 600,
+                'monthly_payments_eur' => 410,
+                'private_loans_eur' => 0,
+                'net_income_eur' => 2200,
+                'court_required_eur' => 0,
+            ]),
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED, $batch->document_layout);
+        $this->assertSame([
+            ContractBatch::DOCUMENT_TYPE_APPLICATION_REQUEST,
+            ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
+            ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
+            ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
+            ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
+            ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+            ContractBatch::DOCUMENT_TYPE_DECLARATION,
+        ], $batch->selected_document_types);
+        $this->assertSame(2, data_get($batch->getSubmittedInput(), 'financial.institution_count'));
+        $this->assertEquals(12000, data_get($batch->getSubmittedInput(), 'financial.total_loan_amount_eur'));
+    }
+
+    public function test_full_layout_generates_all_nine_document_types(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_FULL,
+            'client' => [
+                'city' => 'Пловдив',
+            ],
+            'dates' => [
+                'request_date' => '2026-03-20',
+                'mediation_contract_date' => '2026-03-26',
+                'consultation_contract_date' => '2026-03-15',
+                'company_promissory_note_due_date' => '2026-05-12',
+                'co_applicant_promissory_note_due_date' => '2026-05-13',
+            ],
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_FULL, $batch->document_layout);
+        $this->assertSame(ContractBatch::getDocumentGenerationOrder(), $batch->selected_document_types);
+        $this->assertSame('2026-03-15', data_get($batch->getDerivedInput(), 'dates.consultation_agreement_date'));
+    }
+
     public function test_it_requires_co_applicant_for_declaration(): void
     {
         $operator = User::factory()->create([

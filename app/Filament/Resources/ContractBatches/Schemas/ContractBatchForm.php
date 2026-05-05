@@ -6,14 +6,12 @@ use App\Models\ContractBatch;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Services\Contracts\ContractGenerationService;
-use Carbon\CarbonImmutable;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -23,455 +21,302 @@ class ContractBatchForm
 {
     public static function configure(Schema $schema): Schema
     {
+        return static::configureStepOne($schema);
+    }
+
+    public static function configureStepOne(Schema $schema): Schema
+    {
         return $schema
             ->components([
                 Hidden::make('lead_id'),
-                Section::make('Фирма и документи')
-                    ->columns(2)
+                Hidden::make('lead_guarantor_id'),
+                Hidden::make('dates.request_date')->dehydrated(),
+                Hidden::make('company_key')->default(ContractBatch::COMPANY_REKREDO_KONSULT_DPK)->dehydrated(),
+
+                Grid::make(2)
+                    ->extraAttributes(['class' => 'cz-contract-toprow'])
                     ->schema([
-                        Select::make('company_key')
-                            ->label('Фирма')
-                            ->options(ContractBatch::getCompanyOptions())
+                        Select::make('document_layout')
+                            ->label('Вид Документи')
+                            ->options(ContractBatch::getLayoutOptions())
+                            ->default(ContractBatch::DOCUMENT_LAYOUT_FULL)
                             ->required()
+                            ->live()
                             ->native(false),
-                        DatePicker::make('dates.request_date')
-                            ->label('Дата на заявка')
+                        TextInput::make('client.city')
+                            ->label('Град')
+                            ->prefix('гр.')
                             ->required()
-                            ->native(false),
-                        DatePicker::make('dates.mediation_contract_date')
-                            ->label('Дата на договор за посредничество')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, [
-                                ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
-                                ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
-                            ]))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, [
-                                ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
-                                ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
-                            ]))
-                            ->native(false),
-                        CheckboxList::make('selected_document_types')
-                            ->label('Документи за генериране')
-                            ->options(ContractBatch::getDocumentTypeOptions())
-                            ->required()
+                            ->maxLength(120),
+                    ]),
+
+                Grid::make(2)
+                    ->extraAttributes(['class' => 'cz-contract-flatrow'])
+                    ->schema([
+                        Section::make('Данни на Клиент')
+                            ->extraAttributes(['class' => 'cz-contract-flat-section'])
                             ->columns(2)
-                            ->default(array_keys(ContractBatch::getDocumentTypeOptions()))
-                            ->live()
-                            ->columnSpanFull(),
+                            ->schema(static::partyFields('client', strictRequired: true)),
+                        Section::make('Данни на Авалист')
+                            ->extraAttributes(['class' => 'cz-contract-flat-section'])
+                            ->columns(2)
+                            ->schema(static::partyFields('co_applicant', strictRequired: true)),
                     ]),
-                Section::make('Източник на данни')
-                    ->description('Данните се зареждат от заявката и могат да се редактират преди генериране.')
-                    ->columns(2)
-                    ->visible(fn (Get $get): bool => filled($get('lead_id')))
-                    ->schema([
-                        Placeholder::make('lead_source')
-                            ->label('Заявка')
-                            ->content(fn (Get $get): string => static::getLeadSourceLabel($get)),
-                        Select::make('lead_guarantor_id')
-                            ->label('Гарант / съкредитоискател от заявката')
-                            ->options(fn (Get $get): array => static::getLeadGuarantorOptions($get))
-                            ->visible(fn (Get $get): bool => static::getLeadGuarantorOptions($get) !== [])
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set, mixed $state): void {
-                                if (! is_numeric($state) || ! is_numeric($get('lead_id'))) {
-                                    return;
-                                }
 
-                                $guarantor = LeadGuarantor::query()
-                                    ->where('lead_id', (int) $get('lead_id'))
-                                    ->find((int) $state);
-
-                                static::fillCoApplicantFromGuarantor($set, $guarantor);
-                            })
-                            ->native(false),
-                    ]),
-                Section::make('Автоматични дати')
-                    ->description('Полетата се попълват автоматично, но могат да се редактират ръчно преди генериране.')
-                    ->columns(2)
-                    ->schema([
-                        DatePicker::make('dates.mediation_protocol_date')
-                            ->label('Дата на протокол по посредничество')
-                            ->default(static::today())
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL))
-                            ->native(false),
-                        DatePicker::make('dates.consultation_protocol_date')
-                            ->label('Дата на протокол за извършена консултация')
-                            ->default(static::twoWorkingDaysAgo())
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL))
-                            ->native(false),
-                        DatePicker::make('dates.company_promissory_note_issue_date')
-                            ->label('Дата на издаване на записа на заповед към фирмата')
-                            ->default(static::today())
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE))
-                            ->native(false),
-                        DatePicker::make('dates.company_promissory_note_due_date')
-                            ->label('Падеж на записа на заповед към фирмата')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE))
-                            ->native(false),
-                        DatePicker::make('dates.loan_agreement_date')
-                            ->label('Дата на договор за паричен заем')
-                            ->default(static::today())
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT))
-                            ->live()
-                            ->afterStateUpdated(function (Set $set, ?string $state): void {
-                                if (blank($state)) {
-                                    return;
-                                }
-
-                                $set('dates.loan_due_date', CarbonImmutable::parse($state, 'Europe/Sofia')->addYears(2)->format('Y-m-d'));
-                            })
-                            ->native(false),
-                        DatePicker::make('dates.loan_due_date')
-                            ->label('Крайна дата по договора за заем')
-                            ->default(static::twoYearsAfterToday())
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT))
-                            ->native(false),
-                        DatePicker::make('dates.co_applicant_promissory_note_issue_date')
-                            ->label('Дата на издаване на записа на заповед между клиента и съкредитоискателя')
-                            ->default(static::today())
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE))
-                            ->native(false),
-                        DatePicker::make('dates.co_applicant_promissory_note_due_date')
-                            ->label('Падеж на записа на заповед между клиента и съкредитоискателя')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE))
-                            ->native(false),
-                        DatePicker::make('dates.declaration_date')
-                            ->label('Дата на декларацията')
-                            ->default(static::today())
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_DECLARATION))
-                            ->native(false),
-                    ]),
-                Section::make('Клиент')
-                    ->columns(2)
-                    ->schema([
-                        TextInput::make('client.full_name')
-                            ->label('Три имена')
-                            ->required()
-                            ->maxLength(255),
-                        TextInput::make('client.egn')
-                            ->label('ЕГН')
-                            ->required()
-                            ->maxLength(10),
-                        TextInput::make('client.id_card_number')
-                            ->label('Лична карта №')
-                            ->required()
-                            ->maxLength(32),
-                        DatePicker::make('client.id_card_issued_at')
-                            ->label('Издадена на')
-                            ->required()
-                            ->native(false),
-                        TextInput::make('client.id_card_issued_by')
-                            ->label('Издадена от')
-                            ->required()
-                            ->maxLength(255),
-                        Textarea::make('client.permanent_address')
-                            ->label('Постоянен адрес')
-                            ->required()
-                            ->rows(3)
-                            ->columnSpanFull(),
-                        TextInput::make('client.email')
-                            ->label('Имейл')
-                            ->email()
-                            ->required()
-                            ->maxLength(255)
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('Съкредитоискател')
-                    ->description('Попълва се, когато документът изисква второ лице или когато съкредитоискателят участва като поръчител/авалист.')
-                    ->columns(2)
-                    ->visible(fn (Get $get): bool => static::requiresCoApplicantSection($get))
-                    ->schema([
-                        TextInput::make('co_applicant.full_name')
-                            ->label('Три имена')
-                            ->required(fn (Get $get): bool => static::requiresStrictCoApplicant($get))
-                            ->maxLength(255),
-                        TextInput::make('co_applicant.egn')
-                            ->label('ЕГН')
-                            ->required(fn (Get $get): bool => static::requiresStrictCoApplicant($get))
-                            ->maxLength(10),
-                        TextInput::make('co_applicant.id_card_number')
-                            ->label('Лична карта №')
-                            ->required(fn (Get $get): bool => static::requiresStrictCoApplicant($get))
-                            ->maxLength(32),
-                        DatePicker::make('co_applicant.id_card_issued_at')
-                            ->label('Издадена на')
-                            ->required(fn (Get $get): bool => static::requiresStrictCoApplicant($get))
-                            ->native(false),
-                        TextInput::make('co_applicant.id_card_issued_by')
-                            ->label('Издадена от')
-                            ->required(fn (Get $get): bool => static::requiresStrictCoApplicant($get))
-                            ->maxLength(255),
-                        Textarea::make('co_applicant.permanent_address')
-                            ->label('Постоянен адрес')
-                            ->required(fn (Get $get): bool => static::requiresStrictCoApplicant($get))
-                            ->rows(3)
-                            ->columnSpanFull(),
-                        TextInput::make('co_applicant.email')
-                            ->label('Имейл')
-                            ->email()
-                            ->maxLength(255)
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('Финансови данни преди услугата')
-                    ->columns(2)
-                    ->visible(fn (Get $get): bool => static::requiresBeforeServiceFinancialData($get))
-                    ->schema([
-                        TextInput::make('financial.active_credit_count')
-                            ->label('Брой активни кредити')
-                            ->required(fn (Get $get): bool => static::requiresBeforeServiceFinancialData($get))
-                            ->numeric()
-                            ->minValue(0),
-                        static::euroAmountField('financial.liabilities_total_eur', 'Общ размер на задълженията')
-                            ->required(fn (Get $get): bool => static::requiresApplicationRequest($get))
-                            ->visible(fn (Get $get): bool => static::requiresApplicationRequest($get)),
-                        static::euroAmountField('financial.monthly_repayment_burden_eur', 'Обща месечна погасителна тежест')
-                            ->required(fn (Get $get): bool => static::requiresBeforeServiceFinancialData($get)),
-                        static::euroAmountField('financial.monthly_net_income_eur', 'Среден месечен нетен доход')
-                            ->required(fn (Get $get): bool => static::requiresApplicationRequest($get))
-                            ->visible(fn (Get $get): bool => static::requiresApplicationRequest($get)),
-                    ]),
-                Section::make('Резултат след услугата')
-                    ->columns(2)
-                    ->visible(fn (Get $get): bool => static::hasSelected($get, [
-                        ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
-                        ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
+                Section::make('Данни за Кредити')
+                    ->extraAttributes(['class' => 'cz-contract-flat-section'])
+                    ->columns(5)
+                    ->visible(fn (Get $get): bool => static::isLayout($get, [
+                        ContractBatch::DOCUMENT_LAYOUT_FULL,
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
                     ]))
                     ->schema([
-                        TextInput::make('financial.post_service_credit_count')
-                            ->label('Брой кредити след услугата')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, [
-                                ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
-                                ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
-                            ]))
-                            ->numeric()
-                            ->minValue(0),
-                        static::euroAmountField('financial.post_service_monthly_repayment_burden_eur', 'Месечна вноска след услугата')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, [
-                                ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
-                                ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
+                        static::countField('financial.credit_count_in_institutions', 'В Финансови Институции', 'Пример: 3'),
+                        static::countField('financial.institution_count', 'Брой Институции', 'Пример: 2'),
+                        static::countField('financial.credit_count_in_banks', 'Кредити в Банки', 'Пример: 2'),
+                        static::countField('financial.bank_count', 'Брой Банки', 'Пример: 2'),
+                        static::euroAmountField('financial.total_loan_amount_eur', 'Общ Размер', 'Пример: 30000')
+                            ->required(fn (Get $get): bool => static::isLayout($get, [
+                                ContractBatch::DOCUMENT_LAYOUT_FULL,
+                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
                             ])),
-                    ]),
-                Section::make('Възнаграждение')
-                    ->columns(2)
-                    ->visible(fn (Get $get): bool => static::requiresFee($get))
-                    ->schema([
-                        static::euroAmountField('financial.fee_eur', 'Възнаграждение')
-                            ->required(fn (Get $get): bool => static::requiresFee($get))
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('Запис на заповед между клиент и съкредитоискател')
-                    ->columns(2)
-                    ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE))
-                    ->schema([
-                        static::euroAmountField('financial.co_applicant_promissory_note_amount_eur', 'Сума на запис на заповед')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE)),
-                    ]),
-                Section::make('Данни за кредит и заем')
-                    ->columns(2)
-                    ->visible(fn (Get $get): bool => static::requiresLoanOrCreditDetails($get))
-                    ->schema([
-                        TextInput::make('loan.credit_agreement_number')
-                            ->label('Номер на договор за кредит')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL))
-                            ->maxLength(255),
-                        TextInput::make('loan.creditor_name')
-                            ->label('Кредитор')
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL))
-                            ->maxLength(255),
-                        TextInput::make('loan.institution_name')
-                            ->label('Финансова институция или банка')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT))
-                            ->columnSpanFull()
-                            ->maxLength(255),
-                        static::euroAmountField('financial.loan_amount_eur', 'Размер на кредита')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT)),
-                        static::euroAmountField('financial.loan_return_amount_eur', 'Сума за връщане')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT)),
-                        static::euroAmountField('financial.loan_installment_eur', 'Месечна вноска')
-                            ->required(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT))
-                            ->visible(fn (Get $get): bool => static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT)),
+                        static::euroAmountField('financial.commission_eur', 'Комисионна', 'Пример: 2500')
+                            ->required(fn (Get $get): bool => static::isLayout($get, [
+                                ContractBatch::DOCUMENT_LAYOUT_FULL,
+                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                            ])),
+                        static::euroAmountField('financial.monthly_payments_eur', 'Месечни Вноски', 'Пример: 1000'),
+                        static::euroAmountField('financial.private_loans_eur', 'Частни Заеми', 'Пример: 5000'),
+                        static::euroAmountField('financial.net_income_eur', 'Доход (Нетно)', 'Пример: 3000'),
+                        static::euroAmountField('financial.court_required_eur', 'Съдебно Изискуеми', 'Пример: 3000'),
                     ]),
             ]);
     }
 
-    private static function euroAmountField(string $name, string $label): TextInput
+    public static function configureStepTwo(Schema $schema): Schema
     {
-        return TextInput::make($name)
+        return $schema
+            ->components([
+                Hidden::make('lead_id'),
+                Hidden::make('lead_guarantor_id'),
+                Hidden::make('dates.request_date')->dehydrated(),
+                Hidden::make('document_layout')->dehydrated(),
+                Hidden::make('client.city')->dehydrated(),
+
+                ...static::stepOneHiddenMirror(),
+
+                // Full layout: 3 boxed cards in ONE row (consultation 4 cols, promissory 2 cols, loan 6 cols)
+                Grid::make(12)
+                    ->visible(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_FULL))
+                    ->schema([
+                        static::consultationSection()->columnSpan(4),
+                        static::promissorySection()->columnSpan(2),
+                        static::loanSection()->columnSpan(6),
+                    ]),
+
+                // Опростен: 2 boxed cards in ONE row
+                Grid::make(2)
+                    ->visible(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED))
+                    ->schema([
+                        static::consultationSection(),
+                        static::promissorySection(),
+                    ]),
+
+                // Loan only: just the loan card, full width
+                Grid::make(1)
+                    ->visible(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY))
+                    ->schema([
+                        static::loanSection(),
+                    ]),
+            ]);
+    }
+
+    private static function consultationSection(): Section
+    {
+        return Section::make('Договор за Консултантска Услуга и Протокол')
+            ->columns(3)
+            ->schema([
+                static::datePickerField('dates.consultation_contract_date', 'Дата на Договор')
+                    ->required(fn (Get $get): bool => static::isLayout($get, [
+                        ContractBatch::DOCUMENT_LAYOUT_FULL,
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                    ]))
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                        if (filled($state) && blank($get('dates.request_date'))) {
+                            $set('dates.request_date', $state);
+                        }
+                    }),
+                static::datePickerField('dates.consultation_protocol_date', 'Дата на Протокол'),
+                Select::make('company_key')
+                    ->label('Фирма')
+                    ->options(ContractBatch::getCompanyOptions())
+                    ->required()
+                    ->native(false),
+            ]);
+    }
+
+    private static function promissorySection(): Section
+    {
+        return Section::make('Запис на Заповед (Клиент към нас)')
+            ->columns(2)
+            ->schema([
+                static::datePickerField('dates.company_promissory_note_issue_date', 'Дата на Издаване'),
+                static::datePickerField('dates.company_promissory_note_due_date', 'Дата на Плащане')
+                    ->required(fn (Get $get): bool => static::isLayout($get, [
+                        ContractBatch::DOCUMENT_LAYOUT_FULL,
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                    ])),
+            ]);
+    }
+
+    private static function loanSection(): Section
+    {
+        return Section::make('Договор за Заем и Запис на Заповед (Клиент към Поръчител)')
+            ->columns(4)
+            ->schema([
+                static::datePickerField('dates.loan_agreement_date', 'Дата на Договор')
+                    ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                        if (filled($state) && blank($get('dates.request_date'))) {
+                            $set('dates.request_date', $state);
+                        }
+                    }),
+                static::euroAmountField('financial.loan_amount_eur', 'Размер на Заем')->required(),
+                static::euroAmountField('financial.loan_return_amount_eur', 'Сума за Връщане')->required(),
+                static::euroAmountField('financial.loan_installment_eur', 'Месечна Вноска')->required(),
+                TextInput::make('loan.institution_name')
+                    ->label('Име на Банка')
+                    ->columnSpan(2)
+                    ->maxLength(255),
+                TextInput::make('financial.loan_installment_day_of_month')
+                    ->label('Дата на месечна вноска')
+                    ->suffix('число')
+                    ->numeric()
+                    ->minValue(1)
+                    ->maxValue(31),
+                static::datePickerField('dates.loan_last_installment_date', 'Дата на последна вноска'),
+                static::datePickerField('dates.co_applicant_promissory_note_due_date', 'Падеж на запис на заповед')
+                    ->required()
+                    ->columnSpan(2),
+                static::euroAmountField('financial.co_applicant_promissory_note_amount_eur', 'Сума на запис на заповед')
+                    ->required()
+                    ->columnSpan(2),
+            ]);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function stepOneHiddenMirror(): array
+    {
+        return [
+            Hidden::make('client.full_name')->dehydrated(),
+            Hidden::make('client.egn')->dehydrated(),
+            Hidden::make('client.permanent_address')->dehydrated(),
+            Hidden::make('client.id_card_number')->dehydrated(),
+            Hidden::make('client.id_card_issued_at')->dehydrated(),
+            Hidden::make('client.id_card_issued_by')->dehydrated(),
+            Hidden::make('co_applicant.full_name')->dehydrated(),
+            Hidden::make('co_applicant.egn')->dehydrated(),
+            Hidden::make('co_applicant.permanent_address')->dehydrated(),
+            Hidden::make('co_applicant.id_card_number')->dehydrated(),
+            Hidden::make('co_applicant.id_card_issued_at')->dehydrated(),
+            Hidden::make('co_applicant.id_card_issued_by')->dehydrated(),
+        ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function partyFields(string $namespace, bool $strictRequired): array
+    {
+        return [
+            TextInput::make("{$namespace}.full_name")
+                ->label('Имена')
+                ->required($strictRequired)
+                ->maxLength(255),
+            TextInput::make("{$namespace}.egn")
+                ->label('ЕГН')
+                ->required($strictRequired)
+                ->maxLength(10),
+            Textarea::make("{$namespace}.permanent_address")
+                ->label('Адрес')
+                ->required($strictRequired)
+                ->rows(2)
+                ->columnSpanFull(),
+            Grid::make(3)
+                ->columnSpanFull()
+                ->schema([
+                    TextInput::make("{$namespace}.id_card_number")
+                        ->label('Лична Карта')
+                        ->required($strictRequired)
+                        ->maxLength(32),
+                    static::datePickerField("{$namespace}.id_card_issued_at", 'Дата на Издаване')
+                        ->required($strictRequired),
+                    TextInput::make("{$namespace}.id_card_issued_by")
+                        ->label('Издадена от')
+                        ->required($strictRequired)
+                        ->maxLength(255),
+                ]),
+        ];
+    }
+
+    private static function datePickerField(string $name, string $label): DatePicker
+    {
+        return DatePicker::make($name)
+            ->label($label)
+            ->format('Y-m-d')
+            ->displayFormat('d.m.Y')
+            ->placeholder('дд.мм.гггг')
+            ->locale('bg')
+            ->native(true);
+    }
+
+    private static function euroAmountField(string $name, string $label, ?string $placeholder = null): TextInput
+    {
+        $field = TextInput::make($name)
             ->label($label)
             ->numeric()
             ->inputMode('decimal')
             ->minValue(0)
             ->step('0.01')
-            ->prefix('EUR');
+            ->suffix('€');
+
+        if ($placeholder !== null) {
+            $field->placeholder($placeholder);
+        }
+
+        return $field;
     }
 
-    private static function requiresCoApplicantSection(Get $get): bool
+    private static function countField(string $name, string $label, ?string $placeholder = null): TextInput
     {
-        return count(array_intersect(static::selectedTypes($get), ContractBatch::getCoApplicantDocumentTypes())) > 0;
-    }
+        $field = TextInput::make($name)
+            ->label($label)
+            ->numeric()
+            ->minValue(0)
+            ->suffix('броя');
 
-    private static function requiresStrictCoApplicant(Get $get): bool
-    {
-        return static::hasSelected($get, [
-            ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
-            ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE,
-            ContractBatch::DOCUMENT_TYPE_DECLARATION,
-        ]);
-    }
+        if ($placeholder !== null) {
+            $field->placeholder($placeholder);
+        }
 
-    private static function requiresBeforeServiceFinancialData(Get $get): bool
-    {
-        return static::hasSelected($get, [
-            ContractBatch::DOCUMENT_TYPE_APPLICATION_REQUEST,
-            ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
-            ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
-        ]);
-    }
-
-    private static function requiresApplicationRequest(Get $get): bool
-    {
-        return static::hasSelected($get, ContractBatch::DOCUMENT_TYPE_APPLICATION_REQUEST);
-    }
-
-    private static function requiresFee(Get $get): bool
-    {
-        return static::hasSelected($get, [
-            ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
-            ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
-            ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
-        ]);
-    }
-
-    private static function requiresLoanOrCreditDetails(Get $get): bool
-    {
-        return static::hasSelected($get, [
-            ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
-            ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
-        ]);
+        return $field;
     }
 
     /**
-     * @param  string|array<int, string>  $types
+     * @param  string|array<int, string>  $layouts
      */
-    private static function hasSelected(Get $get, string|array $types): bool
+    private static function isLayout(Get $get, string|array $layouts): bool
     {
-        $selected = static::selectedTypes($get);
+        $current = $get('document_layout');
 
-        return count(array_intersect($selected, (array) $types)) > 0;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private static function selectedTypes(Get $get): array
-    {
-        return array_values(array_filter(
-            $get('selected_document_types') ?? [],
-            static fn (mixed $value): bool => is_string($value) && filled($value),
-        ));
-    }
-
-    private static function today(): string
-    {
-        return CarbonImmutable::now('Europe/Sofia')->format('Y-m-d');
-    }
-
-    private static function twoYearsAfterToday(): string
-    {
-        return CarbonImmutable::now('Europe/Sofia')->addYears(2)->format('Y-m-d');
-    }
-
-    private static function twoWorkingDaysAgo(): string
-    {
-        $date = CarbonImmutable::now('Europe/Sofia')->startOfDay();
-        $remainingDays = 2;
-
-        while ($remainingDays > 0) {
-            $date = $date->subDay();
-
-            if ($date->isWeekend()) {
-                continue;
-            }
-
-            $remainingDays--;
+        if (! is_string($current) || $current === '') {
+            return false;
         }
 
-        return $date->format('Y-m-d');
-    }
-
-    private static function getLeadSourceLabel(Get $get): string
-    {
-        $leadId = $get('lead_id');
-
-        if (! is_numeric($leadId)) {
-            return 'Няма';
-        }
-
-        $lead = Lead::query()->find((int) $leadId);
-
-        if (! $lead instanceof Lead) {
-            return 'Няма';
-        }
-
-        $fullName = trim(implode(' ', array_filter([
-            $lead->first_name,
-            $lead->middle_name,
-            $lead->last_name,
-        ])));
-
-        return trim(implode(' - ', array_filter([
-            '#'.$lead->id,
-            filled($fullName) ? $fullName : null,
-        ])));
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private static function getLeadGuarantorOptions(Get $get): array
-    {
-        $leadId = $get('lead_id');
-
-        if (! is_numeric($leadId)) {
-            return [];
-        }
-
-        return LeadGuarantor::query()
-            ->where('lead_id', (int) $leadId)
-            ->orderBy('id')
-            ->get()
-            ->mapWithKeys(static function (LeadGuarantor $guarantor): array {
-                $fullName = trim(implode(' ', array_filter([
-                    $guarantor->first_name,
-                    $guarantor->middle_name,
-                    $guarantor->last_name,
-                ])));
-
-                return [
-                    $guarantor->id => filled($fullName)
-                        ? $fullName
-                        : 'Гарант #'.$guarantor->id,
-                ];
-            })
-            ->all();
-    }
-
-    private static function fillCoApplicantFromGuarantor(Set $set, ?LeadGuarantor $guarantor): void
-    {
-        $prefill = app(ContractGenerationService::class)
-            ->buildCoApplicantPrefillFromGuarantor($guarantor);
-
-        foreach ($prefill as $field => $value) {
-            if ($value === null) {
-                continue;
-            }
-
-            $set('co_applicant.'.$field, $value);
-        }
+        return in_array($current, (array) $layouts, true);
     }
 }
