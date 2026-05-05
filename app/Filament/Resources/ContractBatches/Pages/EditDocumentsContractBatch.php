@@ -9,18 +9,17 @@ use App\Models\User;
 use App\Services\Contracts\ContractGenerationService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
-class EditContractBatch extends EditRecord
+class EditDocumentsContractBatch extends EditRecord
 {
     protected static string $resource = ContractBatchResource::class;
 
-    protected string $view = 'filament.contract-batches.pages.edit-step-one';
+    protected string $view = 'filament.contract-batches.pages.edit-step-two';
 
     public function getTitle(): string
     {
@@ -30,7 +29,7 @@ class EditContractBatch extends EditRecord
             ? $record->request_date->format('d.m.Y')
             : null;
 
-        return $date !== null ? 'Договор от '.$date : 'Основни данни';
+        return $date !== null ? 'Договор от '.$date : 'Документи';
     }
 
     public function getMaxWidth(): Width|string|null
@@ -40,29 +39,20 @@ class EditContractBatch extends EditRecord
 
     public function form(Schema $schema): Schema
     {
-        return ContractBatchForm::configureStepOne($schema);
+        return ContractBatchForm::configureStepTwo($schema);
     }
 
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make(),
-            static::makeDeleteAction(),
+            EditContractBatch::makeDeleteAction(),
         ];
-    }
-
-    public static function makeDeleteAction(): DeleteAction
-    {
-        return DeleteAction::make()
-            ->requiresConfirmation()
-            ->modalHeading('Изтриване на договорен пакет')
-            ->modalDescription('Сигурни ли сте? Договорният пакет и всички генерирани файлове към него ще бъдат изтрити безвъзвратно.')
-            ->modalSubmitActionLabel('Изтрий пакета');
     }
 
     protected function getFormActions(): array
     {
         return [
+            $this->getBackFormAction(),
             $this->getSaveFormAction(),
             $this->getDeleteFormAction(),
         ];
@@ -70,9 +60,17 @@ class EditContractBatch extends EditRecord
 
     protected function getSaveFormAction(): Action
     {
-        return parent::getSaveFormAction()
-            ->label('Към Документи')
-            ->color('info');
+        return parent::getSaveFormAction()->label('Обнови');
+    }
+
+    protected function getBackFormAction(): Action
+    {
+        return Action::make('back')
+            ->label('Назад')
+            ->color('gray')
+            ->url(fn (): string => ContractBatchResource::getUrl('edit', [
+                'record' => $this->getRecord(),
+            ]));
     }
 
     protected function getDeleteFormAction(): Action
@@ -89,13 +87,6 @@ class EditContractBatch extends EditRecord
                 $record->delete();
                 $this->redirect(ContractBatchResource::getUrl('index'));
             });
-    }
-
-    protected function getRedirectUrl(): string
-    {
-        return ContractBatchResource::getUrl('edit-documents', [
-            'record' => $this->getRecord(),
-        ]);
     }
 
     protected function mutateFormDataBeforeFill(array $data): array
@@ -130,6 +121,6 @@ class EditContractBatch extends EditRecord
             throw new RuntimeException('Невалиден договорен пакет за обновяване.');
         }
 
-        return app(ContractGenerationService::class)->saveDraftBatch($data, $actor, $record);
+        return app(ContractGenerationService::class)->updateBatch($record, $data, $actor);
     }
 }

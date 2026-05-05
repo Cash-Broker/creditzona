@@ -46,6 +46,509 @@
     opacity: 0;
 }
 
+/* Contract batch form: flat layout matching old CreditZone system */
+.fi-resource-contract-batches-resource,
+.fi-resource-contract-batches {
+    --cz-cyan: #0ea5b7;
+    --cz-cyan-soft: rgba(14, 165, 183, 0.16);
+}
+
+/* Force the contract pages to use the full available width */
+body:has(.fi-resource-contract-batches-resource) .fi-main,
+body:has(.fi-resource-contract-batches) .fi-main,
+.fi-resource-contract-batches-resource .fi-main,
+.fi-resource-contract-batches .fi-main,
+.fi-resource-contract-batches-resource[class*="fi-width-"],
+.fi-resource-contract-batches[class*="fi-width-"] {
+    max-width: none !important;
+    width: 100% !important;
+}
+
+body:has(.fi-resource-contract-batches-resource) .fi-main-ctn,
+body:has(.fi-resource-contract-batches) .fi-main-ctn {
+    max-width: none !important;
+}
+
+.fi-resource-contract-batches-resource .fi-page,
+.fi-resource-contract-batches .fi-page {
+    max-width: none !important;
+    width: 100%;
+}
+
+.fi-resource-contract-batches-resource .fi-form,
+.fi-resource-contract-batches .fi-form {
+    gap: 0.75rem;
+    max-width: none;
+    width: 100%;
+}
+
+.fi-resource-contract-batches-resource .fi-section.cz-contract-flat-section,
+.fi-resource-contract-batches .fi-section.cz-contract-flat-section {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-top: 2px solid var(--cz-cyan-soft);
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.fi-resource-contract-batches-resource .fi-section.cz-contract-flat-section > .fi-section-header,
+.fi-resource-contract-batches .fi-section.cz-contract-flat-section > .fi-section-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 0.45rem 0 0.25rem 0;
+}
+
+.fi-resource-contract-batches-resource .fi-section.cz-contract-flat-section .fi-section-header-heading,
+.fi-resource-contract-batches .fi-section.cz-contract-flat-section .fi-section-header-heading,
+.fi-resource-contract-batches-resource .fi-section.cz-contract-flat-section .fi-section-header-heading h3,
+.fi-resource-contract-batches .fi-section.cz-contract-flat-section .fi-section-header-heading h3 {
+    color: var(--cz-cyan);
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.2;
+}
+
+.fi-resource-contract-batches-resource .fi-section.cz-contract-flat-section > .fi-section-content-ctn,
+.fi-resource-contract-batches .fi-section.cz-contract-flat-section > .fi-section-content-ctn {
+    padding: 0.35rem 0 0.85rem 0;
+    background: transparent;
+}
+
+/* Top row (type + city) — also gets a bottom cyan separator */
+.fi-resource-contract-batches-resource .cz-contract-toprow,
+.fi-resource-contract-batches .cz-contract-toprow {
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid var(--cz-cyan-soft);
+}
+
+/* Compact field labels — single line, no wrap */
+.fi-resource-contract-batches-resource .fi-fo-field-wrp .fi-fo-field-lbl,
+.fi-resource-contract-batches .fi-fo-field-wrp .fi-fo-field-lbl,
+.fi-resource-contract-batches-resource .fi-fo-field-wrp label,
+.fi-resource-contract-batches .fi-fo-field-wrp label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #4b5563;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Compact inputs */
+.fi-resource-contract-batches-resource .fi-input,
+.fi-resource-contract-batches .fi-input,
+.fi-resource-contract-batches-resource .fi-select-input,
+.fi-resource-contract-batches .fi-select-input,
+.fi-resource-contract-batches-resource textarea.fi-input,
+.fi-resource-contract-batches textarea.fi-input {
+    font-size: 0.85rem;
+    padding-block: 0.4rem;
+}
+
+.fi-resource-contract-batches-resource .fi-input-wrp,
+.fi-resource-contract-batches .fi-input-wrp {
+    border-radius: 0.5rem;
+}
+
+/* Date pickers: minimum width to fit dd.mm.yyyy */
+.fi-resource-contract-batches-resource .fi-fo-date-time-picker .fi-input,
+.fi-resource-contract-batches .fi-fo-date-time-picker .fi-input {
+    min-width: 7rem;
+}
+
+/* Selects must show their content on one line, never vertically wrapped */
+.fi-resource-contract-batches-resource .fi-fo-select .fi-select-input,
+.fi-resource-contract-batches .fi-fo-select .fi-select-input,
+.fi-resource-contract-batches-resource .fi-fo-select-input-display,
+.fi-resource-contract-batches .fi-fo-select-input-display {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Step 2 sections: Filament default boxed cards (don't strip styles) */
+.fi-resource-contract-batches-resource .fi-section:not(.cz-contract-flat-section),
+.fi-resource-contract-batches .fi-section:not(.cz-contract-flat-section) {
+    background: #ffffff;
+}
+
+/* ============================================================== */
+/* Custom Step 1 form styles (cz-cb-*) — pixel-perfect to reference */
+/* ============================================================== */
+
+.cz-cb-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    max-width: none;
+}
+
+.cz-cb {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.cz-cb-row {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+}
+
+.cz-cb-row-1 {
+    grid-template-columns: 1fr;
+}
+
+.cz-cb-row-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.cz-cb-row-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.cz-cb-row-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+/* 3 (consultation) + 2 (promissory) cols, side-by-side at top of Step 2 */
+.cz-cb-row-cs {
+    grid-template-columns: 3fr 2fr;
+}
+
+.cz-col-span-2 {
+    grid-column: span 2 / span 2;
+}
+
+.cz-col-span-3 {
+    grid-column: span 3 / span 3;
+}
+
+.cz-cb-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cz-section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0ea5e9;
+    margin: 0;
+    padding: 0 0 0.4rem 0;
+    border-bottom: 2px solid rgba(14, 165, 233, 0.35);
+}
+
+.cz-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.cz-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #4b5563;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.cz-req {
+    color: #ef4444;
+    font-weight: 600;
+    margin-left: 0.15rem;
+}
+
+.cz-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background-color: #e5e7eb;
+    color: #6b7280;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: help;
+    line-height: 1;
+}
+
+.cz-input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.875rem;
+    color: #111827;
+    background-color: #ffffff;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 0;
+}
+
+.cz-input:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
+}
+
+/* Hide the native "mm/dd/yyyy" placeholder for empty date inputs.
+   Uses an Alpine-managed cz-date-empty class on date inputs. */
+.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit,
+.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-text,
+.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-month-field,
+.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-day-field,
+.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-year-field {
+    color: transparent !important;
+}
+
+/* Firefox fallback: just hide the spinner area for empty dates */
+@-moz-document url-prefix() {
+    .cz-input.cz-date-empty::-moz-placeholder {
+        color: transparent;
+    }
+}
+
+.cz-textarea {
+    min-height: 2.4rem;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.cz-input-group {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+
+.cz-input-prefix,
+.cz-input-suffix {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.7rem;
+    background-color: #38bdf8;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid #38bdf8;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.cz-input-prefix {
+    border-radius: 0.5rem 0 0 0.5rem;
+    border-right: none;
+}
+
+.cz-input-suffix {
+    border-radius: 0 0.5rem 0.5rem 0;
+    border-left: none;
+}
+
+.cz-input-with-prefix {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.cz-input-with-suffix {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.cz-error {
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.1rem;
+}
+
+/* Buttons */
+.cz-cb-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+.cz-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1.1rem;
+    border-radius: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.cz-btn-primary {
+    color: #0ea5e9;
+    border-color: #0ea5e9;
+    background-color: transparent;
+}
+
+.cz-btn-primary:hover {
+    background-color: rgba(14, 165, 233, 0.08);
+}
+
+.cz-btn-danger {
+    color: #ef4444;
+    border-color: #ef4444;
+    background-color: transparent;
+}
+
+.cz-btn-danger:hover {
+    background-color: rgba(239, 68, 68, 0.08);
+}
+
+.cz-btn-ghost {
+    color: #4b5563;
+    border-color: #d1d5db;
+    background-color: transparent;
+}
+
+.cz-btn-ghost:hover {
+    background-color: #f3f4f6;
+}
+
+/* Step 2 boxed cards */
+.cz-cb-step2 .cz-cb-cards-row {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.cz-cb-step2 .cz-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.85rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.cz-cb-step2 .cz-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 0.3rem 0;
+    line-height: 1.3;
+}
+
+.cz-cb-step2 .cz-card-span-3 { grid-column: span 3 / span 3; }
+.cz-cb-step2 .cz-card-span-4 { grid-column: span 4 / span 4; }
+.cz-cb-step2 .cz-card-span-5 { grid-column: span 5 / span 5; }
+.cz-cb-step2 .cz-card-span-6 { grid-column: span 6 / span 6; }
+.cz-cb-step2 .cz-card-span-7 { grid-column: span 7 / span 7; }
+.cz-cb-step2 .cz-card-span-8 { grid-column: span 8 / span 8; }
+.cz-cb-step2 .cz-card-span-12 { grid-column: span 12 / span 12; }
+
+.cz-cb-row-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* ================================================== */
+/* Contract batches table — zebra stripes + action btns */
+/* ================================================== */
+
+/* Stronger zebra alternation for the contract batches table */
+.fi-resource-contract-batches-resource .fi-ta-table tbody tr:nth-child(odd) > td,
+.fi-resource-contract-batches .fi-ta-table tbody tr:nth-child(odd) > td {
+    background-color: #ffffff;
+}
+
+.fi-resource-contract-batches-resource .fi-ta-table tbody tr:nth-child(even) > td,
+.fi-resource-contract-batches .fi-ta-table tbody tr:nth-child(even) > td {
+    background-color: rgba(14, 165, 233, 0.04);
+}
+
+.fi-resource-contract-batches-resource .fi-ta-table tbody tr:hover > td,
+.fi-resource-contract-batches .fi-ta-table tbody tr:hover > td {
+    background-color: rgba(14, 165, 233, 0.09);
+}
+
+/* Outlined rounded action buttons in the action column */
+.cz-row-action {
+    border: 1.5px solid currentColor !important;
+    border-radius: 0.55rem !important;
+    padding: 0.32rem !important;
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    transition: background-color 0.15s, transform 0.1s;
+    margin: 0 0.1rem !important;
+}
+
+.cz-row-action:hover {
+    transform: translateY(-1px);
+}
+
+.cz-row-action-download {
+    color: #0ea5e9 !important;
+    background-color: rgba(14, 165, 233, 0.06) !important;
+}
+
+.cz-row-action-download:hover {
+    background-color: rgba(14, 165, 233, 0.16) !important;
+}
+
+.cz-row-action-attach {
+    color: #6366f1 !important;
+    background-color: rgba(99, 102, 241, 0.06) !important;
+}
+
+.cz-row-action-attach:hover {
+    background-color: rgba(99, 102, 241, 0.16) !important;
+}
+
+.cz-row-action-edit {
+    color: #f59e0b !important;
+    background-color: rgba(245, 158, 11, 0.06) !important;
+}
+
+.cz-row-action-edit:hover {
+    background-color: rgba(245, 158, 11, 0.16) !important;
+}
+
+.cz-row-action-delete {
+    color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.06) !important;
+}
+
+.cz-row-action-delete:hover {
+    background-color: rgba(239, 68, 68, 0.16) !important;
+}
+
+/* Form action buttons row aligned left, smaller spacing */
+.fi-resource-contract-batches-resource .fi-form-actions,
+.fi-resource-contract-batches .fi-form-actions {
+    justify-content: flex-start;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(14, 165, 183, 0.12);
+    margin-top: 0.5rem;
+}
+
+/* Step 2 page: header and back/save/delete row */
+.fi-resource-contract-batches-resource .cz-contract-flatrow,
+.fi-resource-contract-batches .cz-contract-flatrow {
+    gap: 1.25rem;
+}
+
 .fi-resource-edit-record-page > .fi-page-header-main-ctn > .fi-header,
 .fi-resource-view-record-page > .fi-page-header-main-ctn > .fi-header {
     position: sticky;

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ContractBatches;
 
 use App\Filament\Resources\ContractBatches\Pages\CreateContractBatch;
 use App\Filament\Resources\ContractBatches\Pages\EditContractBatch;
+use App\Filament\Resources\ContractBatches\Pages\EditDocumentsContractBatch;
 use App\Filament\Resources\ContractBatches\Pages\ListContractBatches;
 use App\Filament\Resources\ContractBatches\Pages\ViewContractBatch;
 use App\Filament\Resources\ContractBatches\Schemas\ContractBatchForm;
@@ -85,19 +86,29 @@ class ContractBatchResource extends Resource
             'create' => CreateContractBatch::route('/create'),
             'view' => ViewContractBatch::route('/{record}'),
             'edit' => EditContractBatch::route('/{record}/edit'),
+            'edit-documents' => EditDocumentsContractBatch::route('/{record}/edit/documents'),
         ];
     }
 
     public static function canViewAny(): bool
     {
-        $user = auth()->user();
-
-        return $user instanceof User && $user->canViewAllContracts();
+        return auth()->user() instanceof User;
     }
 
     public static function canView($record): bool
     {
-        return static::canViewAny();
+        $user = auth()->user();
+
+        if (! $user instanceof User || ! $record instanceof ContractBatch) {
+            return false;
+        }
+
+        if ($user->can_view_all_contracts) {
+            return true;
+        }
+
+        return $record->created_by_user_id === $user->id
+            || $record->attached_user_id === $user->id;
     }
 
     public static function canCreate(): bool
@@ -109,12 +120,12 @@ class ContractBatchResource extends Resource
 
     public static function canEdit($record): bool
     {
-        return static::canCreate();
+        return static::canCreate() && static::canView($record);
     }
 
     public static function canDelete($record): bool
     {
-        return static::canCreate();
+        return static::canCreate() && static::canView($record);
     }
 
     public static function canDeleteAny(): bool
@@ -127,11 +138,18 @@ class ContractBatchResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->canViewAllContracts()) {
+        if (! $user instanceof User) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query;
+        if ($user->can_view_all_contracts) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($user): void {
+            $q->where('created_by_user_id', $user->id)
+                ->orWhere('attached_user_id', $user->id);
+        });
     }
 
     public static function makeAttachAction(): Action
@@ -140,9 +158,9 @@ class ContractBatchResource extends Resource
             ->label('Прикачи')
             ->icon(Heroicon::OutlinedUserPlus)
             ->color('primary')
-            ->visible(static fn (): bool => auth()->user()?->isAdmin() ?? false)
-            ->modalHeading('Прикачи договор към оператор')
-            ->modalDescription('Изберете оператор, който ще има достъп до този пакет. Изпразнете полето, за да премахнете прикачването.')
+            ->visible(static fn (): bool => auth()->user() instanceof User)
+            ->modalHeading('Прикачи договор към потребител')
+            ->modalDescription('Изберете потребител, който ще има достъп до този пакет. Изпразнете полето, за да премахнете прикачването.')
             ->modalSubmitActionLabel('Запази')
             ->modalCancelActionLabel('Отказ')
             ->fillForm(static fn (ContractBatch $record): array => [
@@ -150,10 +168,10 @@ class ContractBatchResource extends Resource
             ])
             ->schema([
                 Select::make('operator_id')
-                    ->label('Оператор')
+                    ->label('Потребител')
                     ->placeholder('— без прикачване —')
                     ->options(static fn (): array => User::query()
-                        ->where('role', User::ROLE_OPERATOR)
+                        ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_OPERATOR])
                         ->orderBy('name')
                         ->pluck('name', 'id')
                         ->all())

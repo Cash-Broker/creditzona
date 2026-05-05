@@ -74,10 +74,17 @@ class ContractGenerationService
         $requestDate = $this->buildRequestDateFromLead($lead)
             ?? CarbonImmutable::now('Europe/Sofia')->format('Y-m-d');
 
+        $clientPrefill = $this->buildPartyPrefillFromLead($lead);
+
+        if (filled($lead->city)) {
+            $clientPrefill['city'] = $lead->city;
+        }
+
         return [
             'lead_id' => $lead->id,
             'lead_guarantor_id' => $selectedGuarantor?->id,
-            'client' => $this->buildPartyPrefillFromLead($lead),
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY,
+            'client' => $clientPrefill,
             'co_applicant' => $this->buildPartyPrefillFromGuarantor($selectedGuarantor),
             'financial' => array_filter([
                 'monthly_net_income_eur' => $lead->salary,
@@ -109,6 +116,69 @@ class ContractGenerationService
     public function updateBatch(ContractBatch $batch, array $input, User $actor): ContractBatch
     {
         return $this->persistBatch($batch, $input, $actor);
+    }
+
+    /**
+     * Persist Step 1 (basic) data without running validation or document generation.
+     * Used by the two-step contract creation flow before the user fills out type-specific data.
+     */
+    public function saveDraftBatch(array $input, User $actor, ?ContractBatch $existing = null): ContractBatch
+    {
+        $timezone = 'Europe/Sofia';
+        $documentLayout = $this->normalizeText($input['document_layout'] ?? null);
+        $companyKey = $this->normalizeText($input['company_key'] ?? null) ?? ContractBatch::COMPANY_REKREDO_KONSULT_DPK;
+
+        $clientFullName = $this->normalizeText(data_get($input, 'client.full_name')) ?? '';
+        $coApplicantFullName = $this->normalizeText(data_get($input, 'co_applicant.full_name'));
+        $clientCity = $this->normalizeText(data_get($input, 'client.city'));
+        $requestDate = $this->normalizeDateString(data_get($input, 'dates.request_date'))
+            ?? CarbonImmutable::now($timezone)->format('Y-m-d');
+
+        return DB::transaction(function () use (
+            $existing,
+            $input,
+            $actor,
+            $documentLayout,
+            $companyKey,
+            $clientFullName,
+            $coApplicantFullName,
+            $clientCity,
+            $requestDate
+        ): ContractBatch {
+            $batch = $existing ?? new ContractBatch;
+
+            $existingPayload = is_array($batch->input_payload ?? null) ? $batch->input_payload : [];
+            $existingSubmitted = is_array($existingPayload['submitted'] ?? null) ? $existingPayload['submitted'] : [];
+            $existingDerived = is_array($existingPayload['derived'] ?? null) ? $existingPayload['derived'] : [];
+
+            $mergedSubmitted = array_replace_recursive($existingSubmitted, $input);
+
+            $batch->fill([
+                'company_key' => $companyKey,
+                'document_layout' => $documentLayout,
+                'client_full_name' => $clientFullName,
+                'client_city' => $clientCity,
+                'co_applicant_full_name' => $coApplicantFullName ?: null,
+                'request_date' => $requestDate,
+                'selected_document_types' => $batch->selected_document_types ?? [],
+                'input_payload' => [
+                    'submitted' => $mergedSubmitted,
+                    'derived' => $existingDerived,
+                ],
+            ]);
+
+            if (array_key_exists('lead_id', $input)) {
+                $batch->lead_id = is_numeric($input['lead_id']) ? (int) $input['lead_id'] : null;
+            }
+
+            if (! $batch->exists) {
+                $batch->created_by_user_id = $actor->id;
+            }
+
+            $batch->save();
+
+            return $batch->fresh();
+        });
     }
 
     private function persistBatch(?ContractBatch $existingBatch, array $input, User $actor): ContractBatch
@@ -167,7 +237,9 @@ class ContractGenerationService
                 $batch->fill([
                     'lead_id' => $submitted['lead_id'],
                     'company_key' => $submitted['company_key'],
+                    'document_layout' => $submitted['document_layout'] ?? null,
                     'client_full_name' => $submitted['client']['full_name'],
+                    'client_city' => $submitted['client']['city'] ?? null,
                     'co_applicant_full_name' => $submitted['co_applicant']['full_name'] ?: null,
                     'request_date' => $submitted['dates']['request_date'],
                     'selected_document_types' => $submitted['selected_document_types'],
@@ -210,7 +282,18 @@ class ContractGenerationService
     private function normalizeInput(array $input): array
     {
         $companyKey = $this->normalizeText($input['company_key'] ?? null);
-        $selectedDocumentTypes = ContractBatch::orderSelectedDocumentTypes($input['selected_document_types'] ?? []);
+        $documentLayout = $this->normalizeText($input['document_layout'] ?? null);
+        $layoutOptions = ContractBatch::getLayoutOptions();
+
+        if ($documentLayout !== null && array_key_exists($documentLayout, $layoutOptions)) {
+            $selectedDocumentTypes = ContractBatch::orderSelectedDocumentTypes(
+                ContractBatch::getDocumentTypesForLayout($documentLayout),
+            );
+        } else {
+            $documentLayout = null;
+            $selectedDocumentTypes = ContractBatch::orderSelectedDocumentTypes($input['selected_document_types'] ?? []);
+        }
+
         $sourceLead = $this->resolveLeadById($input['lead_id'] ?? null);
         $sourceGuarantor = $this->resolveLeadGuarantorById($sourceLead, $input['lead_guarantor_id'] ?? null);
 
@@ -232,11 +315,14 @@ class ContractGenerationService
             $sourceGuarantor ? $this->buildPartyPrefillFromGuarantor($sourceGuarantor) : [],
         );
 
+        $clientCity = $this->normalizeText(data_get($input, 'client.city') ?? data_get($input, 'client_city'));
+
         $submitted = [
             'lead_id' => $sourceLead?->id,
             'lead_guarantor_id' => $sourceGuarantor?->id,
             'company_key' => $companyKey,
-            'client' => $client,
+            'document_layout' => $documentLayout,
+            'client' => array_merge($client, ['city' => $clientCity]),
             'co_applicant' => $coApplicant,
             'financial' => [
                 'active_credit_count' => $this->normalizeInteger(data_get($input, 'financial.active_credit_count')),
@@ -252,6 +338,17 @@ class ContractGenerationService
                     ?? $this->normalizeAmount($sourceLead?->amount),
                 'loan_return_amount_eur' => $this->normalizeAmount(data_get($input, 'financial.loan_return_amount_eur')),
                 'loan_installment_eur' => $this->normalizeAmount(data_get($input, 'financial.loan_installment_eur')),
+                'loan_installment_day_of_month' => $this->normalizeDayOfMonth(data_get($input, 'financial.loan_installment_day_of_month')),
+                'credit_count_in_institutions' => $this->normalizeInteger(data_get($input, 'financial.credit_count_in_institutions')),
+                'institution_count' => $this->normalizeInteger(data_get($input, 'financial.institution_count')),
+                'credit_count_in_banks' => $this->normalizeInteger(data_get($input, 'financial.credit_count_in_banks')),
+                'bank_count' => $this->normalizeInteger(data_get($input, 'financial.bank_count')),
+                'total_loan_amount_eur' => $this->normalizeAmount(data_get($input, 'financial.total_loan_amount_eur')),
+                'commission_eur' => $this->normalizeAmount(data_get($input, 'financial.commission_eur')),
+                'monthly_payments_eur' => $this->normalizeAmount(data_get($input, 'financial.monthly_payments_eur')),
+                'private_loans_eur' => $this->normalizeAmount(data_get($input, 'financial.private_loans_eur')),
+                'net_income_eur' => $this->normalizeAmount(data_get($input, 'financial.net_income_eur')),
+                'court_required_eur' => $this->normalizeAmount(data_get($input, 'financial.court_required_eur')),
             ],
             'loan' => [
                 'institution_name' => $this->normalizeText(data_get($input, 'loan.institution_name'))
@@ -265,11 +362,13 @@ class ContractGenerationService
                     ?? $this->buildRequestDateFromLead($sourceLead),
                 'mediation_contract_date' => $this->normalizeDateString(data_get($input, 'dates.mediation_contract_date')),
                 'mediation_protocol_date' => $this->normalizeDateString(data_get($input, 'dates.mediation_protocol_date')),
+                'consultation_contract_date' => $this->normalizeDateString(data_get($input, 'dates.consultation_contract_date')),
                 'consultation_protocol_date' => $this->normalizeDateString(data_get($input, 'dates.consultation_protocol_date')),
                 'company_promissory_note_issue_date' => $this->normalizeDateString(data_get($input, 'dates.company_promissory_note_issue_date')),
                 'company_promissory_note_due_date' => $this->normalizeDateString(data_get($input, 'dates.company_promissory_note_due_date')),
                 'loan_agreement_date' => $this->normalizeDateString(data_get($input, 'dates.loan_agreement_date')),
                 'loan_due_date' => $this->normalizeDateString(data_get($input, 'dates.loan_due_date')),
+                'loan_last_installment_date' => $this->normalizeDateString(data_get($input, 'dates.loan_last_installment_date')),
                 'co_applicant_promissory_note_issue_date' => $this->normalizeDateString(data_get($input, 'dates.co_applicant_promissory_note_issue_date')),
                 'co_applicant_promissory_note_due_date' => $this->normalizeDateString(data_get($input, 'dates.co_applicant_promissory_note_due_date')),
                 'declaration_date' => $this->normalizeDateString(data_get($input, 'dates.declaration_date')),
@@ -277,9 +376,92 @@ class ContractGenerationService
             'selected_document_types' => $selectedDocumentTypes,
         ];
 
+        $this->applyLayoutFieldMappings($submitted);
+
         $this->validateSubmittedInput($submitted);
 
         return $submitted;
+    }
+
+    /**
+     * Auto-map Step 1 credit-data fields to legacy financial keys when the layout
+     * does not expose them on Step 2. Keeps the validateSubmittedInput contract intact.
+     *
+     * @param  array<string, mixed>  $submitted
+     */
+    private function applyLayoutFieldMappings(array &$submitted): void
+    {
+        $layout = $submitted['document_layout'] ?? null;
+
+        if ($layout === null) {
+            return;
+        }
+
+        $financial = &$submitted['financial'];
+
+        // Total liabilities → from "Общ Размер"
+        if ($financial['liabilities_total_eur'] === null && $financial['total_loan_amount_eur'] !== null) {
+            $financial['liabilities_total_eur'] = $financial['total_loan_amount_eur'];
+        }
+
+        // Monthly repayment burden → from "Месечни Вноски"
+        if ($financial['monthly_repayment_burden_eur'] === null && $financial['monthly_payments_eur'] !== null) {
+            $financial['monthly_repayment_burden_eur'] = $financial['monthly_payments_eur'];
+        }
+
+        // Monthly net income → from "Доход (Нетно)"
+        if ($financial['monthly_net_income_eur'] === null && $financial['net_income_eur'] !== null) {
+            $financial['monthly_net_income_eur'] = $financial['net_income_eur'];
+        }
+
+        // Active credit count → sum of "Кредити в институции" + "Кредити в банки"
+        if ($financial['active_credit_count'] === null) {
+            $institutions = $financial['credit_count_in_institutions'];
+            $banks = $financial['credit_count_in_banks'];
+
+            if ($institutions !== null || $banks !== null) {
+                $financial['active_credit_count'] = ($institutions ?? 0) + ($banks ?? 0);
+            }
+        }
+
+        // Fee → from "Комисионна" when not explicitly provided
+        if ($financial['fee_eur'] === null && $financial['commission_eur'] !== null) {
+            $financial['fee_eur'] = $financial['commission_eur'];
+        }
+
+        // Post-service data (consultation/mediation protocol) — sensible defaults
+        // After the service the client typically has fewer credits and one consolidated payment.
+        if ($financial['post_service_credit_count'] === null && $layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED) {
+            $financial['post_service_credit_count'] = 1;
+        }
+
+        if ($financial['post_service_monthly_repayment_burden_eur'] === null
+            && $layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED
+            && $financial['loan_installment_eur'] !== null) {
+            $financial['post_service_monthly_repayment_burden_eur'] = $financial['loan_installment_eur'];
+        }
+
+        // For Опростен the loan card isn't shown — derive sensible fallbacks for documents that need it.
+        if ($layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED) {
+            if ($financial['loan_amount_eur'] === null && $financial['total_loan_amount_eur'] !== null) {
+                $financial['loan_amount_eur'] = $financial['total_loan_amount_eur'];
+            }
+        }
+
+        // mediation_protocol's credit_agreement_number is left blank-friendly
+        if (blank($submitted['loan']['credit_agreement_number'] ?? null)) {
+            $submitted['loan']['credit_agreement_number'] = '—';
+        }
+
+        // co_applicant_promissory_note auto-derive (form does not expose these fields)
+        if ($financial['co_applicant_promissory_note_amount_eur'] === null && $financial['loan_return_amount_eur'] !== null) {
+            $financial['co_applicant_promissory_note_amount_eur'] = $financial['loan_return_amount_eur'];
+        }
+
+        if (blank($submitted['dates']['co_applicant_promissory_note_due_date'] ?? null)
+            && filled($submitted['dates']['loan_last_installment_date'] ?? null)) {
+            $submitted['dates']['co_applicant_promissory_note_due_date'] = $submitted['dates']['loan_last_installment_date'];
+        }
     }
 
     /**
@@ -294,12 +476,21 @@ class ContractGenerationService
             ? CarbonImmutable::parse($dates['loan_agreement_date'], $timezone)->startOfDay()
             : $today;
 
+        $requestDate = $dates['request_date']
+            ?? ($dates['consultation_contract_date'] ?? null)
+            ?? ($dates['loan_agreement_date'] ?? null)
+            ?? $today->format('Y-m-d');
+
+        $mediationContractDate = $dates['mediation_contract_date']
+            ?? ($dates['consultation_contract_date'] ?? null);
+
         return [
-            'request_date' => $dates['request_date'] ?? null,
-            'mediation_contract_date' => $dates['mediation_contract_date'] ?? null,
+            'request_date' => $requestDate,
+            'mediation_contract_date' => $mediationContractDate,
             'mediation_protocol_date' => filled($dates['mediation_protocol_date'] ?? null)
                 ? CarbonImmutable::parse($dates['mediation_protocol_date'], $timezone)->format('Y-m-d')
                 : $today->format('Y-m-d'),
+            'consultation_contract_date' => $dates['consultation_contract_date'] ?? null,
             'consultation_protocol_date' => filled($dates['consultation_protocol_date'] ?? null)
                 ? CarbonImmutable::parse($dates['consultation_protocol_date'], $timezone)->format('Y-m-d')
                 : $this->workingDayService->subtractWorkingDays($today, 2, $timezone)->format('Y-m-d'),
@@ -311,6 +502,7 @@ class ContractGenerationService
             'loan_due_date' => filled($dates['loan_due_date'] ?? null)
                 ? CarbonImmutable::parse($dates['loan_due_date'], $timezone)->format('Y-m-d')
                 : $loanAgreementDate->addYears(2)->format('Y-m-d'),
+            'loan_last_installment_date' => $dates['loan_last_installment_date'] ?? null,
             'co_applicant_promissory_note_issue_date' => filled($dates['co_applicant_promissory_note_issue_date'] ?? null)
                 ? CarbonImmutable::parse($dates['co_applicant_promissory_note_issue_date'], $timezone)->format('Y-m-d')
                 : $today->format('Y-m-d'),
@@ -596,6 +788,9 @@ class ContractGenerationService
             ? CarbonImmutable::parse($submitted['dates']['mediation_contract_date'], $timezone)->startOfDay()
             : null;
         $mediationProtocolDate = CarbonImmutable::parse($submitted['dates']['mediation_protocol_date'], $timezone)->startOfDay();
+        $consultationContractDate = filled($submitted['dates']['consultation_contract_date'] ?? null)
+            ? CarbonImmutable::parse($submitted['dates']['consultation_contract_date'], $timezone)->startOfDay()
+            : $requestDate;
         $consultationProtocolDate = CarbonImmutable::parse($submitted['dates']['consultation_protocol_date'], $timezone)->startOfDay();
         $companyPromissoryIssueDate = CarbonImmutable::parse($submitted['dates']['company_promissory_note_issue_date'], $timezone)->startOfDay();
         $companyPromissoryDueDate = filled($submitted['dates']['company_promissory_note_due_date'])
@@ -617,9 +812,9 @@ class ContractGenerationService
                 'request_date' => $requestDate->format('Y-m-d'),
                 'request_date_formatted' => $this->dateFormatter->format($requestDate),
                 'request_date_words' => $this->dateFormatter->spellOut($requestDate),
-                'consultation_agreement_date' => $requestDate->format('Y-m-d'),
-                'consultation_agreement_date_formatted' => $this->dateFormatter->format($requestDate),
-                'consultation_agreement_date_words' => $this->dateFormatter->spellOut($requestDate),
+                'consultation_agreement_date' => $consultationContractDate->format('Y-m-d'),
+                'consultation_agreement_date_formatted' => $this->dateFormatter->format($consultationContractDate),
+                'consultation_agreement_date_words' => $this->dateFormatter->spellOut($consultationContractDate),
                 'application_request_date' => $requestDate->format('Y-m-d'),
                 'application_request_date_formatted' => $this->dateFormatter->format($requestDate),
                 'application_request_date_words' => $this->dateFormatter->spellOut($requestDate),
@@ -1338,6 +1533,17 @@ CSS;
         }
 
         return (int) $value;
+    }
+
+    private function normalizeDayOfMonth(mixed $value): ?int
+    {
+        $integer = $this->normalizeInteger($value);
+
+        if ($integer === null) {
+            return null;
+        }
+
+        return max(1, min(31, $integer));
     }
 
     private function normalizeAmount(mixed $value): ?float
