@@ -2,12 +2,12 @@
     <div class="overflow-hidden rounded-xl border border-gray-200 bg-gray-50/50 dark:border-white/10 dark:bg-gray-900/40">
         {{-- Chat area --}}
         <div
-            class="h-96 overflow-y-auto px-4 py-3"
+            class="max-h-64 overflow-y-auto px-4 py-3"
             x-data
             x-init="$el.scrollTop = $el.scrollHeight"
         >
             @if (empty($messages))
-                <div class="flex h-full items-center justify-center">
+                <div class="flex items-center justify-center py-2">
                     <span class="text-sm text-gray-400 dark:text-gray-500">Няма съобщения</span>
                 </div>
             @else
