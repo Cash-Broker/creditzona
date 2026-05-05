@@ -110,17 +110,27 @@
                 msg: '',
                 canSendMessage: @js($canSendMessage),
                 draftStorageKey: @js($draftStorageKey),
-                pendingDraftKey: 'creditzona.note-chat.pending-on-save',
+                pendingDraftKey: 'creditzona.note-chat.pending-on-save.' + window.location.pathname,
+                isGuarantorContext: @js($canSendMessage)
+                    ? @js((string) ($draftStorageKey ?? '')).includes('.guarantor.')
+                    : true,
                 status: 'idle',
                 errorMessage: '',
                 feedbackTimer: null,
                 init() {
+                    let shouldAutoSend = false;
+
                     if (this.canSendMessage) {
-                        const transitional = localStorage.getItem(this.pendingDraftKey);
-                        if (transitional && ! localStorage.getItem(this.draftStorageKey)) {
-                            this.msg = transitional;
-                            localStorage.setItem(this.draftStorageKey, transitional);
-                            localStorage.removeItem(this.pendingDraftKey);
+                        if (this.isGuarantorContext) {
+                            const transitional = localStorage.getItem(this.pendingDraftKey);
+                            if (transitional && ! localStorage.getItem(this.draftStorageKey)) {
+                                this.msg = transitional;
+                                localStorage.setItem(this.draftStorageKey, transitional);
+                                localStorage.removeItem(this.pendingDraftKey);
+                                shouldAutoSend = transitional.trim().length > 0;
+                            } else {
+                                this.msg = localStorage.getItem(this.draftStorageKey) || '';
+                            }
                         } else {
                             this.msg = localStorage.getItem(this.draftStorageKey) || '';
                         }
@@ -128,7 +138,13 @@
                         this.msg = localStorage.getItem(this.pendingDraftKey) || '';
                     }
 
-                    this.$nextTick(() => this.autoResize(this.$refs.textarea));
+                    this.$nextTick(() => {
+                        this.autoResize(this.$refs.textarea);
+
+                        if (shouldAutoSend) {
+                            this.sendMessage();
+                        }
+                    });
 
                     this.$watch('msg', (value) => {
                         const key = this.canSendMessage ? this.draftStorageKey : this.pendingDraftKey;
