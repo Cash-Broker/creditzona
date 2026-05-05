@@ -236,29 +236,6 @@ class LeadForm
                             })
                             ->extraAlpineAttributes(UploadedFileDeletionConfirmation::alpineAttributes())
                             ->columnSpanFull(),
-                    ]),
-                Section::make('Поръчители')
-                    ->columnSpanFull()
-                    ->schema([
-                        Repeater::make('guarantors')
-                            ->label('Поръчители')
-                            ->relationship('guarantors')
-                            ->defaultItems(0)
-                            ->addActionLabel('Добави поръчител')
-                            ->reorderable(false)
-                            ->collapsible()
-                            ->collapsed()
-                            ->mutateRelationshipDataBeforeFillUsing(static fn (array $data): array => static::mutateGuarantorRelationshipDataForFill($data))
-                            ->mutateRelationshipDataBeforeCreateUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
-                            ->mutateRelationshipDataBeforeSaveUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
-                            ->itemLabel(fn (array $state): HtmlString => static::guarantorItemLabel($state))
-                            ->grid(1)
-                            ->schema(static::guarantorSchema())
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('Съобщения за клиента')
-                    ->columnSpanFull()
-                    ->schema([
                         LivewireComponent::make(
                             NoteHistoryChatWidget::class,
                             fn (?Lead $record): array => [
@@ -285,6 +262,25 @@ class LeadForm
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Местоположението на имота'))
                             ->nullable(),
+                    ]),
+                Section::make('Поръчители')
+                    ->columnSpanFull()
+                    ->schema([
+                        Repeater::make('guarantors')
+                            ->label('Поръчители')
+                            ->relationship('guarantors')
+                            ->defaultItems(0)
+                            ->addActionLabel('Добави поръчител')
+                            ->reorderable(false)
+                            ->collapsible()
+                            ->collapsed()
+                            ->mutateRelationshipDataBeforeFillUsing(static fn (array $data): array => static::mutateGuarantorRelationshipDataForFill($data))
+                            ->mutateRelationshipDataBeforeCreateUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
+                            ->mutateRelationshipDataBeforeSaveUsing(static fn (array $data): ?array => static::mutateGuarantorRelationshipDataForSave($data))
+                            ->itemLabel(fn (array $state): HtmlString => static::guarantorItemLabel($state))
+                            ->grid(1)
+                            ->schema(static::guarantorSchema())
+                            ->columnSpanFull(),
                     ]),
                 static::communicationSection()
                     ->visible($includeCommunicationWidget),
