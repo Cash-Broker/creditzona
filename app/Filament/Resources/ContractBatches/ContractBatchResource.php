@@ -92,7 +92,7 @@ class ContractBatchResource extends Resource
     {
         $user = auth()->user();
 
-        return $user instanceof User && $user->isAdmin();
+        return $user instanceof User && $user->canViewAllContracts();
     }
 
     public static function canView($record): bool
@@ -102,22 +102,24 @@ class ContractBatchResource extends Resource
 
     public static function canCreate(): bool
     {
-        return static::canViewAny();
+        $user = auth()->user();
+
+        return $user instanceof User && $user->isAdmin();
     }
 
     public static function canEdit($record): bool
     {
-        return static::canViewAny();
+        return static::canCreate();
     }
 
     public static function canDelete($record): bool
     {
-        return static::canViewAny();
+        return static::canCreate();
     }
 
     public static function canDeleteAny(): bool
     {
-        return static::canViewAny();
+        return static::canCreate();
     }
 
     public static function getEloquentQuery(): Builder
@@ -125,7 +127,7 @@ class ContractBatchResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->isAdmin()) {
+        if (! $user instanceof User || ! $user->canViewAllContracts()) {
             return $query->whereRaw('1 = 0');
         }
 
@@ -138,6 +140,7 @@ class ContractBatchResource extends Resource
             ->label('Прикачи')
             ->icon(Heroicon::OutlinedUserPlus)
             ->color('primary')
+            ->visible(static fn (): bool => auth()->user()?->isAdmin() ?? false)
             ->modalHeading('Прикачи договор към оператор')
             ->modalDescription('Изберете оператор, който ще има достъп до този пакет. Изпразнете полето, за да премахнете прикачването.')
             ->modalSubmitActionLabel('Запази')

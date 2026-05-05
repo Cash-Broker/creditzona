@@ -50,6 +50,7 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'role',
         'is_available_for_lead_assignment',
+        'can_view_all_contracts',
         'expo_push_token',
         'last_seen_at',
     ];
@@ -74,6 +75,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'is_available_for_lead_assignment' => 'boolean',
+            'can_view_all_contracts' => 'boolean',
             'last_seen_at' => 'datetime',
             'password' => 'hashed',
         ];
@@ -153,6 +155,11 @@ class User extends Authenticatable implements FilamentUser
     public function isOperator(): bool
     {
         return $this->role === self::ROLE_OPERATOR;
+    }
+
+    public function canViewAllContracts(): bool
+    {
+        return $this->isAdmin() || (bool) $this->can_view_all_contracts;
     }
 
     public function canBeLeadPrimaryAssignee(): bool

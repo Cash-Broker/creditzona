@@ -14,7 +14,7 @@ class ContractBatchPolicy
 
     public function view(User $user, ContractBatch $contractBatch): bool
     {
-        if ($user->isAdmin()) {
+        if ($user->canViewAllContracts()) {
             return true;
         }
 

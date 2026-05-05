@@ -174,6 +174,74 @@ class ContractBatchAttachmentTest extends TestCase
         $this->assertFalse(AttachedContractBatchResource::canViewAny());
     }
 
+    public function test_operator_with_view_all_flag_sees_every_contract_but_cannot_edit(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+            'can_view_all_contracts' => true,
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $attachedToAnna = $this->createBatch([
+            'created_by_user_id' => $admin->id,
+            'attached_user_id' => $anna->id,
+        ]);
+
+        $unattached = $this->createBatch([
+            'created_by_user_id' => $admin->id,
+            'attached_user_id' => null,
+            'client_full_name' => 'Друг клиент',
+        ]);
+
+        $this->actingAs($elena);
+
+        $this->assertTrue(ContractBatchResource::canViewAny());
+        $this->assertEqualsCanonicalizing(
+            [$attachedToAnna->id, $unattached->id],
+            ContractBatchResource::getEloquentQuery()->pluck('id')->all(),
+        );
+        $this->assertTrue(ContractBatchResource::canView($attachedToAnna));
+        $this->assertTrue(ContractBatchResource::canView($unattached));
+
+        $this->assertFalse(ContractBatchResource::canCreate());
+        $this->assertFalse(ContractBatchResource::canEdit($attachedToAnna));
+        $this->assertFalse(ContractBatchResource::canDelete($attachedToAnna));
+        $this->assertFalse(ContractBatchResource::canDeleteAny());
+    }
+
+    public function test_operator_without_view_all_flag_cannot_see_contract_batch_resource(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $this->createBatch([
+            'created_by_user_id' => $admin->id,
+            'attached_user_id' => $anna->id,
+        ]);
+
+        $this->actingAs($anna);
+
+        $this->assertFalse(ContractBatchResource::canViewAny());
+        $this->assertSame([], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
+    }
+
     public function test_attached_resource_disallows_create_edit_delete(): void
     {
         $anna = User::factory()->create([
