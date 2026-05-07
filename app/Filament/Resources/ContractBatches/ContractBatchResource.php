@@ -92,30 +92,21 @@ class ContractBatchResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user() instanceof User;
+        $user = auth()->user();
+
+        return $user instanceof User && $user->canViewAllContracts();
     }
 
     public static function canView($record): bool
     {
-        $user = auth()->user();
-
-        if (! $user instanceof User || ! $record instanceof ContractBatch) {
-            return false;
-        }
-
-        if ($user->can_view_all_contracts) {
-            return true;
-        }
-
-        return $record->created_by_user_id === $user->id
-            || $record->attached_user_id === $user->id;
+        return static::canViewAny();
     }
 
     public static function canCreate(): bool
     {
         $user = auth()->user();
 
-        return $user instanceof User && $user->isAdmin();
+        return $user instanceof User && $user->canViewAllContracts();
     }
 
     public static function canEdit($record): bool
@@ -138,18 +129,11 @@ class ContractBatchResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if (! $user instanceof User) {
+        if (! $user instanceof User || ! $user->canViewAllContracts()) {
             return $query->whereRaw('1 = 0');
         }
 
-        if ($user->can_view_all_contracts) {
-            return $query;
-        }
-
-        return $query->where(function (Builder $q) use ($user): void {
-            $q->where('created_by_user_id', $user->id)
-                ->orWhere('attached_user_id', $user->id);
-        });
+        return $query;
     }
 
     public static function makeAttachAction(): Action
@@ -158,7 +142,7 @@ class ContractBatchResource extends Resource
             ->label('Прикачи')
             ->icon(Heroicon::OutlinedUserPlus)
             ->color('primary')
-            ->visible(static fn (): bool => auth()->user() instanceof User)
+            ->visible(static fn (): bool => auth()->user()?->canViewAllContracts() ?? false)
             ->modalHeading('Прикачи договор към потребител')
             ->modalDescription('Изберете потребител, който ще има достъп до този пакет. Изпразнете полето, за да премахнете прикачването.')
             ->modalSubmitActionLabel('Запази')

@@ -24,27 +24,27 @@ class ContractBatchPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->canViewAllContracts();
     }
 
     public function update(User $user, ContractBatch $contractBatch): bool
     {
-        return $user->isAdmin();
+        return $user->canViewAllContracts();
     }
 
     public function delete(User $user, ContractBatch $contractBatch): bool
     {
-        return $user->isAdmin();
+        return $user->canViewAllContracts();
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->canViewAllContracts();
     }
 
     public function attach(User $user, ContractBatch $contractBatch): bool
     {
-        return $user->isAdmin();
+        return $user->canViewAllContracts();
     }
 
     public function restore(User $user, ContractBatch $contractBatch): bool
