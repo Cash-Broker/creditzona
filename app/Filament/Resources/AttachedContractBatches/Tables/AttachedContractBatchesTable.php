@@ -45,6 +45,11 @@ class AttachedContractBatchesTable
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->visible(fn (ContractBatch $record): bool => $record->combinedPdfExists())
                     ->url(fn (ContractBatch $record): string => route('admin.contract-batches.combined-pdf.download', $record)),
+                Action::make('downloadCombinedDocx')
+                    ->label('Word')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->visible(fn (ContractBatch $record): bool => $record->combinedDocxExists())
+                    ->url(fn (ContractBatch $record): string => route('admin.contract-batches.combined-docx.download', $record)),
                 ViewAction::make(),
             ])
             ->defaultSort('generated_at', 'desc');

@@ -77,6 +77,19 @@ class ContractBatchesTable
                         ? route('admin.contract-batches.combined-pdf.download', $record)
                         : null)
                     ->openUrlInNewTab(),
+                Action::make('downloadCombinedDocx')
+                    ->label('')
+                    ->tooltip(fn (ContractBatch $record): string => $record->combinedDocxExists()
+                        ? 'Свали Word'
+                        : 'Word не е генериран — отворете "Редактирай" за да продължите към документите.')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->color('info')
+                    ->extraAttributes(['class' => 'cz-row-action cz-row-action-download'])
+                    ->disabled(fn (ContractBatch $record): bool => ! $record->combinedDocxExists())
+                    ->url(fn (ContractBatch $record): ?string => $record->combinedDocxExists()
+                        ? route('admin.contract-batches.combined-docx.download', $record)
+                        : null)
+                    ->openUrlInNewTab(),
                 ContractBatchResource::makeAttachAction()
                     ->label('')
                     ->tooltip('Прикачи към оператор')
