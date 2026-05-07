@@ -102,6 +102,12 @@ class EditDocumentsContractBatch extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $record = $this->getRecord();
+
+        if ($record instanceof ContractBatch) {
+            $data = array_replace_recursive($record->getSubmittedInput(), $data);
+        }
+
         if (empty($data['company_key'])) {
             $data['company_key'] = ContractBatch::COMPANY_REKREDO_KONSULT_DPK;
         }
