@@ -73,7 +73,7 @@ class LeadPrivacyConsentPdfService
                 $consentDateTime,
                 $companyKey,
             ),
-            'download_name' => $lead->buildPrivacyConsentDownloadFileName(),
+            'download_name' => $lead->buildPrivacyConsentDownloadFileName($companyKey),
         ];
     }
 
@@ -100,7 +100,7 @@ class LeadPrivacyConsentPdfService
                 $consentDateTime,
                 $companyKey,
             ),
-            'download_name' => $guarantor->buildPrivacyConsentDownloadFileName(),
+            'download_name' => $guarantor->buildPrivacyConsentDownloadFileName($companyKey),
         ];
     }
 
@@ -162,15 +162,21 @@ class LeadPrivacyConsentPdfService
 
     private function writeParticipantIdentity(Mpdf $mpdf, string $participantIdentity): void
     {
+        // Shift the div ~2mm to the left and pad the inner content so the
+        // visible text still starts at FIELD_X, but the white background
+        // extends a couple of millimetres earlier — enough to cover the
+        // "данни взети..." placeholder leak that varies per template.
+        $leftShiftMm = 2.5;
+
         $mpdf->WriteFixedPosHTML(
             sprintf(
-                '<div style="font-family: dejavuserif; font-size: %.1Fpt; line-height: 1; white-space: nowrap;">%s</div>',
+                '<div style="background-color: #ffffff; padding: 1.5pt 0 1.5pt 7pt; font-family: dejavuserif; font-size: %.1Fpt; line-height: 1; white-space: nowrap;">%s</div>',
                 self::FIELD_FONT_SIZE,
                 e($participantIdentity),
             ),
-            self::FIELD_X,
+            self::FIELD_X - $leftShiftMm,
             self::FIELD_Y,
-            self::FIELD_MAX_WIDTH,
+            self::FIELD_MAX_WIDTH + $leftShiftMm,
             self::FIELD_HEIGHT,
             'visible',
         );

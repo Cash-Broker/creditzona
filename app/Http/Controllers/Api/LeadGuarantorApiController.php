@@ -127,14 +127,20 @@ class LeadGuarantorApiController extends Controller
         int $leadId,
         int $guarantorId,
         LeadPrivacyConsentPdfService $pdfService,
-    ): StreamedResponse {
+    ): StreamedResponse|JsonResponse {
         $lead = Lead::query()
             ->visibleToUser($request->user())
             ->findOrFail($leadId);
 
         $guarantor = $lead->guarantors()->findOrFail($guarantorId);
 
-        $document = $pdfService->buildGuarantorDownload($guarantor);
+        $companyKey = $request->query('company');
+
+        if ($companyKey !== null && ! Lead::isValidPrivacyConsentCompany((string) $companyKey)) {
+            return response()->json(['message' => 'Невалидна фирма.'], 404);
+        }
+
+        $document = $pdfService->buildGuarantorDownload($guarantor, $companyKey);
 
         return response()->streamDownload(
             static function () use ($document): void {

@@ -3,7 +3,14 @@
     "allow": [
       "Bash(find c:UsersyordaDownloadsyordancreditzonaappFilamentResourcesReturnedToMeLeads -type f -name *.php)",
       "Bash(php artisan:*)",
-      "mcp__laravel-boost__database-schema"
+      "mcp__laravel-boost__database-schema",
+      "mcp__laravel-boost__search-docs",
+      "Bash(composer show *)",
+      "Bash(findstr /R \"^name ^versions\")",
+      "Bash(not exist *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

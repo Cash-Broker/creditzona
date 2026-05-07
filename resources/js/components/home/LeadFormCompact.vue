@@ -447,19 +447,25 @@
                         <span class="consent-copy">
                             Съгласен/съгласна съм личните ми данни да бъдат обработвани
                             за целите на кредитната консултация и запознат/а съм с
-                            документа
-                            <a
-                                :href="leadConsentDocument.url"
-                                class="consent-link"
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            документите
+                            <template
+                                v-for="(doc, index) in leadConsentDocuments"
+                                :key="doc.path"
                             >
-                                {{
-                                    false
-                                        ? "Подготвяме документа..."
-                                        : leadConsentDocument.name
-                                }}
-                            </a>
+                                <a
+                                    :href="doc.url"
+                                    class="consent-link"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {{ doc.name }} ({{ doc.company_label }})
+                                </a>
+                                <template v-if="index < leadConsentDocuments.length - 2">,
+                                </template>
+                                <template v-else-if="index === leadConsentDocuments.length - 2">
+                                    и
+                                </template>
+                            </template>
                             .
                         </span>
                     </label>
@@ -627,10 +633,20 @@ const props = defineProps({
 const successPanel = ref(null);
 const showGuarantorGuard = ref(false);
 const showConsumerUpsell = ref(false);
-const leadConsentDocument = getInitialData("leadConsentDocument", {
-    name: "Съгласие за обработка на лични данни",
-    url: "/documents/legal/lead-personal-data-consent-v1.pdf",
-});
+const leadConsentDocuments = getInitialData("leadConsentDocuments", [
+    {
+        name: "Съгласие за обработка на лични данни",
+        url: "/documents/legal/lead-personal-data-consent-v1.pdf",
+        company_label: "РеКредо Консулт ДПК",
+        path: "documents/legal/lead-personal-data-consent-v1.pdf",
+    },
+    {
+        name: "Съгласие за обработка на лични данни",
+        url: "/documents/legal/lead-personal-data-consent-deconsulting-ready.pdf",
+        company_label: "Д – Консултинг ЕООД",
+        path: "documents/legal/lead-personal-data-consent-deconsulting-ready.pdf",
+    },
+]);
 
 const {
     form,

@@ -244,19 +244,6 @@ class LeadInfolist
                             ->label('Дадено на')
                             ->dateTime('d.m.Y H:i', 'Europe/Sofia')
                             ->placeholder('Няма'),
-                        ViewEntry::make('privacy_consent_document_downloads')
-                            ->label('Приет документ')
-                            ->view('filament.resources.leads.infolists.document-downloads')
-                            ->state(fn (Lead $record): array => array_map(
-                                static fn (array $document): array => array_merge($document, [
-                                    'description' => 'Документът, с който клиентът е дал съгласие за обработване на личните данни.',
-                                    'download_url' => $document['url'] === null
-                                        ? route('admin.leads.privacy-consent.download', ['lead' => $record])
-                                        : null,
-                                ]),
-                                $record->getPrivacyConsentDocumentDownloads(),
-                            ))
-                            ->columnSpanFull(),
                         ViewEntry::make('privacy_consent_company_downloads')
                             ->label('Декларация за лични данни')
                             ->view('filament.resources.leads.infolists.privacy-consent-company-buttons')

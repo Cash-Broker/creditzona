@@ -8,6 +8,7 @@ use App\Http\Requests\Api\UpdateLeadStatusRequest;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Models\User;
+use App\Services\LeadPrivacyConsentPdfService;
 use App\Services\LeadService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -263,11 +264,35 @@ class LeadApiController extends Controller
         ]);
     }
 
-    public function privacyConsent(Request $request, int $id): StreamedResponse|JsonResponse
-    {
+    public function privacyConsent(
+        Request $request,
+        int $id,
+        LeadPrivacyConsentPdfService $pdfService,
+    ): StreamedResponse|JsonResponse {
         $lead = Lead::query()
             ->visibleToUser($request->user())
             ->findOrFail($id);
+
+        $companyKey = $request->query('company');
+
+        if ($companyKey !== null) {
+            if (! Lead::isValidPrivacyConsentCompany((string) $companyKey)) {
+                return response()->json(['message' => 'Невалидна фирма.'], 404);
+            }
+
+            $document = $pdfService->buildLeadDownload($lead, (string) $companyKey);
+
+            return response()->streamDownload(
+                static function () use ($document): void {
+                    echo $document['content'];
+                },
+                $document['download_name'],
+                [
+                    'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                    'Content-Type' => 'application/pdf',
+                ],
+            );
+        }
 
         $document = $lead->findPrivacyConsentDocumentDownload();
 

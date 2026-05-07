@@ -161,7 +161,7 @@ class LeadGuarantor extends Model implements HasRichContent
         return null;
     }
 
-    public function buildPrivacyConsentDownloadFileName(): string
+    public function buildPrivacyConsentDownloadFileName(?string $companyKey = null): string
     {
         $baseName = implode('', array_filter([
             $this->sanitizePrivacyConsentDownloadSegment($this->first_name),
@@ -173,7 +173,13 @@ class LeadGuarantor extends Model implements HasRichContent
             $baseName = 'ДекларацияСъгласие';
         }
 
-        return $baseName.'ДекларацияСъгласие.pdf';
+        $companySuffix = match ($companyKey) {
+            Lead::PRIVACY_CONSENT_COMPANY_REKREDO => '_РеКредо',
+            Lead::PRIVACY_CONSENT_COMPANY_D_CONSULTING => '_ДКонсултинг',
+            default => '',
+        };
+
+        return $baseName.'ДекларацияСъгласие'.$companySuffix.'.pdf';
     }
 
     protected function casts(): array

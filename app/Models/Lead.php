@@ -21,6 +21,8 @@ class Lead extends Model implements HasRichContent
 
     public const PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH = 'documents/legal/lead-personal-data-consent-v1.pdf';
 
+    public const PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH_D_CONSULTING = 'documents/legal/lead-personal-data-consent-deconsulting-ready.pdf';
+
     public const PRIVACY_CONSENT_DOCUMENT_NAME = 'Съгласие за обработка на лични данни';
 
     public const PRIVACY_CONSENT_DOWNLOAD_FILE_NAME = 'lead-personal-data-consent.pdf';
@@ -131,7 +133,7 @@ class Lead extends Model implements HasRichContent
         return self::PRIVACY_CONSENT_DOWNLOAD_FILE_NAME;
     }
 
-    public function buildPrivacyConsentDownloadFileName(): string
+    public function buildPrivacyConsentDownloadFileName(?string $companyKey = null): string
     {
         $baseName = implode('', array_filter([
             $this->sanitizePrivacyConsentDownloadSegment($this->first_name),
@@ -143,7 +145,13 @@ class Lead extends Model implements HasRichContent
             $baseName = 'ДекларацияСъгласие';
         }
 
-        return $baseName.'ДекларацияСъгласие.pdf';
+        $companySuffix = match ($companyKey) {
+            self::PRIVACY_CONSENT_COMPANY_REKREDO => '_РеКредо',
+            self::PRIVACY_CONSENT_COMPANY_D_CONSULTING => '_ДКонсултинг',
+            default => '',
+        };
+
+        return $baseName.'ДекларацияСъгласие'.$companySuffix.'.pdf';
     }
 
     public static function isPublicPrivacyConsentDocumentPath(string $path): bool
@@ -185,6 +193,25 @@ class Lead extends Model implements HasRichContent
                 ? is_file(public_path($documentPath))
                 : Storage::disk('local')->exists($documentPath),
             'download_name' => static::getPrivacyConsentDownloadFileName(),
+        ];
+    }
+
+    /**
+     * @return array<int, array{name: string, path: string, url: ?string, is_available: bool, download_name: string, company_label: string}>
+     */
+    public static function getPublicPrivacyConsentDocumentsMeta(): array
+    {
+        return [
+            array_merge(
+                static::getPrivacyConsentDocumentMeta(self::PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH),
+                ['company_label' => 'РеКредо Консулт ДПК'],
+            ),
+            array_merge(
+                static::getPrivacyConsentDocumentMeta(
+                    self::PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH_D_CONSULTING,
+                ),
+                ['company_label' => 'Д – Консултинг ЕООД'],
+            ),
         ];
     }
 
