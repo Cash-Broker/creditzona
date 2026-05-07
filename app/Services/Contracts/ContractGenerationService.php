@@ -436,9 +436,9 @@ class ContractGenerationService
         }
 
         if ($financial['post_service_monthly_repayment_burden_eur'] === null
-            && $layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED
-            && $financial['loan_installment_eur'] !== null) {
-            $financial['post_service_monthly_repayment_burden_eur'] = $financial['loan_installment_eur'];
+            && $layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED) {
+            $financial['post_service_monthly_repayment_burden_eur'] = $financial['loan_installment_eur']
+                ?? $financial['monthly_payments_eur'];
         }
 
         // For Опростен the loan card isn't shown — derive sensible fallbacks for documents that need it.
