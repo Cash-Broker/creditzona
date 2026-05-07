@@ -89,6 +89,8 @@ class ContractBatchForm
                         static::euroAmountField('financial.private_loans_eur', 'Частни Заеми', 'Пример: 5000'),
                         static::euroAmountField('financial.net_income_eur', 'Доход (Нетно)', 'Пример: 3000'),
                         static::euroAmountField('financial.court_required_eur', 'Съдебно Изискуеми', 'Пример: 3000'),
+                        static::countField('financial.post_service_credit_count', 'Кредити след съдействие', 'Пример: 1'),
+                        static::euroAmountField('financial.post_service_monthly_repayment_burden_eur', 'Вноска след съдействие', 'Пример: 500'),
                     ]),
             ]);
     }
