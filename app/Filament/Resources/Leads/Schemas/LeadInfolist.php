@@ -139,11 +139,17 @@ class LeadInfolist
                                             ->placeholder('Няма'),
                                         ViewEntry::make('privacy_consent_download')
                                             ->label('Декларация за съгласие')
-                                            ->view('filament.resources.leads.infolists.guarantor-privacy-consent-download')
+                                            ->view('filament.resources.leads.infolists.privacy-consent-company-buttons')
                                             ->state(fn (LeadGuarantor $record): array => [
-                                                'url' => route('admin.leads.guarantors.privacy-consent.download', [
+                                                'rekredo' => route('admin.leads.guarantors.privacy-consent.download', [
                                                     'lead' => $record->lead_id,
                                                     'guarantor' => $record,
+                                                    'company' => Lead::PRIVACY_CONSENT_COMPANY_REKREDO,
+                                                ]),
+                                                'd_consulting' => route('admin.leads.guarantors.privacy-consent.download', [
+                                                    'lead' => $record->lead_id,
+                                                    'guarantor' => $record,
+                                                    'company' => Lead::PRIVACY_CONSENT_COMPANY_D_CONSULTING,
                                                 ]),
                                             ])
                                             ->columnStart(3),
@@ -250,6 +256,20 @@ class LeadInfolist
                                 ]),
                                 $record->getPrivacyConsentDocumentDownloads(),
                             ))
+                            ->columnSpanFull(),
+                        ViewEntry::make('privacy_consent_company_downloads')
+                            ->label('Декларация за лични данни')
+                            ->view('filament.resources.leads.infolists.privacy-consent-company-buttons')
+                            ->state(fn (Lead $record): array => [
+                                'rekredo' => route('admin.leads.privacy-consent.download', [
+                                    'lead' => $record,
+                                    'company' => Lead::PRIVACY_CONSENT_COMPANY_REKREDO,
+                                ]),
+                                'd_consulting' => route('admin.leads.privacy-consent.download', [
+                                    'lead' => $record,
+                                    'company' => Lead::PRIVACY_CONSENT_COMPANY_D_CONSULTING,
+                                ]),
+                            ])
                             ->columnSpanFull(),
                     ]),
                 Section::make('Съобщения за клиента')

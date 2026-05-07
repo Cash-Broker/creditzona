@@ -17,11 +17,17 @@ class Lead extends Model implements HasRichContent
 
     public const PRIVACY_CONSENT_TEMPLATE_PATH = 'documents/legal/lead-personal-data-consent-ready.pdf';
 
+    public const PRIVACY_CONSENT_TEMPLATE_PATH_D_CONSULTING = 'documents/legal/lead-personal-data-consent-deconsulting-ready.pdf';
+
     public const PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH = 'documents/legal/lead-personal-data-consent-v1.pdf';
 
     public const PRIVACY_CONSENT_DOCUMENT_NAME = 'Съгласие за обработка на лични данни';
 
     public const PRIVACY_CONSENT_DOWNLOAD_FILE_NAME = 'lead-personal-data-consent.pdf';
+
+    public const PRIVACY_CONSENT_COMPANY_REKREDO = 'rekredo';
+
+    public const PRIVACY_CONSENT_COMPANY_D_CONSULTING = 'd_consulting';
 
     public const CREDIT_TYPE_CONSUMER = 'consumer';
 
@@ -90,9 +96,29 @@ class Lead extends Model implements HasRichContent
         return self::PRIVACY_CONSENT_PUBLIC_DOCUMENT_PATH;
     }
 
-    public static function getPrivacyConsentTemplatePath(): string
+    public static function getPrivacyConsentTemplatePath(?string $companyKey = null): string
     {
-        return self::PRIVACY_CONSENT_TEMPLATE_PATH;
+        return match ($companyKey) {
+            self::PRIVACY_CONSENT_COMPANY_D_CONSULTING => self::PRIVACY_CONSENT_TEMPLATE_PATH_D_CONSULTING,
+            default => self::PRIVACY_CONSENT_TEMPLATE_PATH,
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getPrivacyConsentCompanyOptions(): array
+    {
+        return [
+            self::PRIVACY_CONSENT_COMPANY_REKREDO => 'РеКредо',
+            self::PRIVACY_CONSENT_COMPANY_D_CONSULTING => 'Деконсултинг',
+        ];
+    }
+
+    public static function isValidPrivacyConsentCompany(?string $companyKey): bool
+    {
+        return $companyKey !== null
+            && array_key_exists($companyKey, self::getPrivacyConsentCompanyOptions());
     }
 
     public static function getPrivacyConsentDocumentName(): string

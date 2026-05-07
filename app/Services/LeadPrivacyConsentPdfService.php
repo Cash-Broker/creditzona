@@ -53,7 +53,34 @@ class LeadPrivacyConsentPdfService
     /**
      * @return array{content: string, download_name: string}
      */
-    public function buildGuarantorDownload(LeadGuarantor $guarantor): array
+    public function buildLeadDownload(Lead $lead, ?string $companyKey = null): array
+    {
+        $consentDateTime = ($lead->privacy_consent_accepted_at ?? $lead->created_at ?? now())
+            ->timezone('Europe/Sofia')
+            ->format('d.m.Y H:i');
+
+        return [
+            'content' => $this->buildPdf(
+                $this->formatParticipantIdentity(
+                    $lead->first_name,
+                    $lead->middle_name,
+                    $lead->last_name,
+                    $lead->egn,
+                    $lead->phone,
+                    $lead->email,
+                    $lead->city,
+                ),
+                $consentDateTime,
+                $companyKey,
+            ),
+            'download_name' => $lead->buildPrivacyConsentDownloadFileName(),
+        ];
+    }
+
+    /**
+     * @return array{content: string, download_name: string}
+     */
+    public function buildGuarantorDownload(LeadGuarantor $guarantor, ?string $companyKey = null): array
     {
         $consentDateTime = ($guarantor->privacy_consent_accepted_at ?? now())
             ->timezone('Europe/Sofia')
@@ -71,14 +98,15 @@ class LeadPrivacyConsentPdfService
                     $guarantor->city,
                 ),
                 $consentDateTime,
+                $companyKey,
             ),
             'download_name' => $guarantor->buildPrivacyConsentDownloadFileName(),
         ];
     }
 
-    private function buildPdf(string $participantIdentity, ?string $consentDateTime = null): string
+    private function buildPdf(string $participantIdentity, ?string $consentDateTime = null, ?string $companyKey = null): string
     {
-        $templatePath = public_path(Lead::getPrivacyConsentTemplatePath());
+        $templatePath = public_path(Lead::getPrivacyConsentTemplatePath($companyKey));
 
         if (! is_file($templatePath)) {
             throw new RuntimeException('Privacy consent PDF template is missing.');

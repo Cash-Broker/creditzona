@@ -25,7 +25,13 @@ class LeadGuarantorPrivacyConsentDocumentDownloadController extends Controller
             $guarantor->forceFill(['privacy_consent_accepted_at' => now()])->save();
         }
 
-        $document = $leadPrivacyConsentPdfService->buildGuarantorDownload($guarantor);
+        $companyKey = $request->query('company');
+
+        if ($companyKey !== null && ! Lead::isValidPrivacyConsentCompany((string) $companyKey)) {
+            abort(404);
+        }
+
+        $document = $leadPrivacyConsentPdfService->buildGuarantorDownload($guarantor, $companyKey);
 
         return response()->streamDownload(
             static function () use ($document): void {
