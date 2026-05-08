@@ -135,7 +135,6 @@ class PageController extends Controller
         $seo = $this->seoManager->forPage($page, $request, $overrides);
         $initialData = array_merge([
             'leadConsentDocument' => Lead::getPrivacyConsentDocumentMeta(),
-            'leadConsentDocuments' => Lead::getPublicPrivacyConsentDocumentsMeta(),
         ], $overrides['initial_data'] ?? []);
 
         return view('layouts.app', [

@@ -175,7 +175,7 @@ class LeadGuarantor extends Model implements HasRichContent
 
         $companySuffix = match ($companyKey) {
             Lead::PRIVACY_CONSENT_COMPANY_REKREDO => '_РеКредо',
-            Lead::PRIVACY_CONSENT_COMPANY_D_CONSULTING => '_ДКонсултинг',
+            Lead::PRIVACY_CONSENT_COMPANY_D_CONSULTING => '_Д-Консултинг',
             default => '',
         };
 
