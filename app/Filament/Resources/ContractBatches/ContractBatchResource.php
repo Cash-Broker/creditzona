@@ -94,12 +94,27 @@ class ContractBatchResource extends Resource
     {
         $user = auth()->user();
 
-        return $user instanceof User && $user->canViewAllContracts();
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return $user->canViewAllContracts() || $user->isOperator();
     }
 
     public static function canView($record): bool
     {
-        return static::canViewAny();
+        $user = auth()->user();
+
+        if (! $user instanceof User || ! $record instanceof ContractBatch) {
+            return false;
+        }
+
+        if ($user->canViewAllContracts()) {
+            return true;
+        }
+
+        return $user->isOperator()
+            && $record->attached_user_id === $user->id;
     }
 
     public static function canCreate(): bool
@@ -111,12 +126,20 @@ class ContractBatchResource extends Resource
 
     public static function canEdit($record): bool
     {
-        return static::canCreate() && static::canView($record);
+        $user = auth()->user();
+
+        return $user instanceof User
+            && $user->canViewAllContracts()
+            && static::canView($record);
     }
 
     public static function canDelete($record): bool
     {
-        return static::canCreate() && static::canView($record);
+        $user = auth()->user();
+
+        return $user instanceof User
+            && $user->canViewAllContracts()
+            && static::canView($record);
     }
 
     public static function canDeleteAny(): bool
@@ -129,11 +152,19 @@ class ContractBatchResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if (! $user instanceof User || ! $user->canViewAllContracts()) {
+        if (! $user instanceof User) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query;
+        if ($user->canViewAllContracts()) {
+            return $query;
+        }
+
+        if ($user->isOperator()) {
+            return $query->where('attached_user_id', $user->id);
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 
     public static function makeAttachAction(): Action
@@ -159,8 +190,7 @@ class ContractBatchResource extends Resource
                         ->orderBy('name')
                         ->pluck('name', 'id')
                         ->all())
-                    ->searchable()
-                    ->preload()
+                    ->native(false)
                     ->nullable(),
             ])
             ->action(function (array $data, ContractBatch $record): void {
