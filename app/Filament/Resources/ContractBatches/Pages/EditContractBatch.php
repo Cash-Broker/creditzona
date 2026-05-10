@@ -10,6 +10,7 @@ use App\Services\Contracts\ContractGenerationService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
@@ -131,5 +132,13 @@ class EditContractBatch extends EditRecord
         }
 
         return app(ContractGenerationService::class)->saveDraftBatch($data, $actor, $record);
+    }
+
+    protected function getSavedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title('Данните са запазени')
+            ->body('Продължете към документите, за да генерирате PDF и Word файловете.');
     }
 }

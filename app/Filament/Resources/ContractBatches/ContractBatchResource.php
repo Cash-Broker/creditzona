@@ -190,7 +190,6 @@ class ContractBatchResource extends Resource
                         ->orderBy('name')
                         ->pluck('name', 'id')
                         ->all())
-                    ->native(false)
                     ->nullable(),
             ])
             ->action(function (array $data, ContractBatch $record): void {

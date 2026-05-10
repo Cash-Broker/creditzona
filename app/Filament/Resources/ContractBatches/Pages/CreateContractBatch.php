@@ -9,6 +9,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Services\Contracts\ContractGenerationService;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
@@ -101,6 +102,14 @@ class CreateContractBatch extends CreateRecord
         }
 
         return app(ContractGenerationService::class)->saveDraftBatch($data, $actor);
+    }
+
+    protected function getCreatedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title('Договорът е създаден')
+            ->body('Продължете към документите, за да генерирате PDF и Word файловете.');
     }
 
     /**

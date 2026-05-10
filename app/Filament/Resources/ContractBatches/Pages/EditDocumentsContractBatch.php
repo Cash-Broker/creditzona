@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Contracts\ContractGenerationService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
@@ -128,5 +129,13 @@ class EditDocumentsContractBatch extends EditRecord
         }
 
         return app(ContractGenerationService::class)->updateBatch($record, $data, $actor);
+    }
+
+    protected function getSavedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title('Договорът е генериран успешно')
+            ->body('Документите са обновени и са готови за сваляне.');
     }
 }
