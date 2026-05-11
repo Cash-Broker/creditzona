@@ -115,6 +115,23 @@
                         <input type="date" wire:model="data.dates.loan_last_installment_date" class="cz-input">
                     </div>
                 </div>
+
+                {{-- Row 3: Падеж на запис на заповед (span 2) | Сума на запис на заповед (span 2) --}}
+                <div class="cz-cb-row cz-cb-row-4">
+                    <div class="cz-field cz-col-span-2">
+                        <label class="cz-label">Падеж на запис на заповед<span class="cz-req">*</span></label>
+                        <input type="date" wire:model="data.dates.co_applicant_promissory_note_due_date" class="cz-input">
+                        @error('data.dates.co_applicant_promissory_note_due_date') <span class="cz-error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="cz-field cz-col-span-2">
+                        <label class="cz-label">Сума на запис на заповед<span class="cz-req">*</span></label>
+                        <div class="cz-input-group">
+                            <input type="number" wire:model="data.financial.co_applicant_promissory_note_amount_eur" class="cz-input cz-input-with-suffix" min="0" step="0.01">
+                            <span class="cz-input-suffix">€</span>
+                        </div>
+                        @error('data.financial.co_applicant_promissory_note_amount_eur') <span class="cz-error">{{ $message }}</span> @enderror
+                    </div>
+                </div>
             </div>
         @endif
 
