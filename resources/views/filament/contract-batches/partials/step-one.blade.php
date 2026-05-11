@@ -121,6 +121,22 @@
                     </div>
                 </div>
             </div>
+            <div class="cz-cb-row cz-cb-row-5">
+                <div class="cz-field">
+                    <label class="cz-label">Кредити след съдействие</label>
+                    <div class="cz-input-group">
+                        <input type="number" wire:model="data.financial.post_service_credit_count" class="cz-input cz-input-with-suffix" placeholder="Пример: 1" min="0">
+                        <span class="cz-input-suffix">броя</span>
+                    </div>
+                </div>
+                <div class="cz-field">
+                    <label class="cz-label">Вноска след съдействие</label>
+                    <div class="cz-input-group">
+                        <input type="number" wire:model="data.financial.post_service_monthly_repayment_burden_eur" class="cz-input cz-input-with-suffix" placeholder="Пример: 500" min="0" step="0.01">
+                        <span class="cz-input-suffix">€</span>
+                    </div>
+                </div>
+            </div>
         </div>
     @endif
 </div>
