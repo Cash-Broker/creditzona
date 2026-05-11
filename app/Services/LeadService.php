@@ -146,6 +146,8 @@ class LeadService
                 'returned_to_primary_archived_at' => null,
                 'approved_returned_by_user_id' => null,
                 'approved_returned_at' => null,
+                'approved_returned_archived_user_id' => null,
+                'approved_returned_archived_at' => null,
             ])->save();
 
             $lead = $lead->refresh();
@@ -258,6 +260,32 @@ class LeadService
                 'approved_returned_by_user_id' => $actor->id,
                 'approved_returned_at' => now(),
             ])->save();
+        });
+
+        return $lead->refresh();
+    }
+
+    public function archiveApprovedReturnedLead(Lead $lead, User $actor): Lead
+    {
+        if (! ($actor->isAdmin() || $actor->isOperator())) {
+            throw new AuthorizationException('Нямате достъп да архивирате тази одобрена върната заявка.');
+        }
+
+        if ($lead->assigned_user_id !== $actor->id) {
+            throw new AuthorizationException('Тази одобрена върната заявка не е към вас.');
+        }
+
+        if ($lead->approved_returned_at === null) {
+            throw new DomainException('Само одобрени върнати заявки могат да бъдат архивирани.');
+        }
+
+        DB::transaction(function () use ($lead, $actor): void {
+            $lead->forceFill([
+                'approved_returned_archived_user_id' => $actor->id,
+                'approved_returned_archived_at' => now(),
+            ])->save();
+
+            $this->deleteLeadNotifications($lead->refresh());
         });
 
         return $lead->refresh();

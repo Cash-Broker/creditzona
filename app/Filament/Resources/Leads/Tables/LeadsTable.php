@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Leads\Tables;
 
+use App\Filament\Resources\ApprovedReturnedLeads\ApprovedReturnedLeadResource;
 use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
@@ -36,9 +37,11 @@ class LeadsTable
         string $resourceClass = LeadResource::class,
         bool $isAttachedResource = false,
         bool $isReturnedToMeResource = false,
+        bool $isApprovedReturnedResource = false,
         bool $showReturnedMeta = false,
         bool $showAttachedArchiveMeta = false,
         bool $showReturnedToMeArchiveMeta = false,
+        bool $showApprovedReturnedArchiveMeta = false,
         ?string $defaultSortColumn = null,
     ): Table {
         $defaultSortColumn ??= 'created_at';
@@ -129,6 +132,12 @@ class LeadsTable
                     ->dateTime('d.m.Y H:i', 'Europe/Sofia')
                     ->sortable()
                     ->visible($showReturnedToMeArchiveMeta),
+
+                TextColumn::make('approved_returned_archived_at')
+                    ->label('Архивирана на')
+                    ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                    ->sortable()
+                    ->visible($showApprovedReturnedArchiveMeta),
 
                 TextColumn::make('phone')
                     ->label('Телефон')
@@ -226,6 +235,7 @@ class LeadsTable
             ->recordActions(array_values(array_filter([
                 $isAttachedResource ? AttachedLeadResource::makeReturnToPrimaryAction() : null,
                 $isReturnedToMeResource ? ReturnedToMeLeadResource::makeArchiveAction() : null,
+                $isApprovedReturnedResource ? ApprovedReturnedLeadResource::makeArchiveAction() : null,
                 ViewAction::make(),
                 EditAction::make(),
                 static::makeReassignLeadAction(),

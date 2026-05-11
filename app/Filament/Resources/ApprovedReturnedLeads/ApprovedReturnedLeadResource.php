@@ -12,10 +12,14 @@ use App\Filament\Resources\Leads\Tables\LeadsTable;
 use App\Models\Lead;
 use App\Models\User;
 use BackedEnum;
+use DomainException;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -72,9 +76,54 @@ class ApprovedReturnedLeadResource extends Resource
         return LeadsTable::configure(
             $table,
             static::class,
+            isApprovedReturnedResource: true,
             showReturnedMeta: true,
             defaultSortColumn: 'approved_returned_at',
         );
+    }
+
+    public static function makeArchiveAction(): Action
+    {
+        return Action::make('archive_approved_returned')
+            ->label('Архивирай')
+            ->icon(Heroicon::OutlinedArchiveBox)
+            ->color('info')
+            ->requiresConfirmation()
+            ->modalHeading('Архивиране на одобрена върната заявка')
+            ->modalDescription('Заявката ще бъде махната от "Одобрени върнати" и ще се премести в "Архивирани одобрени върнати".')
+            ->visible(function (Lead $record): bool {
+                $user = auth()->user();
+
+                return $user instanceof User
+                    && $user->isOperator()
+                    && $record->assigned_user_id === $user->id
+                    && $record->additional_user_id === null
+                    && $record->approved_returned_at !== null
+                    && $record->approved_returned_archived_at === null;
+            })
+            ->action(function (Lead $record): void {
+                $user = auth()->user();
+
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                try {
+                    app(\App\Services\LeadService::class)->archiveApprovedReturnedLead($record, $user);
+                } catch (AuthorizationException|DomainException $exception) {
+                    Notification::make()
+                        ->title($exception->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Заявката е архивирана и вече е в "Архивирани одобрени върнати".')
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getRelations(): array

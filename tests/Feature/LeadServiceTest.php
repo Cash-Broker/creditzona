@@ -66,8 +66,7 @@ class LeadServiceTest extends TestCase
         $this->assertNotNull($lead);
 
         Log::shouldHaveReceived('log')
-            ->withArgs(fn (string $level, string $message): bool =>
-                $level === 'warning' && $message === 'Failed to send lead confirmation email.'
+            ->withArgs(fn (string $level, string $message): bool => $level === 'warning' && $message === 'Failed to send lead confirmation email.'
             )
             ->once();
     }
@@ -90,8 +89,7 @@ class LeadServiceTest extends TestCase
         $this->assertNotNull($lead);
 
         Log::shouldHaveReceived('log')
-            ->withArgs(fn (string $level, string $message): bool =>
-                $level === 'error' && $message === 'Failed to send lead confirmation email.'
+            ->withArgs(fn (string $level, string $message): bool => $level === 'error' && $message === 'Failed to send lead confirmation email.'
             )
             ->once();
     }
@@ -937,6 +935,128 @@ class LeadServiceTest extends TestCase
 
         $this->assertNull($lead->returned_to_primary_archived_user_id);
         $this->assertNull($lead->returned_to_primary_archived_at);
+    }
+
+    public function test_primary_operator_can_archive_approved_returned_lead(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $elena->id,
+            'returned_to_primary_at' => now(),
+            'approved_returned_by_user_id' => $anna->id,
+            'approved_returned_at' => now(),
+        ]));
+
+        app(LeadService::class)->archiveApprovedReturnedLead($lead, $anna);
+
+        $lead->refresh();
+
+        $this->assertSame($anna->id, $lead->approved_returned_archived_user_id);
+        $this->assertNotNull($lead->approved_returned_archived_at);
+    }
+
+    public function test_archiving_approved_returned_lead_requires_primary_assignee(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $renata = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $elena->id,
+            'returned_to_primary_at' => now(),
+            'approved_returned_by_user_id' => $anna->id,
+            'approved_returned_at' => now(),
+        ]));
+
+        $this->expectException(AuthorizationException::class);
+        $this->expectExceptionMessage('Тази одобрена върната заявка не е към вас.');
+
+        app(LeadService::class)->archiveApprovedReturnedLead($lead, $renata);
+    }
+
+    public function test_archiving_approved_returned_lead_requires_approved_state(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => null,
+            'returned_additional_user_id' => $elena->id,
+            'returned_to_primary_at' => now(),
+            'approved_returned_at' => null,
+        ]));
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Само одобрени върнати заявки могат да бъдат архивирани.');
+
+        app(LeadService::class)->archiveApprovedReturnedLead($lead, $anna);
+    }
+
+    public function test_returning_approved_returned_archived_lead_again_clears_approved_archive_state(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'additional_user_id' => $elena->id,
+        ]));
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead, $elena);
+        app(LeadService::class)->approveReturnedLead($lead->fresh(), $anna);
+        app(LeadService::class)->archiveApprovedReturnedLead($lead->fresh(), $anna);
+
+        $lead->forceFill([
+            'additional_user_id' => $elena->id,
+        ])->save();
+
+        app(LeadService::class)->returnAttachedLeadToPrimary($lead->fresh(), $elena);
+
+        $lead->refresh();
+
+        $this->assertNull($lead->approved_returned_archived_user_id);
+        $this->assertNull($lead->approved_returned_archived_at);
+        $this->assertNull($lead->approved_returned_at);
+        $this->assertNull($lead->approved_returned_by_user_id);
     }
 
     public function test_returning_attached_lead_requires_current_additional_assignee(): void
