@@ -11,7 +11,7 @@
 @endphp
 
 <x-filament-panels::page>
-    <form wire:submit="save" class="cz-cb-form">
+    <form wire:submit.prevent="save" class="cz-cb-form">
         @if($showConsultation)
             <div class="cz-cb-row cz-cb-row-cs">
                 {{-- Договор за Консултантска Услуга и Протокол --}}
@@ -120,7 +120,7 @@
 
         <div class="cz-cb-actions">
             <a href="{{ \App\Filament\Resources\ContractBatches\ContractBatchResource::getUrl('edit', ['record' => $record]) }}" class="cz-btn cz-btn-ghost">Назад</a>
-            <button type="submit" class="cz-btn cz-btn-primary">Обнови</button>
+            <button type="button" wire:click="save" class="cz-btn cz-btn-primary">Обнови</button>
             <button type="button" class="cz-btn cz-btn-danger" wire:click="mountAction('deleteFromForm')">Изтрий</button>
         </div>
     </form>
