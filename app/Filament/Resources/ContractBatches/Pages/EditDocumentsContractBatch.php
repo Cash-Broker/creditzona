@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
@@ -128,7 +129,18 @@ class EditDocumentsContractBatch extends EditRecord
             throw new RuntimeException('Невалиден договорен пакет за обновяване.');
         }
 
-        return app(ContractGenerationService::class)->updateBatch($record, $data, $actor);
+        try {
+            return app(ContractGenerationService::class)->updateBatch($record, $data, $actor);
+        } catch (RuntimeException $exception) {
+            Notification::make()
+                ->title('Договорът не може да бъде запазен')
+                ->body($exception->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+
+            throw new Halt;
+        }
     }
 
     protected function getSavedNotification(): ?Notification
