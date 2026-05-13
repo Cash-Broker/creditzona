@@ -21,6 +21,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 class EditAttachedLead extends EditRecord
 {
     use \App\Filament\Resources\Leads\Concerns\SavesNotesInline;
+    use \App\Filament\Resources\Leads\Concerns\SendsLeadEmail;
+
     protected static string $resource = AttachedLeadResource::class;
 
     protected ?int $previousAdditionalUserId = null;
@@ -44,6 +46,7 @@ class EditAttachedLead extends EditRecord
                 ->label('Генерирай договори')
                 ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey())
                 ->visible(fn (): bool => auth()->user()?->canViewAllContracts() ?? false),
+            $this->composeLeadEmailAction(),
         ];
     }
 

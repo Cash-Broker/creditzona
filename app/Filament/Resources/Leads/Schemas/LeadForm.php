@@ -179,7 +179,18 @@ class LeadForm
                             ->default('new')
                             ->live()
                             ->native(false)
-                            ->columnSpan(2),
+                            ->columnSpan(2)
+                            ->afterStateUpdated(function (?string $state, \Livewire\Component $livewire): void {
+                                if ($state !== 'email') {
+                                    return;
+                                }
+
+                                if (! method_exists($livewire, 'composeLeadEmailAction')) {
+                                    return;
+                                }
+
+                                $livewire->mountAction('composeLeadEmail');
+                            }),
                         TextInput::make('amount')
                             ->label('Сума')
                             ->required(fn (Get $get): bool => ! static::isRecurringStatus($get('status')))

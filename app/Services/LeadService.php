@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Mail\LeadEmail as LeadEmailMailable;
 use App\Mail\LeadSubmittedConfirmation;
 use App\Models\Lead;
+use App\Models\LeadEmail;
 use App\Models\User;
+use App\Support\Notes\NoteHistory;
 use App\Support\Phone\PhoneNormalizer;
 use DomainException;
 use Filament\Notifications\DatabaseNotification as FilamentDatabaseNotification;
@@ -289,6 +292,75 @@ class LeadService
         });
 
         return $lead->refresh();
+    }
+
+    public function sendEmailToLead(Lead $lead, User $sender, string $body): LeadEmail
+    {
+        $body = trim($body);
+
+        if ($body === '') {
+            throw new DomainException('Съобщението не може да бъде празно.');
+        }
+
+        if (blank($lead->email)) {
+            throw new DomainException('Тази заявка няма имейл адрес, на който да изпратите съобщение.');
+        }
+
+        if (! ($sender->isAdmin() || $sender->isOperator())) {
+            throw new AuthorizationException('Нямате достъп да изпратите имейл към тази заявка.');
+        }
+
+        $isAssigned = $lead->assigned_user_id === $sender->id
+            || $lead->additional_user_id === $sender->id;
+
+        if (! $sender->isAdmin() && ! $isAssigned) {
+            throw new AuthorizationException('Тази заявка не е към вас.');
+        }
+
+        if (blank($sender->email)) {
+            throw new DomainException('Личният имейл на оператора липсва — не може да се изпрати съобщение.');
+        }
+
+        $subject = 'Във връзка с Вашата заявка в CreditZona';
+
+        return DB::transaction(function () use ($lead, $sender, $body, $subject): LeadEmail {
+            $email = LeadEmail::query()->create([
+                'lead_id' => $lead->id,
+                'sender_user_id' => $sender->id,
+                'body' => $body,
+                'from_email' => $sender->email,
+                'to_email' => $lead->email,
+                'subject' => $subject,
+                'sent_at' => now(),
+            ]);
+
+            $messageId = sprintf(
+                'lead-email-%d.lead-%d@creditzona.bg',
+                $email->id,
+                $lead->id,
+            );
+
+            $email->forceFill(['message_id' => $messageId])->save();
+
+            Mail::to($lead->email)->queue(new LeadEmailMailable(
+                lead: $lead,
+                sender: $sender,
+                body: $body,
+                subjectLine: $subject,
+                messageId: $messageId,
+            ));
+
+            $lead->forceFill([
+                'internal_notes' => NoteHistory::append(
+                    $lead->internal_notes,
+                    sprintf("Изпратен имейл до %s:\n%s", $lead->email, $body),
+                    $sender->name,
+                    $sender->id,
+                ),
+            ])->save();
+
+            return $email->refresh();
+        });
     }
 
     public function setMarkedForLater(Lead $lead, bool $markedForLater): Lead

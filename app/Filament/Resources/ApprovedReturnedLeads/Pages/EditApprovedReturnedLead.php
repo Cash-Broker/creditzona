@@ -19,6 +19,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 class EditApprovedReturnedLead extends EditRecord
 {
     use \App\Filament\Resources\Leads\Concerns\SavesNotesInline;
+    use \App\Filament\Resources\Leads\Concerns\SendsLeadEmail;
 
     protected static string $resource = ApprovedReturnedLeadResource::class;
 
@@ -44,6 +45,7 @@ class EditApprovedReturnedLead extends EditRecord
                 ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey())
                 ->visible(fn (): bool => auth()->user()?->canViewAllContracts() ?? false),
             ViewAction::make(),
+            $this->composeLeadEmailAction(),
         ];
     }
 

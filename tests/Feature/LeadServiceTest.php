@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Mail\LeadEmail as LeadEmailMailable;
 use App\Models\Lead;
+use App\Models\LeadEmail;
 use App\Models\LeadGuarantor;
 use App\Models\User;
 use App\Services\LeadService;
@@ -1057,6 +1059,123 @@ class LeadServiceTest extends TestCase
         $this->assertNull($lead->approved_returned_archived_at);
         $this->assertNull($lead->approved_returned_at);
         $this->assertNull($lead->approved_returned_by_user_id);
+    }
+
+    public function test_send_email_to_lead_creates_record_and_queues_mail(): void
+    {
+        Mail::fake();
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'email' => 'client@example.com',
+        ]));
+
+        $email = app(LeadService::class)->sendEmailToLead($lead, $anna, 'Здравейте! Получихме Вашата заявка.');
+
+        $this->assertInstanceOf(LeadEmail::class, $email);
+        $this->assertSame($lead->id, $email->lead_id);
+        $this->assertSame($anna->id, $email->sender_user_id);
+        $this->assertSame('Здравейте! Получихме Вашата заявка.', $email->body);
+        $this->assertSame('client@example.com', $email->to_email);
+        $this->assertSame($anna->email, $email->from_email);
+        $this->assertNotNull($email->message_id);
+        $this->assertNotNull($email->sent_at);
+
+        Mail::assertQueued(LeadEmailMailable::class, function (LeadEmailMailable $mail) use ($lead): bool {
+            return $mail->hasTo($lead->email);
+        });
+
+        $lead->refresh();
+        $this->assertStringContainsString('Изпратен имейл', $lead->internal_notes ?? '');
+    }
+
+    public function test_send_email_to_lead_rejects_empty_body(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'email' => 'client@example.com',
+        ]));
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Съобщението не може да бъде празно.');
+
+        app(LeadService::class)->sendEmailToLead($lead, $anna, '   ');
+    }
+
+    public function test_send_email_to_lead_rejects_when_lead_has_no_email(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+        ]));
+
+        $lead->forceFill(['email' => ''])->save();
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Тази заявка няма имейл адрес');
+
+        app(LeadService::class)->sendEmailToLead($lead->fresh(), $anna, 'Test body');
+    }
+
+    public function test_send_email_to_lead_rejects_unrelated_operator(): void
+    {
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $stranger = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'stranger@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'email' => 'client@example.com',
+        ]));
+
+        $this->expectException(AuthorizationException::class);
+        $this->expectExceptionMessage('Тази заявка не е към вас.');
+
+        app(LeadService::class)->sendEmailToLead($lead, $stranger, 'Test body');
+    }
+
+    public function test_send_email_to_lead_allows_admin_regardless_of_assignment(): void
+    {
+        Mail::fake();
+
+        $anna = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create($this->leadData([
+            'assigned_user_id' => $anna->id,
+            'email' => 'client@example.com',
+        ]));
+
+        $email = app(LeadService::class)->sendEmailToLead($lead, $admin, 'Поздрави.');
+
+        $this->assertSame($admin->id, $email->sender_user_id);
     }
 
     public function test_returning_attached_lead_requires_current_additional_assignee(): void

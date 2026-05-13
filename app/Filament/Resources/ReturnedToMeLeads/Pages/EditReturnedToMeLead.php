@@ -19,6 +19,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 class EditReturnedToMeLead extends EditRecord
 {
     use \App\Filament\Resources\Leads\Concerns\SavesNotesInline;
+    use \App\Filament\Resources\Leads\Concerns\SendsLeadEmail;
+
     protected static string $resource = ReturnedToMeLeadResource::class;
 
     protected ?int $previousAdditionalUserId = null;
@@ -43,6 +45,7 @@ class EditReturnedToMeLead extends EditRecord
                 ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey())
                 ->visible(fn (): bool => auth()->user()?->canViewAllContracts() ?? false),
             ViewAction::make(),
+            $this->composeLeadEmailAction(),
         ];
     }
 

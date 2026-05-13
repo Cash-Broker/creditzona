@@ -14,6 +14,7 @@ use Filament\Resources\Pages\EditRecord;
 class EditApprovedReturnedLeadArchive extends EditRecord
 {
     use \App\Filament\Resources\Leads\Concerns\SavesNotesInline;
+    use \App\Filament\Resources\Leads\Concerns\SendsLeadEmail;
 
     protected static string $resource = ApprovedReturnedLeadArchiveResource::class;
 
@@ -39,6 +40,7 @@ class EditApprovedReturnedLeadArchive extends EditRecord
                 ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey())
                 ->visible(fn (): bool => auth()->user()?->canViewAllContracts() ?? false),
             ViewAction::make(),
+            $this->composeLeadEmailAction(),
         ];
     }
 
