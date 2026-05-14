@@ -5,8 +5,10 @@ use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\CalendarApiController;
 use App\Http\Controllers\Api\ContactMessageApiController;
 use App\Http\Controllers\Api\ContactMessageController;
+use App\Http\Controllers\Api\ContactMessageReplyApiController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\LeadApiController;
+use App\Http\Controllers\Api\LeadEmailApiController;
 use App\Http\Controllers\Api\LeadGuarantorApiController;
 use App\Http\Controllers\Api\LeadMessageApiController;
 use App\Http\Controllers\Api\UserApiController;
@@ -56,6 +58,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/leads/{id}/messages/{messageId}', [LeadMessageApiController::class, 'update'])->where(['id' => '[0-9]+', 'messageId' => '[0-9]+']);
     Route::delete('/leads/{id}/messages/{messageId}', [LeadMessageApiController::class, 'destroy'])->where(['id' => '[0-9]+', 'messageId' => '[0-9]+']);
 
+    // Lead Emails (sent to clients)
+    Route::get('/leads/{id}/emails', [LeadEmailApiController::class, 'index'])->where('id', '[0-9]+');
+    Route::post('/leads/{id}/emails', [LeadEmailApiController::class, 'store'])->where('id', '[0-9]+');
+
     // Calendar
     Route::get('/calendar', [CalendarApiController::class, 'index']);
     Route::post('/calendar', [CalendarApiController::class, 'store']);
@@ -69,6 +75,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/crm/contact-messages/{id}', [ContactMessageApiController::class, 'show'])->where('id', '[0-9]+');
     Route::patch('/crm/contact-messages/{id}/assign', [ContactMessageApiController::class, 'assign'])->where('id', '[0-9]+');
     Route::patch('/crm/contact-messages/{id}/archive', [ContactMessageApiController::class, 'archive'])->where('id', '[0-9]+');
+    Route::get('/crm/contact-messages/{id}/replies', [ContactMessageReplyApiController::class, 'index'])->where('id', '[0-9]+');
+    Route::post('/crm/contact-messages/{id}/replies', [ContactMessageReplyApiController::class, 'store'])->where('id', '[0-9]+');
 
     // Auth extras
     Route::patch('/auth/availability', [AuthController::class, 'toggleAvailability']);
