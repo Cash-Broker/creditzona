@@ -168,6 +168,8 @@ class NotificationService
                 ]);
             }
 
+            $this->cleanupInvalidTokens($messages, $responseData ?? []);
+
             return $responseData ?? [];
         } catch (\Throwable $exception) {
             Log::error('Expo push notification error.', [
@@ -176,6 +178,43 @@ class NotificationService
             ]);
 
             return [];
+        }
+    }
+
+    /**
+     * Clears expo_push_token for users whose tokens Expo reports as invalid.
+     */
+    private function cleanupInvalidTokens(array $messages, array $responseData): void
+    {
+        $tickets = $responseData['data'] ?? null;
+
+        if (! is_array($tickets)) {
+            return;
+        }
+
+        // Single message → server returns a single ticket object instead of array
+        $isSingle = isset($tickets['status']);
+        $list = $isSingle ? [$tickets] : $tickets;
+        $messageList = $isSingle ? [$messages] : $messages;
+
+        foreach ($list as $index => $ticket) {
+            if (($ticket['status'] ?? null) !== 'error') {
+                continue;
+            }
+
+            $errorType = $ticket['details']['error'] ?? null;
+
+            if (! in_array($errorType, ['DeviceNotRegistered', 'InvalidCredentials'], true)) {
+                continue;
+            }
+
+            $token = $messageList[$index]['to'] ?? null;
+
+            if (is_string($token) && $token !== '') {
+                User::query()
+                    ->where('expo_push_token', $token)
+                    ->update(['expo_push_token' => null]);
+            }
         }
     }
 }

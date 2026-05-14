@@ -165,8 +165,10 @@ class LeadApiController extends Controller
             ->visibleToUser($user)
             ->findOrFail($id);
 
+        $wasMarked = $lead->marked_for_later_at !== null;
+
         $lead->update([
-            'marked_for_later_at' => $lead->marked_for_later_at ? null : now(),
+            'marked_for_later_at' => $wasMarked ? null : now(),
         ]);
 
         $lead = $lead->fresh([
@@ -176,6 +178,10 @@ class LeadApiController extends Controller
             'guarantors',
             'messages.author:id,name',
         ]);
+
+        if (! $wasMarked && $lead->isMarkedForLater()) {
+            $this->notificationService->notifyMarkedForLater($lead);
+        }
 
         return response()->json([
             'data' => $this->formatLeadDetail($lead),

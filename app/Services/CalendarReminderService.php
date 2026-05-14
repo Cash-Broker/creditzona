@@ -17,6 +17,10 @@ class CalendarReminderService
 
     private const NOTIFICATION_RETENTION_HOURS = 24;
 
+    public function __construct(
+        private readonly NotificationService $notificationService,
+    ) {}
+
     public function dispatchDueRemindersFor(User $user): void
     {
         if (! Schema::hasTable('notifications')) {
@@ -42,6 +46,7 @@ class CalendarReminderService
 
                 $this->deleteReminderNotificationsForEvent($event, $user->id);
                 $this->sendReminderNotification($event, $user);
+                $this->notificationService->notifyCalendarReminder($event);
 
                 $event->forceFill([
                     'reminder_sent_at' => $now,
