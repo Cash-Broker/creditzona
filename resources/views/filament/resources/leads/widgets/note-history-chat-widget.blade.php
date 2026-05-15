@@ -36,6 +36,7 @@
                                     {{-- Bubble --}}
                                     <div @class([
                                         'min-w-16 rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                                        'w-[min(28rem,80vw)]' => $editingIndex === $msg['index'],
                                         'rounded-br-sm bg-primary-600 text-white' => $msg['isMe'],
                                         'rounded-bl-sm bg-white text-gray-800 ring-1 ring-gray-200 dark:bg-gray-950 dark:text-gray-100 dark:ring-white/10' => ! $msg['isMe'],
                                     ])>
@@ -43,8 +44,11 @@
                                             {{-- Edit mode --}}
                                             <textarea
                                                 wire:model.live="editingBody"
-                                                rows="2"
-                                                class="w-full rounded-lg border-0 bg-white/20 p-1 text-sm leading-relaxed focus:ring-1 focus:ring-white/40 {{ $msg['isMe'] ? 'text-white placeholder-white/60' : 'text-gray-800 dark:text-gray-100' }}"
+                                                rows="3"
+                                                x-data
+                                                x-init="$el.style.height = 'auto'; $el.style.height = ($el.scrollHeight + 2) + 'px'"
+                                                @input="$el.style.height = 'auto'; $el.style.height = ($el.scrollHeight + 2) + 'px'"
+                                                class="block w-full resize-none rounded-lg border-0 bg-white/20 p-2 text-sm leading-relaxed focus:ring-1 focus:ring-white/40 {{ $msg['isMe'] ? 'text-white placeholder-white/60' : 'text-gray-800 dark:text-gray-100' }}"
                                             ></textarea>
                                             <div class="mt-1 flex gap-1">
                                                 <button
