@@ -21,7 +21,6 @@ use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 class ContractBatchesTable
 {
@@ -123,7 +122,7 @@ class ContractBatchesTable
                     ->modalSubmitActionLabel('Изтрий пакета'),
             ])
             ->defaultSort(fn (Builder $query): Builder => $query
-                ->orderByRaw('COALESCE('.static::protocolDateOrderExpression().', DATE(created_at)) DESC')
+                ->orderByRaw('COALESCE(request_date, DATE(created_at)) DESC')
                 ->orderByDesc('id'))
             ->paginated([5, 10, 25, 50])
             ->defaultPaginationPageOption(5)
@@ -151,7 +150,7 @@ class ContractBatchesTable
             ->label('Прикачи към оператор')
             ->icon(Heroicon::OutlinedUserPlus)
             ->color('primary')
-            ->visible(static fn (): bool => auth()->user()?->canViewAllContracts() ?? false)
+            ->visible(static fn (): bool => (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isOperator() ?? false))
             ->modalHeading('Прикачи избраните договори към оператор')
             ->modalDescription('Изберете потребител, който ще има достъп до избраните пакети. Изпразнете полето, за да премахнете прикачването от избраните.')
             ->modalSubmitActionLabel('Прикачи')
@@ -221,13 +220,5 @@ class ContractBatchesTable
                     ->success()
                     ->send();
             });
-    }
-
-    private static function protocolDateOrderExpression(): string
-    {
-        return match (DB::connection()->getDriverName()) {
-            'mysql' => "JSON_UNQUOTE(JSON_EXTRACT(input_payload, '$.dates.consultation_protocol_date'))",
-            default => "json_extract(input_payload, '$.dates.consultation_protocol_date')",
-        };
     }
 }

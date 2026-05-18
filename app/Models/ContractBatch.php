@@ -34,11 +34,17 @@ class ContractBatch extends Model
 
     public const DOCUMENT_TYPE_DECLARATION = 'declaration';
 
+    public const DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M = 'consultation_agreement_12m';
+
+    public const DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION = 'credit_history_declaration';
+
     public const DOCUMENT_LAYOUT_FULL = 'full';
 
     public const DOCUMENT_LAYOUT_SIMPLIFIED = 'simplified';
 
     public const DOCUMENT_LAYOUT_LOAN_ONLY = 'loan_only';
+
+    public const DOCUMENT_LAYOUT_CONTRACT_12M = 'contract_12m';
 
     public const COMPANY_REKREDO_KONSULT_DPK = 'rekredo_konsult_dpk';
 
@@ -90,6 +96,7 @@ class ContractBatch extends Model
     {
         return [
             self::DOCUMENT_TYPE_APPLICATION_REQUEST,
+            self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M,
             self::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
             self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
             self::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
@@ -97,6 +104,7 @@ class ContractBatch extends Model
             self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
             self::DOCUMENT_TYPE_LOAN_AGREEMENT,
             self::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE,
+            self::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION,
             self::DOCUMENT_TYPE_DECLARATION,
         ];
     }
@@ -107,11 +115,13 @@ class ContractBatch extends Model
             self::DOCUMENT_TYPE_APPLICATION_REQUEST => 'Молба за предоставяне на консултативна услуга и посредничество',
             self::DOCUMENT_TYPE_MEDIATION_AGREEMENT => 'Договор за посредничество',
             self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT => 'Договор за финансова консултантска услуга',
+            self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M => 'Договор за финансова консултация (12 месеца)',
             self::DOCUMENT_TYPE_MEDIATION_PROTOCOL => 'Приемо-предавателен протокол към договор за посредничество',
             self::DOCUMENT_TYPE_CONSULTATION_PROTOCOL => 'Протокол за извършена консултация',
             self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE => 'Запис на заповед към фирмата',
             self::DOCUMENT_TYPE_LOAN_AGREEMENT => 'Договор за паричен заем',
             self::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE => 'Запис на заповед между клиент и съкредитоискател',
+            self::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION => 'Декларация (трудова заетост и кредитна история)',
             self::DOCUMENT_TYPE_DECLARATION => 'Декларация',
         ];
     }
@@ -130,6 +140,7 @@ class ContractBatch extends Model
             self::DOCUMENT_LAYOUT_FULL => 'Пълен',
             self::DOCUMENT_LAYOUT_SIMPLIFIED => 'Опростен',
             self::DOCUMENT_LAYOUT_LOAN_ONLY => 'Договор за Заем + Заповед',
+            self::DOCUMENT_LAYOUT_CONTRACT_12M => 'Договор 12м',
         ];
     }
 
@@ -157,7 +168,27 @@ class ContractBatch extends Model
                 self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
                 self::DOCUMENT_TYPE_DECLARATION,
             ],
-            self::DOCUMENT_LAYOUT_FULL => self::getDocumentGenerationOrder(),
+            self::DOCUMENT_LAYOUT_CONTRACT_12M => [
+                self::DOCUMENT_TYPE_APPLICATION_REQUEST,
+                self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M,
+                self::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
+                self::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
+                self::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
+                self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+                self::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION,
+                self::DOCUMENT_TYPE_DECLARATION,
+            ],
+            self::DOCUMENT_LAYOUT_FULL => [
+                self::DOCUMENT_TYPE_APPLICATION_REQUEST,
+                self::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
+                self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
+                self::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
+                self::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
+                self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+                self::DOCUMENT_TYPE_LOAN_AGREEMENT,
+                self::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE,
+                self::DOCUMENT_TYPE_DECLARATION,
+            ],
             default => [],
         };
     }
@@ -166,24 +197,48 @@ class ContractBatch extends Model
     {
         $label = self::getDocumentTypeLabel($documentType);
 
-        if ($documentType !== self::DOCUMENT_TYPE_LOAN_AGREEMENT || $copyNumber === null) {
+        if ($copyNumber === null) {
             return $label;
         }
 
-        return $label.' - екземпляр '.$copyNumber;
+        if ($documentType === self::DOCUMENT_TYPE_LOAN_AGREEMENT) {
+            return $label.' - екземпляр '.$copyNumber;
+        }
+
+        if ($documentType === self::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION) {
+            $copyLabel = $copyNumber === 1 ? 'Възложител' : 'Поръчител';
+
+            return $label.' - '.$copyLabel;
+        }
+
+        return $label;
     }
 
     /**
      * @return array<int, string>
      */
-    public static function orderSelectedDocumentTypes(array $documentTypes): array
+    public static function getGenerationOrderForLayout(?string $layout): array
+    {
+        if ($layout === null) {
+            return self::getDocumentGenerationOrder();
+        }
+
+        $layoutOrder = self::getDocumentTypesForLayout($layout);
+
+        return $layoutOrder !== [] ? $layoutOrder : self::getDocumentGenerationOrder();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function orderSelectedDocumentTypes(array $documentTypes, ?string $layout = null): array
     {
         $selected = array_values(array_unique(array_filter(
             $documentTypes,
             static fn (mixed $value): bool => is_string($value) && array_key_exists($value, self::getDocumentTypeOptions()),
         )));
 
-        $priority = array_flip(self::getDocumentGenerationOrder());
+        $priority = array_flip(self::getGenerationOrderForLayout($layout));
 
         usort($selected, static function (string $left, string $right) use ($priority): int {
             return ($priority[$left] ?? PHP_INT_MAX) <=> ($priority[$right] ?? PHP_INT_MAX);
@@ -211,6 +266,7 @@ class ContractBatch extends Model
             self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
             self::DOCUMENT_TYPE_LOAN_AGREEMENT,
             self::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE,
+            self::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION,
             self::DOCUMENT_TYPE_DECLARATION,
         ];
     }
@@ -392,7 +448,10 @@ class ContractBatch extends Model
     {
         return array_map(
             static fn (string $documentType): string => self::getDocumentTypeLabel($documentType),
-            self::orderSelectedDocumentTypes($this->selected_document_types ?? []),
+            self::orderSelectedDocumentTypes(
+                $this->selected_document_types ?? [],
+                $this->document_layout ?? null,
+            ),
         );
     }
 

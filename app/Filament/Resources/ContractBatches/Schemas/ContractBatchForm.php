@@ -3,9 +3,6 @@
 namespace App\Filament\Resources\ContractBatches\Schemas;
 
 use App\Models\ContractBatch;
-use App\Models\Lead;
-use App\Models\LeadGuarantor;
-use App\Services\Contracts\ContractGenerationService;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -69,6 +66,7 @@ class ContractBatchForm
                     ->visible(fn (Get $get): bool => static::isLayout($get, [
                         ContractBatch::DOCUMENT_LAYOUT_FULL,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                     ]))
                     ->schema([
                         static::countField('financial.credit_count_in_institutions', 'В Финансови Институции', 'Пример: 3'),
@@ -79,15 +77,18 @@ class ContractBatchForm
                             ->required(fn (Get $get): bool => static::isLayout($get, [
                                 ContractBatch::DOCUMENT_LAYOUT_FULL,
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                                ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                             ])),
                         static::euroAmountField('financial.commission_eur', 'Комисионна', 'Пример: 2500')
                             ->required(fn (Get $get): bool => static::isLayout($get, [
                                 ContractBatch::DOCUMENT_LAYOUT_FULL,
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                                ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                             ])),
                         static::euroAmountField('financial.monthly_payments_eur', 'Месечни Вноски', 'Пример: 1000'),
                         static::euroAmountField('financial.private_loans_eur', 'Частни Заеми', 'Пример: 5000'),
-                        static::euroAmountField('financial.net_income_eur', 'Доход (Нетно)', 'Пример: 3000'),
+                        static::euroAmountField('financial.net_income_eur', 'Доход (Нетно)', 'Пример: 3000')
+                            ->required(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M)),
                         static::euroAmountField('financial.court_required_eur', 'Съдебно Изискуеми', 'Пример: 3000'),
                         static::countField('financial.post_service_credit_count', 'Кредити след съдействие', 'Пример: 1'),
                         static::euroAmountField('financial.post_service_monthly_repayment_burden_eur', 'Вноска след съдействие', 'Пример: 500'),
@@ -116,9 +117,12 @@ class ContractBatchForm
                         static::loanSection()->columnSpan(6),
                     ]),
 
-                // Опростен: 2 boxed cards in ONE row
+                // Опростен / Договор 12м: 2 boxed cards in ONE row
                 Grid::make(2)
-                    ->visible(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED))
+                    ->visible(fn (Get $get): bool => static::isLayout($get, [
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+                    ]))
                     ->schema([
                         static::consultationSection(),
                         static::promissorySection(),
@@ -142,6 +146,7 @@ class ContractBatchForm
                     ->required(fn (Get $get): bool => static::isLayout($get, [
                         ContractBatch::DOCUMENT_LAYOUT_FULL,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                     ]))
                     ->live(onBlur: true)
                     ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
@@ -168,6 +173,7 @@ class ContractBatchForm
                     ->required(fn (Get $get): bool => static::isLayout($get, [
                         ContractBatch::DOCUMENT_LAYOUT_FULL,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                     ])),
             ]);
     }

@@ -96,7 +96,7 @@ class ContractBatchLeadPrefillTest extends TestCase
         ])->assertSee('Генерирай договори');
     }
 
-    public function test_attached_and_returned_lead_pages_hide_generate_contracts_action_from_operators(): void
+    public function test_attached_and_returned_lead_pages_show_generate_contracts_action_to_operators(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -124,19 +124,19 @@ class ContractBatchLeadPrefillTest extends TestCase
 
         Livewire::test(ViewAttachedLead::class, [
             'record' => (string) $attachedLead->getKey(),
-        ])->assertDontSee('Генерирай договори');
+        ])->assertSee('Генерирай договори');
 
         Livewire::test(EditAttachedLead::class, [
             'record' => (string) $attachedLead->getKey(),
-        ])->assertDontSee('Генерирай договори');
+        ])->assertSee('Генерирай договори');
 
         Livewire::test(ViewReturnedToMeLead::class, [
             'record' => (string) $returnedLead->getKey(),
-        ])->assertDontSee('Генерирай договори');
+        ])->assertSee('Генерирай договори');
 
         Livewire::test(EditReturnedToMeLead::class, [
             'record' => (string) $returnedLead->getKey(),
-        ])->assertDontSee('Генерирай договори');
+        ])->assertSee('Генерирай договори');
     }
 
     private function createLeadForContracts(User $assignedUser, array $overrides = []): Lead

@@ -20,7 +20,7 @@ class ViewAttachedLead extends ViewRecord
             Action::make('generateContracts')
                 ->label('Генерирай договори')
                 ->url(fn (): string => ContractBatchResource::getUrl('create').'?lead_id='.$this->getRecord()->getKey())
-                ->visible(fn (): bool => auth()->user()?->canViewAllContracts() ?? false),
+                ->visible(fn (): bool => (auth()->user()?->isAdmin() ?? false) || (auth()->user()?->isOperator() ?? false)),
         ];
     }
 }

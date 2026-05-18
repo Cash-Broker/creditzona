@@ -4,6 +4,7 @@
     $showCredits = in_array(($layout ?? null), [
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_FULL,
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
     ], true);
 @endphp
 

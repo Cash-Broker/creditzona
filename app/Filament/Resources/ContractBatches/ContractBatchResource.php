@@ -98,7 +98,7 @@ class ContractBatchResource extends Resource
             return false;
         }
 
-        return $user->canViewAllContracts() || $user->isOperator();
+        return $user->isAdmin() || $user->isOperator();
     }
 
     public static function canView($record): bool
@@ -113,33 +113,29 @@ class ContractBatchResource extends Resource
             return true;
         }
 
-        return $user->isOperator()
-            && $record->attached_user_id === $user->id;
+        if (! $user->isAdmin() && ! $user->isOperator()) {
+            return false;
+        }
+
+        return $record->attached_user_id === $user->id
+            || $record->created_by_user_id === $user->id;
     }
 
     public static function canCreate(): bool
     {
         $user = auth()->user();
 
-        return $user instanceof User && $user->canViewAllContracts();
+        return $user instanceof User && ($user->isAdmin() || $user->isOperator());
     }
 
     public static function canEdit($record): bool
     {
-        $user = auth()->user();
-
-        return $user instanceof User
-            && $user->canViewAllContracts()
-            && static::canView($record);
+        return static::canView($record);
     }
 
     public static function canDelete($record): bool
     {
-        $user = auth()->user();
-
-        return $user instanceof User
-            && $user->canViewAllContracts()
-            && static::canView($record);
+        return static::canView($record);
     }
 
     public static function canDeleteAny(): bool
@@ -160,8 +156,11 @@ class ContractBatchResource extends Resource
             return $query;
         }
 
-        if ($user->isOperator()) {
-            return $query->where('attached_user_id', $user->id);
+        if ($user->isAdmin() || $user->isOperator()) {
+            return $query->where(function (Builder $inner) use ($user): void {
+                $inner->where('attached_user_id', $user->id)
+                    ->orWhere('created_by_user_id', $user->id);
+            });
         }
 
         return $query->whereRaw('1 = 0');
@@ -173,7 +172,24 @@ class ContractBatchResource extends Resource
             ->label('Прикачи')
             ->icon(Heroicon::OutlinedUserPlus)
             ->color('primary')
-            ->visible(static fn (): bool => auth()->user()?->canViewAllContracts() ?? false)
+            ->visible(static function (ContractBatch $record): bool {
+                $user = auth()->user();
+
+                if (! $user instanceof User) {
+                    return false;
+                }
+
+                if ($user->canViewAllContracts()) {
+                    return true;
+                }
+
+                if (! $user->isAdmin() && ! $user->isOperator()) {
+                    return false;
+                }
+
+                return $record->attached_user_id === $user->id
+                    || $record->created_by_user_id === $user->id;
+            })
             ->modalHeading('Прикачи договор към потребител')
             ->modalDescription('Изберете потребител, който ще има достъп до този пакет. Изпразнете полето, за да премахнете прикачването.')
             ->modalSubmitActionLabel('Запази')

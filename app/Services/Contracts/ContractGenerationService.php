@@ -30,10 +30,12 @@ class ContractGenerationService
         ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT => 'contracts.pdf.documents.mediation_agreement',
         ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL => 'contracts.pdf.documents.mediation_protocol',
         ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT => 'contracts.pdf.documents.consultation_agreement',
+        ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M => 'contracts.pdf.documents.consultation_agreement_12m',
         ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL => 'contracts.pdf.documents.consultation_protocol',
         ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE => 'contracts.pdf.documents.company_promissory_note',
         ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT => 'contracts.pdf.documents.loan_agreement',
         ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE => 'contracts.pdf.documents.co_applicant_promissory_note',
+        ContractBatch::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION => 'contracts.pdf.documents.credit_history_declaration',
         ContractBatch::DOCUMENT_TYPE_DECLARATION => 'contracts.pdf.documents.declaration',
     ];
 
@@ -43,6 +45,7 @@ class ContractGenerationService
     private const FEE_DOCUMENT_TYPES = [
         ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
         ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
+        ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M,
         ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
     ];
 
@@ -173,6 +176,10 @@ class ContractGenerationService
 
             if (! $batch->exists) {
                 $batch->created_by_user_id = $actor->id;
+
+                if (blank($batch->attached_user_id)) {
+                    $batch->attached_user_id = $actor->id;
+                }
             }
 
             $batch->save();
@@ -204,12 +211,15 @@ class ContractGenerationService
                 $directoryKey,
             );
 
+            $layoutForOrder = is_string($submitted['document_layout'] ?? null) ? $submitted['document_layout'] : null;
+
             $combinedPdf = $this->generateCombinedPdf(
                 $submitted['selected_document_types'],
                 $submitted,
                 $derived,
                 $directoryKey,
                 $submitted['client']['full_name'],
+                $layoutForOrder,
             );
 
             $combinedDocx = $this->generateCombinedDocx(
@@ -218,6 +228,7 @@ class ContractGenerationService
                 $derived,
                 $directoryKey,
                 $submitted['client']['full_name'],
+                $layoutForOrder,
             );
 
             $archive = $this->createArchive($generatedDocuments, $combinedPdf, $directoryKey, $submitted['client']['full_name']);
@@ -259,6 +270,10 @@ class ContractGenerationService
 
                 if (! $batch->exists) {
                     $batch->created_by_user_id = $actor->id;
+
+                    if (blank($batch->attached_user_id)) {
+                        $batch->attached_user_id = $actor->id;
+                    }
                 }
 
                 $batch->save();
@@ -288,6 +303,7 @@ class ContractGenerationService
         if ($documentLayout !== null && array_key_exists($documentLayout, $layoutOptions)) {
             $selectedDocumentTypes = ContractBatch::orderSelectedDocumentTypes(
                 ContractBatch::getDocumentTypesForLayout($documentLayout),
+                $documentLayout,
             );
         } else {
             $documentLayout = null;
@@ -429,20 +445,25 @@ class ContractGenerationService
             $financial['fee_eur'] = $financial['commission_eur'];
         }
 
+        $layoutsWithoutLoanCard = [
+            ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+            ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+        ];
+
         // Post-service data (consultation/mediation protocol) — sensible defaults
         // After the service the client typically has fewer credits and one consolidated payment.
-        if ($financial['post_service_credit_count'] === null && $layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED) {
+        if ($financial['post_service_credit_count'] === null && in_array($layout, $layoutsWithoutLoanCard, true)) {
             $financial['post_service_credit_count'] = 1;
         }
 
         if ($financial['post_service_monthly_repayment_burden_eur'] === null
-            && $layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED) {
+            && in_array($layout, $layoutsWithoutLoanCard, true)) {
             $financial['post_service_monthly_repayment_burden_eur'] = $financial['loan_installment_eur']
                 ?? $financial['monthly_payments_eur'];
         }
 
-        // For Опростен the loan card isn't shown — derive sensible fallbacks for documents that need it.
-        if ($layout === ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED) {
+        // When the loan card isn't shown — derive sensible fallbacks for documents that need it.
+        if (in_array($layout, $layoutsWithoutLoanCard, true)) {
             if ($financial['loan_amount_eur'] === null && $financial['total_loan_amount_eur'] !== null) {
                 $financial['loan_amount_eur'] = $financial['total_loan_amount_eur'];
             }
@@ -879,7 +900,9 @@ class ContractGenerationService
     {
         $documents = [];
 
-        foreach ($this->expandDocumentSpecs($documentTypes) as $documentSpec) {
+        $layout = is_string($submitted['document_layout'] ?? null) ? $submitted['document_layout'] : null;
+
+        foreach ($this->expandDocumentSpecs($documentTypes, $layout) as $documentSpec) {
             $documentType = $documentSpec['document_type'];
             $documentKey = $documentSpec['document_key'];
             $copyNumber = $documentSpec['copy_number'];
@@ -922,12 +945,15 @@ class ContractGenerationService
      * @param  array<int, string>  $documentTypes
      * @return array<int, array{document_type: string, document_key: string, copy_number: int|null, label: string}>
      */
-    private function expandDocumentSpecs(array $documentTypes): array
+    private function expandDocumentSpecs(array $documentTypes, ?string $layout = null): array
     {
         $specs = [];
 
-        foreach (ContractBatch::orderSelectedDocumentTypes($documentTypes) as $documentType) {
-            if ($documentType === ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT) {
+        foreach (ContractBatch::orderSelectedDocumentTypes($documentTypes, $layout) as $documentType) {
+            if (in_array($documentType, [
+                ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
+                ContractBatch::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION,
+            ], true)) {
                 foreach ([1, 2] as $copyNumber) {
                     $specs[] = [
                         'document_type' => $documentType,
@@ -1057,6 +1083,7 @@ class ContractGenerationService
         array $derived,
         string $directoryKey,
         ?string $clientFullName,
+        ?string $layout = null,
     ): array {
         $css = <<<'CSS'
         body {
@@ -1075,7 +1102,7 @@ class ContractGenerationService
         .spacer { height: 18px; }
 CSS;
 
-        $documentSpecs = $this->expandDocumentSpecs($documentTypes);
+        $documentSpecs = $this->expandDocumentSpecs($documentTypes, $layout);
         $documentContents = [];
         $documentPageCounts = [];
 
@@ -1178,8 +1205,9 @@ CSS;
         array $derived,
         string $directoryKey,
         ?string $clientFullName,
+        ?string $layout = null,
     ): array {
-        $documentSpecs = $this->expandDocumentSpecs($documentTypes);
+        $documentSpecs = $this->expandDocumentSpecs($documentTypes, $layout);
 
         $phpWord = new PhpWord;
         $phpWord->setDefaultFontName('Times New Roman');
@@ -1447,7 +1475,8 @@ CSS;
     {
         return in_array(ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT, $documentTypes, true)
             || in_array(ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE, $documentTypes, true)
-            || in_array(ContractBatch::DOCUMENT_TYPE_DECLARATION, $documentTypes, true);
+            || in_array(ContractBatch::DOCUMENT_TYPE_DECLARATION, $documentTypes, true)
+            || in_array(ContractBatch::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION, $documentTypes, true);
     }
 
     /**

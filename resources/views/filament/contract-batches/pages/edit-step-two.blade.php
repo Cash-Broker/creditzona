@@ -6,8 +6,9 @@
     $isFull = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_FULL;
     $isSimplified = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED;
     $isLoanOnly = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY;
+    $isContract12m = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M;
     $showLoan = $isFull || $isLoanOnly;
-    $showConsultation = $isFull || $isSimplified;
+    $showConsultation = $isFull || $isSimplified || $isContract12m;
 @endphp
 
 <x-filament-panels::page>
