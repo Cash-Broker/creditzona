@@ -12,11 +12,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public const LEAD_PRIMARY_ASSIGNMENT_EMAILS = [
         'anna@creditzona.test',
@@ -159,7 +158,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function canViewAllContracts(): bool
     {
-        return $this->isAdmin() || (bool) $this->can_view_all_contracts;
+        return (bool) $this->can_view_all_contracts;
     }
 
     public function canBeLeadPrimaryAssignee(): bool

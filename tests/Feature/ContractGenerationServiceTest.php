@@ -352,8 +352,93 @@ class ContractGenerationServiceTest extends TestCase
         ]), $operator);
 
         $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_FULL, $batch->document_layout);
-        $this->assertSame(ContractBatch::getDocumentGenerationOrder(), $batch->selected_document_types);
+        $this->assertSame(
+            ContractBatch::getDocumentTypesForLayout(ContractBatch::DOCUMENT_LAYOUT_FULL),
+            $batch->selected_document_types,
+        );
         $this->assertSame('2026-03-15', data_get($batch->getDerivedInput(), 'dates.consultation_agreement_date'));
+    }
+
+    public function test_contract_12m_layout_generates_nine_documents_in_lawyer_order(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+            'client' => [
+                'city' => 'Пловдив',
+            ],
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'credit_count_in_institutions' => 2,
+                'credit_count_in_banks' => 1,
+                'total_loan_amount_eur' => 12000,
+                'commission_eur' => 600,
+                'monthly_payments_eur' => 410,
+                'net_income_eur' => 2200,
+            ]),
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M, $batch->document_layout);
+
+        $this->assertSame([
+            ContractBatch::DOCUMENT_TYPE_APPLICATION_REQUEST,
+            ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M,
+            ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
+            ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
+            ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL,
+            ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+            ContractBatch::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION,
+            ContractBatch::DOCUMENT_TYPE_DECLARATION,
+        ], $batch->selected_document_types);
+
+        $documentKeys = array_column($batch->generated_documents ?? [], 'document_key');
+
+        $this->assertSame([
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_APPLICATION_REQUEST),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT_12M),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_MEDIATION_PROTOCOL),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION, 1),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION, 2),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_DECLARATION),
+        ], $documentKeys);
+
+        $this->assertCount(9, $batch->generated_documents ?? []);
+
+        $combinedDocxPath = Storage::disk('legal')->path($batch->combined_docx_path);
+        $this->assertFileExists($combinedDocxPath);
+
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($combinedDocxPath) === true);
+        $documentXml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        $this->assertIsString($documentXml);
+        preg_match_all('/<w:t[^>]*>([^<]*)<\/w:t>/', $documentXml, $matches);
+        $joined = implode(' ', $matches[1]);
+
+        $positions = [
+            'molba' => mb_strpos($joined, 'МОЛБА'),
+            'consultation_12m' => mb_strpos($joined, 'ДОГОВОР ЗА ФИНАНСОВА КОНСУЛТАЦИЯ'),
+            'consultation_protocol' => mb_strpos($joined, 'ПРОТОКОЛ ЗА ИЗВЪРШЕНА КОНСУЛТАЦИЯ'),
+            'mediation_agreement' => mb_strpos($joined, 'ДОГОВОР ЗА ПОСРЕДНИЧЕСТВО Днес'),
+            'mediation_protocol' => mb_strpos($joined, 'ПРИЕМО'),
+        ];
+
+        foreach ($positions as $label => $pos) {
+            $this->assertNotFalse($pos, "Combined DOCX is missing section: {$label}");
+        }
+
+        $this->assertLessThan($positions['consultation_12m'], $positions['molba'] + 1);
+        $this->assertLessThan($positions['consultation_protocol'], $positions['consultation_12m']);
+        $this->assertLessThan($positions['mediation_agreement'], $positions['consultation_protocol']);
+        $this->assertLessThan($positions['mediation_protocol'], $positions['mediation_agreement']);
     }
 
     public function test_it_requires_co_applicant_for_declaration(): void

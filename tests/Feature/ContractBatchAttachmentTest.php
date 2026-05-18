@@ -6,8 +6,6 @@ use App\Filament\Resources\ContractBatches\ContractBatchResource;
 use App\Models\ContractBatch;
 use App\Models\User;
 use App\Services\ContractBatchService;
-use DomainException;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -241,24 +239,38 @@ class ContractBatchAttachmentTest extends TestCase
         $this->assertTrue($policy->attach($elena, $batch));
     }
 
-    public function test_user_without_view_all_flag_cannot_create_edit_delete_contracts(): void
+    public function test_operator_without_view_all_flag_can_create_and_manage_only_their_own(): void
     {
         $anna = User::factory()->create([
             'role' => User::ROLE_OPERATOR,
             'email' => 'anna@creditzona.test',
         ]);
 
-        $batch = $this->createBatch([
+        $elena = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $ownBatch = $this->createBatch([
             'created_by_user_id' => $anna->id,
             'attached_user_id' => $anna->id,
         ]);
 
+        $foreignBatch = $this->createBatch([
+            'created_by_user_id' => $elena->id,
+            'attached_user_id' => $elena->id,
+        ]);
+
         $this->actingAs($anna);
 
-        $this->assertFalse(ContractBatchResource::canCreate());
-        $this->assertFalse(ContractBatchResource::canEdit($batch));
-        $this->assertFalse(ContractBatchResource::canDelete($batch));
-        $this->assertFalse(ContractBatchResource::canDeleteAny());
+        $this->assertTrue(ContractBatchResource::canCreate());
+        $this->assertTrue(ContractBatchResource::canDeleteAny());
+
+        $this->assertTrue(ContractBatchResource::canEdit($ownBatch));
+        $this->assertTrue(ContractBatchResource::canDelete($ownBatch));
+
+        $this->assertFalse(ContractBatchResource::canEdit($foreignBatch));
+        $this->assertFalse(ContractBatchResource::canDelete($foreignBatch));
     }
 
     public function test_operator_without_flag_only_sees_attached_contracts_in_main_resource(): void

@@ -18,33 +18,46 @@ class ContractBatchPolicy
             return true;
         }
 
-        return $user->isOperator()
-            && $contractBatch->attached_user_id === $user->id;
+        if (! $user->isAdmin() && ! $user->isOperator()) {
+            return false;
+        }
+
+        return $contractBatch->attached_user_id === $user->id
+            || $contractBatch->created_by_user_id === $user->id;
     }
 
     public function create(User $user): bool
     {
-        return $user->canViewAllContracts();
+        return $user->isAdmin() || $user->isOperator();
     }
 
     public function update(User $user, ContractBatch $contractBatch): bool
     {
-        return $user->canViewAllContracts();
+        return $this->view($user, $contractBatch);
     }
 
     public function delete(User $user, ContractBatch $contractBatch): bool
     {
-        return $user->canViewAllContracts();
+        return $this->view($user, $contractBatch);
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->canViewAllContracts();
+        return $user->isAdmin() || $user->isOperator();
     }
 
     public function attach(User $user, ContractBatch $contractBatch): bool
     {
-        return $user->canViewAllContracts();
+        if ($user->canViewAllContracts()) {
+            return true;
+        }
+
+        if (! $user->isAdmin() && ! $user->isOperator()) {
+            return false;
+        }
+
+        return $contractBatch->attached_user_id === $user->id
+            || $contractBatch->created_by_user_id === $user->id;
     }
 
     public function restore(User $user, ContractBatch $contractBatch): bool
