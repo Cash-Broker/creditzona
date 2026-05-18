@@ -29,6 +29,7 @@ class LeadGuarantor extends Model implements HasRichContent
         'email',
         'city',
         'workplace',
+        'workplace_tenure',
         'job_title',
         'salary',
         'marital_status',

@@ -173,6 +173,9 @@ class LeadInfolist
                                         TextEntry::make('workplace')
                                             ->label('Месторабота')
                                             ->placeholder('Няма'),
+                                        TextEntry::make('workplace_tenure')
+                                            ->label('Стаж при наст. работодател')
+                                            ->placeholder('Няма'),
                                         TextEntry::make('job_title')
                                             ->label('Длъжност')
                                             ->placeholder('Няма'),

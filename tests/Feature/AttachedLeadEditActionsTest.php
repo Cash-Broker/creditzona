@@ -309,6 +309,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'full_name' => 'Антон Колев',
                     'egn' => '9002010004',
                     'phone' => '0876997981',
+                    'workplace_tenure' => '5 години',
                     'documents' => [],
                     'document_file_names' => [],
                     'new_internal_note' => null,
@@ -322,6 +323,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'first_name' => 'Антон',
             'last_name' => 'Колев',
             'phone' => '0876997981',
+            'workplace_tenure' => '5 години',
             'status' => null,
         ]);
 
@@ -412,6 +414,7 @@ class AttachedLeadEditActionsTest extends TestCase
                     'full_name' => 'Мария Николова Георгиева',
                     'egn' => '9003010009',
                     'phone' => '0876997981',
+                    'workplace_tenure' => '3 години',
                     'documents' => [],
                     'document_file_names' => [],
                     'new_internal_note' => null,
@@ -426,6 +429,7 @@ class AttachedLeadEditActionsTest extends TestCase
             'middle_name' => 'Николова',
             'last_name' => 'Георгиева',
             'phone' => '0876997981',
+            'workplace_tenure' => '3 години',
         ]);
 
         $guarantor = $lead->fresh()->guarantors()->first();

@@ -389,13 +389,22 @@ class LeadForm
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Местоработата на поръчителя'))
-                        ->columnSpan(3),
+                        ->columnSpan(2),
+                    TextInput::make('workplace_tenure')
+                        ->label('Стаж при наст. работодател')
+                        ->required(fn (Get $get): bool => static::guarantorRequiresIdentityFields($get))
+                        ->markAsRequired()
+                        ->maxLength(120)
+                        ->validationMessages([
+                            'required' => 'Посочете стажа при настоящия работодател на поръчителя.',
+                        ])
+                        ->columnSpan(2),
                     TextInput::make('job_title')
                         ->label('Длъжност')
                         ->nullable()
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Длъжността на поръчителя'))
-                        ->columnSpan(3),
+                        ->columnSpan(2),
                     TextInput::make('salary')
                         ->label('Месечен доход')
                         ->nullable()
@@ -551,6 +560,7 @@ class LeadForm
             $get('email'),
             $get('city'),
             $get('workplace'),
+            $get('workplace_tenure'),
             $get('job_title'),
             $get('salary'),
             $get('marital_status'),

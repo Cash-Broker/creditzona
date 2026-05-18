@@ -137,6 +137,7 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
             'email',
             'city',
             'workplace',
+            'workplace_tenure',
             'job_title',
             'salary',
             'marital_status',
@@ -149,6 +150,19 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
             $this->assertArrayHasKey($field, $guarantorFields);
             $this->assertFalse($guarantorFields[$field]->isRequired(), "Expected guarantor field [{$field}] to stay optional in admin.");
         }
+    }
+
+    public function test_guarantor_workplace_tenure_becomes_required_when_guarantor_has_data(): void
+    {
+        $guarantorFields = $this->getGuarantorSchemaFields([
+            'workplace' => 'Софарма АД',
+        ]);
+
+        $this->assertArrayHasKey('workplace_tenure', $guarantorFields);
+        $this->assertTrue(
+            $guarantorFields['workplace_tenure']->isRequired(),
+            'Expected guarantor workplace_tenure to be required once the guarantor has data.',
+        );
     }
 
     public function test_sms_email_and_rejected_statuses_do_not_require_full_application_fields_in_admin(): void
@@ -291,9 +305,10 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $state
      * @return array<string, mixed>
      */
-    private function getGuarantorSchemaFields(): array
+    private function getGuarantorSchemaFields(array $state = []): array
     {
         $method = new \ReflectionMethod(LeadForm::class, 'guarantorSchema');
         $method->setAccessible(true);
@@ -321,8 +336,12 @@ class LeadAdminFormRequiredFieldsTest extends TestCase
 
         $component->components = $method->invoke(null);
 
-        return $component
-            ->form(Schema::make($component))
-            ->getFlatFields(withHidden: true);
+        $form = $component->form(Schema::make($component));
+
+        if ($state !== []) {
+            $form->fill($state);
+        }
+
+        return $form->getFlatFields(withHidden: true);
     }
 }
