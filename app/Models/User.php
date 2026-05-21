@@ -38,6 +38,8 @@ class User extends Authenticatable implements FilamentUser
 
     public const ROLE_OPERATOR = 'operator';
 
+    public const ROLE_MARKETING = 'marketing';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -156,6 +158,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === self::ROLE_OPERATOR;
     }
 
+    public function isMarketing(): bool
+    {
+        return $this->role === self::ROLE_MARKETING;
+    }
+
     public function canViewAllContracts(): bool
     {
         return $this->isAdmin() || (bool) $this->can_view_all_contracts;
@@ -174,7 +181,7 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $panel->getId() === 'admin'
-            && ($this->isAdmin() || $this->isOperator());
+            && ($this->isAdmin() || $this->isOperator() || $this->isMarketing());
     }
 
     public function isAvailableForLeadAssignment(): bool

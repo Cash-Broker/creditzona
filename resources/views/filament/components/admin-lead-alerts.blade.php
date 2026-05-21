@@ -1,6 +1,13 @@
 @php
     use App\Filament\Resources\AttachedLeads\AttachedLeadResource;
     use App\Filament\Resources\ReturnedToMeLeads\ReturnedToMeLeadResource;
+    use App\Models\User;
+
+    $user = auth()->user();
+
+    if (! $user instanceof User || $user->isMarketing()) {
+        return;
+    }
 @endphp
 
 <div>

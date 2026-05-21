@@ -28,6 +28,13 @@ class AdminOverview extends StatsOverviewWidget
 
     protected ?string $description = 'Бърз преглед на най-важното в административния панел.';
 
+    public static function canView(): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User && ! $user->isMarketing();
+    }
+
     protected function getStats(): array
     {
         $user = auth()->user();

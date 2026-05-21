@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\RestrictMarketingToDashboard;
 use App\Http\Middleware\SetFilamentLocale;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
@@ -94,6 +95,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                RestrictMarketingToDashboard::class,
             ]);
     }
 }
