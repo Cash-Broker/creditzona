@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import BlogPage from "@/pages/BlogPage.vue";
 import BlogDetailsPage from "@/pages/BlogDetailsPage.vue";
 import { applyRouteSeo } from "@/seo";
+import { trackPageView } from "@/utils/analytics";
 
 const routes = [
     {
@@ -73,6 +74,7 @@ const router = createRouter({
 
 router.afterEach((to) => {
     applyRouteSeo(to);
+    trackPageView(to);
 });
 
 export default router;

@@ -145,7 +145,7 @@ class SeoManager
      */
     public function browserPayload(array $initialData = []): array
     {
-        return [
+        $payload = [
             'routes' => [
                 'home' => Route::has('home') ? route('home') : '/',
                 'about' => Route::has('about') ? route('about') : '/about',
@@ -172,6 +172,16 @@ class SeoManager
             ],
             'initialData' => $initialData,
         ];
+
+        $googleMeasurementId = trim((string) config('services.google_analytics.measurement_id'));
+
+        if ($googleMeasurementId !== '') {
+            $payload['analytics'] = [
+                'googleMeasurementId' => $googleMeasurementId,
+            ];
+        }
+
+        return $payload;
     }
 
     public function organizationSchema(): array
