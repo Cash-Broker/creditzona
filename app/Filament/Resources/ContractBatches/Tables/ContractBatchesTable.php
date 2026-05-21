@@ -122,7 +122,7 @@ class ContractBatchesTable
                     ->modalSubmitActionLabel('Изтрий пакета'),
             ])
             ->defaultSort(fn (Builder $query): Builder => $query
-                ->orderByRaw('COALESCE(request_date, DATE(created_at)) DESC')
+                ->orderByDesc('created_at')
                 ->orderByDesc('id'))
             ->paginated([5, 10, 25, 50])
             ->defaultPaginationPageOption(5)
