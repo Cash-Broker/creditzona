@@ -28,9 +28,12 @@ class ContractBatchesTable
     {
         return $table
             ->columns([
-                TextColumn::make('request_date')
+                TextColumn::make('created_at')
                     ->label('Дата')
                     ->date('d.m.Y')
+                    ->description(fn (ContractBatch $record): string => $record->request_date
+                        ? 'заявка: '.$record->request_date->format('d.m.Y')
+                        : '')
                     ->sortable(),
                 TextColumn::make('client_full_name')
                     ->label('Клиент')
