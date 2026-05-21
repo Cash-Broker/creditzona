@@ -12,6 +12,10 @@ export function getSeoConfig() {
     return appConfig.seo ?? { site: {}, pages: {} };
 }
 
+export function getAnalyticsConfig() {
+    return appConfig.analytics ?? {};
+}
+
 export function getInitialData(key, fallback = null) {
     if (!key || typeof key !== "string") {
         return fallback;
