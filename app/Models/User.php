@@ -158,7 +158,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function canViewAllContracts(): bool
     {
-        return (bool) $this->can_view_all_contracts;
+        return $this->isAdmin() || (bool) $this->can_view_all_contracts;
     }
 
     public function canBeLeadPrimaryAssignee(): bool

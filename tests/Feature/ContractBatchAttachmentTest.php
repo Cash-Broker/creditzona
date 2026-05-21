@@ -114,15 +114,38 @@ class ContractBatchAttachmentTest extends TestCase
             'email' => 'anna@creditzona.test',
         ]);
 
-        $batch = $this->createBatch([
+        $otherOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $ownBatch = $this->createBatch([
             'created_by_user_id' => $admin->id,
             'attached_user_id' => $operator->id,
+            'client_full_name' => 'Свой клиент',
+        ]);
+
+        $foreignAttached = $this->createBatch([
+            'created_by_user_id' => $otherOperator->id,
+            'attached_user_id' => $operator->id,
+            'client_full_name' => 'Чужд клиент - прикачен',
+        ]);
+
+        $foreignUnattached = $this->createBatch([
+            'created_by_user_id' => $otherOperator->id,
+            'attached_user_id' => null,
+            'client_full_name' => 'Чужд клиент - неприкачен',
         ]);
 
         $this->actingAs($admin);
         $this->assertTrue(ContractBatchResource::canViewAny());
-        $this->assertSame([$batch->id], ContractBatchResource::getEloquentQuery()->pluck('id')->all());
-        $this->assertTrue(ContractBatchResource::canView($batch));
+        $this->assertEqualsCanonicalizing(
+            [$ownBatch->id, $foreignAttached->id, $foreignUnattached->id],
+            ContractBatchResource::getEloquentQuery()->pluck('id')->all(),
+        );
+        $this->assertTrue(ContractBatchResource::canView($ownBatch));
+        $this->assertTrue(ContractBatchResource::canView($foreignAttached));
+        $this->assertTrue(ContractBatchResource::canView($foreignUnattached));
     }
 
     public function test_operator_main_resource_query_only_returns_contracts_attached_to_them(): void
