@@ -37,6 +37,8 @@ return [
 
     'google_analytics' => [
         'measurement_id' => env('GA_MEASUREMENT_ID'),
+        'ads_id' => env('GOOGLE_ADS_ID'),
+        'ads_conversion_label' => env('GOOGLE_ADS_CONVERSION_LABEL'),
     ],
 
 ];

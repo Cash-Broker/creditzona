@@ -5,12 +5,39 @@ const GTAG_SCRIPT_ATTR = "data-creditzona-gtag";
 const state = {
     initialized: false,
     measurementId: "",
+    adsId: "",
+    adsConversionLabel: "",
     consentGranted: false,
     scriptInjected: false,
 };
 
-function injectGtagScript(measurementId) {
+function readConfig() {
+    const config = getAnalyticsConfig();
+
+    return {
+        measurementId:
+            typeof config.googleMeasurementId === "string"
+                ? config.googleMeasurementId.trim()
+                : "",
+        adsId:
+            typeof config.googleAdsId === "string"
+                ? config.googleAdsId.trim()
+                : "",
+        adsConversionLabel:
+            typeof config.googleAdsConversionLabel === "string"
+                ? config.googleAdsConversionLabel.trim()
+                : "",
+    };
+}
+
+function injectGtagScript() {
     if (state.scriptInjected) {
+        return;
+    }
+
+    const primaryTagId = state.measurementId || state.adsId;
+
+    if (!primaryTagId) {
         return;
     }
 
@@ -24,12 +51,19 @@ function injectGtagScript(measurementId) {
 
     const script = document.createElement("script");
     script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(primaryTagId)}`;
     script.setAttribute(GTAG_SCRIPT_ATTR, "true");
     document.head.appendChild(script);
 
     window.gtag("js", new Date());
-    window.gtag("config", measurementId, { send_page_view: false });
+
+    if (state.measurementId) {
+        window.gtag("config", state.measurementId, { send_page_view: false });
+    }
+
+    if (state.adsId) {
+        window.gtag("config", state.adsId, { send_page_view: false });
+    }
 
     state.scriptInjected = true;
 }
@@ -43,8 +77,8 @@ function handleConsentChange(event) {
 
     state.consentGranted = analyticsAllowed;
 
-    if (analyticsAllowed && state.measurementId) {
-        injectGtagScript(state.measurementId);
+    if (analyticsAllowed) {
+        injectGtagScript();
     }
 }
 
@@ -55,16 +89,15 @@ export function initializeAnalytics({ initialConsent } = {}) {
 
     state.initialized = true;
 
-    const measurementId =
-        typeof getAnalyticsConfig().googleMeasurementId === "string"
-            ? getAnalyticsConfig().googleMeasurementId.trim()
-            : "";
+    const { measurementId, adsId, adsConversionLabel } = readConfig();
 
-    if (!measurementId) {
+    if (!measurementId && !adsId) {
         return;
     }
 
     state.measurementId = measurementId;
+    state.adsId = adsId;
+    state.adsConversionLabel = adsConversionLabel;
     state.consentGranted = Boolean(initialConsent?.analytics);
 
     window.addEventListener(
@@ -73,7 +106,7 @@ export function initializeAnalytics({ initialConsent } = {}) {
     );
 
     if (state.consentGranted) {
-        injectGtagScript(measurementId);
+        injectGtagScript();
     }
 }
 
@@ -92,4 +125,26 @@ export function trackPageView(route) {
         page_location: window.location.href,
         page_title: document.title,
     });
+}
+
+export function trackLeadConversion() {
+    if (typeof window.gtag !== "function") {
+        return;
+    }
+
+    // GA4 standard lead-generation event — visible in GA4 reports.
+    // Mark it as a Key Event in the GA4 console to count it as a conversion.
+    if (state.measurementId) {
+        window.gtag("event", "generate_lead", {
+            send_to: state.measurementId,
+        });
+    }
+
+    // Google Ads conversion attribution — separate hit, routed only to the
+    // Google Ads tag via `send_to` so it does not pollute the GA4 stream.
+    if (state.adsId && state.adsConversionLabel) {
+        window.gtag("event", "conversion", {
+            send_to: `${state.adsId}/${state.adsConversionLabel}`,
+        });
+    }
 }

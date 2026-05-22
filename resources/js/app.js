@@ -4,6 +4,7 @@ import App from "./App.vue";
 import router from "./router";
 import { initializeCookieConsent } from "@/composables/useCookieConsent";
 import { initializeAnalytics } from "@/utils/analytics";
+import { captureUtmFromCurrentUrl } from "@/utils/utmTracking";
 import { applyRouteSeo } from "@/seo";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -40,6 +41,8 @@ library.add(
     faCheck,
     faRoute,
 );
+
+captureUtmFromCurrentUrl();
 
 const storedCookieConsent = initializeCookieConsent();
 initializeAnalytics({ initialConsent: storedCookieConsent });

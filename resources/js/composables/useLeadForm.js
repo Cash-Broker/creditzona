@@ -1,4 +1,6 @@
 import { computed, reactive, ref, watch } from "vue";
+import { trackLeadConversion } from "@/utils/analytics";
+import { getStoredUtmParameters } from "@/utils/utmTracking";
 
 const amountMin = 5000;
 const amountDefault = 5500;
@@ -566,6 +568,8 @@ export function useLeadForm(options = {}) {
             ...leadPayload
         } = form;
 
+        const utm = getStoredUtmParameters();
+
         return {
             ...leadPayload,
             guarantors: isConsumerWithGuarantor.value
@@ -580,6 +584,10 @@ export function useLeadForm(options = {}) {
                 : [],
             property_type: isMortgage.value ? form.property_type : null,
             property_location: isMortgage.value ? form.property_location : null,
+            utm_source: utm?.utm_source ?? null,
+            utm_campaign: utm?.utm_campaign ?? null,
+            utm_medium: utm?.utm_medium ?? null,
+            gclid: utm?.gclid ?? null,
         };
     }
 
@@ -618,11 +626,7 @@ export function useLeadForm(options = {}) {
             success.value = true;
             resetForm();
 
-            if (typeof gtag !== 'undefined') {
-                gtag('event', 'conversion', {
-                    'send_to': 'AW-17854641886/2TJhCJiz--cbEN7t4MFC'
-                });
-            }
+            trackLeadConversion();
 
             return { status: "submitted" };
         } catch (error) {

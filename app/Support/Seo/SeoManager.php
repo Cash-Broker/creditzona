@@ -174,11 +174,17 @@ class SeoManager
         ];
 
         $googleMeasurementId = trim((string) config('services.google_analytics.measurement_id'));
+        $googleAdsId = trim((string) config('services.google_analytics.ads_id'));
+        $googleAdsConversionLabel = trim((string) config('services.google_analytics.ads_conversion_label'));
 
-        if ($googleMeasurementId !== '') {
-            $payload['analytics'] = [
-                'googleMeasurementId' => $googleMeasurementId,
-            ];
+        $analytics = array_filter([
+            'googleMeasurementId' => $googleMeasurementId !== '' ? $googleMeasurementId : null,
+            'googleAdsId' => $googleAdsId !== '' ? $googleAdsId : null,
+            'googleAdsConversionLabel' => $googleAdsConversionLabel !== '' ? $googleAdsConversionLabel : null,
+        ], static fn (?string $value): bool => $value !== null);
+
+        if ($analytics !== []) {
+            $payload['analytics'] = $analytics;
         }
 
         return $payload;

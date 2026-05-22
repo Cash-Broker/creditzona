@@ -881,6 +881,52 @@ class LeadSubmissionTest extends TestCase
         $this->assertDatabaseCount('lead_guarantors', 0);
     }
 
+    public function test_submission_persists_utm_attribution_when_provided(): void
+    {
+        Mail::fake();
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'guarantors' => [],
+            'utm_source' => 'google',
+            'utm_campaign' => 'spring-credit-2026',
+            'utm_medium' => 'cpc',
+            'gclid' => 'CjwKCAjw_test_gclid',
+        ]));
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('leads', [
+            'utm_source' => 'google',
+            'utm_campaign' => 'spring-credit-2026',
+            'utm_medium' => 'cpc',
+            'gclid' => 'CjwKCAjw_test_gclid',
+        ]);
+    }
+
+    public function test_submission_stores_null_utm_when_payload_omits_them(): void
+    {
+        Mail::fake();
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'guarantors' => [],
+            'utm_source' => null,
+            'utm_campaign' => null,
+            'utm_medium' => null,
+            'gclid' => null,
+        ]));
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('leads', [
+            'utm_source' => null,
+            'utm_campaign' => null,
+            'utm_medium' => null,
+            'gclid' => null,
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
