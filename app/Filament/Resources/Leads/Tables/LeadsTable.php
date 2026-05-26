@@ -282,6 +282,9 @@ class LeadsTable
                                 ->send();
                         })
                     : null,
+                auth()->user() instanceof User && auth()->user()->isAdmin()
+                    ? static::makeBulkReassignAction()
+                    : null,
                 BulkAction::make('mark_selected_for_later')
                     ->label('Маркирай за по-късно')
                     ->icon('heroicon-m-clock')
@@ -317,6 +320,72 @@ class LeadsTable
                     }),
 
             ])));
+    }
+
+    private static function makeBulkReassignAction(): BulkAction
+    {
+        return BulkAction::make('reassign_selected')
+            ->label('Прехвърли към служител')
+            ->icon(Heroicon::OutlinedArrowsRightLeft)
+            ->color('warning')
+            ->modalHeading('Прехвърляне на избраните заявки')
+            ->modalDescription('Изберете служител, към когото ще бъдат прехвърлени всички избрани заявки.')
+            ->modalSubmitActionLabel('Прехвърли')
+            ->deselectRecordsAfterCompletion()
+            ->schema([
+                Select::make('new_operator_id')
+                    ->label('Нов служител')
+                    ->options(LeadResource::getPrimaryAssignmentOptions())
+                    ->required()
+                    ->searchable()
+                    ->native(false),
+            ])
+            ->action(function (array $data, Collection $records): void {
+                $actor = auth()->user();
+
+                if (! $actor instanceof User) {
+                    return;
+                }
+
+                $newOperator = User::query()->find($data['new_operator_id'] ?? null);
+
+                if (! $newOperator instanceof User) {
+                    Notification::make()
+                        ->title('Изберете служител.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                $leadService = app(LeadService::class);
+                $reassigned = 0;
+                $skipped = 0;
+
+                foreach ($records as $lead) {
+                    if (! $lead instanceof Lead) {
+                        continue;
+                    }
+
+                    try {
+                        $leadService->reassignLead($lead, $newOperator, $actor);
+                        $reassigned++;
+                    } catch (AuthorizationException|DomainException) {
+                        $skipped++;
+                    }
+                }
+
+                $title = sprintf('Прехвърлени към %s: %d.', $newOperator->name, $reassigned);
+
+                if ($skipped > 0) {
+                    $title .= sprintf(' Пропуснати: %d.', $skipped);
+                }
+
+                Notification::make()
+                    ->title($title)
+                    ->success()
+                    ->send();
+            });
     }
 
     private static function makeReassignLeadAction(): Action
