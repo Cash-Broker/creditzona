@@ -10,8 +10,9 @@ use App\Models\AdminDocument;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Rules\CyrillicText;
-use App\Rules\ExclusiveLeadParticipantPhone;
 use App\Support\Notes\NoteHistory;
+use App\Support\Phone\LeadPhoneOwnerLookup;
+use App\Support\Phone\PhoneNormalizer;
 use Closure;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -130,9 +131,16 @@ class LeadForm
                             ->label('Телефон')
                             ->tel()
                             ->nullable()
-                            ->rule(static fn (Get $get): Closure => static::applicantPhoneExclusivityRule($get))
+                            ->live(onBlur: true)
+                            ->hint(fn (Get $get, ?Lead $record): ?string => static::applicantPhoneConflictMessage($get('phone'), $record))
+                            ->hintColor('danger')
                             ->maxLength(30)
                             ->columnSpan(2),
+                        Placeholder::make('phone_existing_owners')
+                            ->hiddenLabel()
+                            ->content(fn (Get $get, ?Lead $record): HtmlString => static::renderPhoneOwners($get('phone'), $record?->getKey(), null))
+                            ->visible(fn (Get $get, ?Lead $record): bool => static::hasPhoneOwners($get('phone'), $record?->getKey(), null))
+                            ->columnSpanFull(),
                         TextInput::make('email')
                             ->label('Имейл')
                             ->email()
@@ -369,9 +377,16 @@ class LeadForm
                         ->label('Телефон')
                         ->tel()
                         ->nullable()
-                        ->rule(static fn (Get $get): Closure => static::guarantorPhoneExclusivityRule($get))
+                        ->live(onBlur: true)
+                        ->hint(fn (Get $get, ?LeadGuarantor $record): ?string => static::guarantorPhoneConflictMessage($get, $record))
+                        ->hintColor('danger')
                         ->maxLength(30)
                         ->columnSpan(2),
+                    Placeholder::make('phone_existing_owners')
+                        ->hiddenLabel()
+                        ->content(fn (Get $get, ?LeadGuarantor $record): HtmlString => static::renderPhoneOwners($get('phone'), $record?->lead_id, $record?->getKey()))
+                        ->visible(fn (Get $get, ?LeadGuarantor $record): bool => static::hasPhoneOwners($get('phone'), $record?->lead_id, $record?->getKey()))
+                        ->columnSpanFull(),
                     TextInput::make('city')
                         ->label('Адрес')
                         ->nullable()
@@ -840,21 +855,94 @@ class LeadForm
         );
     }
 
-    private static function applicantPhoneExclusivityRule(Get $get): Closure
+    private static function applicantPhoneConflictMessage(?string $phone, ?Lead $record): ?string
     {
-        $rule = ExclusiveLeadParticipantPhone::forApplicant();
+        $normalizedPhone = PhoneNormalizer::normalize($phone);
 
-        return static function (string $attribute, mixed $value, Closure $fail) use ($rule): void {
-            $rule->validate($attribute, $value, $fail);
-        };
+        if (blank($normalizedPhone)) {
+            return null;
+        }
+
+        $existsAsGuarantor = LeadGuarantor::query()
+            ->where('phone', $normalizedPhone)
+            ->when(
+                $record !== null,
+                static fn ($query) => $query->where('lead_id', '!=', $record->getKey()),
+            )
+            ->exists();
+
+        if ($existsAsGuarantor) {
+            return 'Този телефон вече е използван за поръчител и не може да се използва и за кредитоискател.';
+        }
+
+        return null;
     }
 
-    private static function guarantorPhoneExclusivityRule(Get $get): Closure
+    private static function guarantorPhoneConflictMessage(Get $get, ?LeadGuarantor $record): ?string
     {
-        $rule = ExclusiveLeadParticipantPhone::forGuarantor([$get('../../phone')]);
+        $normalizedPhone = PhoneNormalizer::normalize($get('phone'));
 
-        return static function (string $attribute, mixed $value, Closure $fail) use ($rule): void {
-            $rule->validate($attribute, $value, $fail);
-        };
+        if (blank($normalizedPhone)) {
+            return null;
+        }
+
+        $applicantPhone = PhoneNormalizer::normalize($get('../../phone'));
+
+        if (filled($applicantPhone) && $applicantPhone === $normalizedPhone) {
+            return 'Този телефон вече е използван за кредитоискател и не може да се използва и за поръчител.';
+        }
+
+        $existsAsApplicant = Lead::query()
+            ->forNormalizedPhone($normalizedPhone)
+            ->when(
+                $record?->lead_id !== null,
+                static fn ($query) => $query->where('id', '!=', $record->lead_id),
+            )
+            ->exists();
+
+        if ($existsAsApplicant) {
+            return 'Този телефон вече е използван за кредитоискател и не може да се използва и за поръчител.';
+        }
+
+        return null;
+    }
+
+    private static function hasPhoneOwners(?string $phone, ?int $excludingLeadId, ?int $excludingGuarantorId): bool
+    {
+        return LeadPhoneOwnerLookup::findOwners($phone, $excludingLeadId, $excludingGuarantorId)->isNotEmpty();
+    }
+
+    private static function renderPhoneOwners(?string $phone, ?int $excludingLeadId, ?int $excludingGuarantorId): HtmlString
+    {
+        $owners = LeadPhoneOwnerLookup::findOwners($phone, $excludingLeadId, $excludingGuarantorId);
+
+        if ($owners->isEmpty()) {
+            return new HtmlString('');
+        }
+
+        $items = $owners
+            ->map(static function (array $owner): string {
+                $roleLabel = $owner['role'] === LeadPhoneOwnerLookup::ROLE_APPLICANT
+                    ? 'Кредитоискател'
+                    : 'Поръчител';
+
+                $name = $owner['name'] !== '' ? $owner['name'] : 'Без име';
+                $url = LeadResource::getUrl('view', ['record' => $owner['lead_id']]);
+
+                return sprintf(
+                    '<li class="leading-snug"><a href="%s" target="_blank" class="font-medium text-primary-600 hover:underline dark:text-primary-400">%s</a> <span class="text-gray-500 dark:text-gray-400">— %s, заявка #%d (%s)</span></li>',
+                    e($url),
+                    e($name),
+                    e($roleLabel),
+                    $owner['lead_id'],
+                    e($owner['phone']),
+                );
+            })
+            ->implode('');
+
+        return new HtmlString(sprintf(
+            '<div class="rounded-lg border border-danger-200 bg-danger-50/60 px-3 py-2 text-sm text-danger-800 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-200"><div class="mb-1 font-semibold">Този телефон вече е въведен за:</div><ul class="list-disc space-y-1 pl-5">%s</ul></div>',
+            $items,
+        ));
     }
 }
