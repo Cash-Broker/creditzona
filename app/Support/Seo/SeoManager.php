@@ -173,11 +173,13 @@ class SeoManager
             'initialData' => $initialData,
         ];
 
+        $googleTagId = trim((string) config('services.google_analytics.google_tag_id'));
         $googleMeasurementId = trim((string) config('services.google_analytics.measurement_id'));
         $googleAdsId = trim((string) config('services.google_analytics.ads_id'));
         $googleAdsConversionLabel = trim((string) config('services.google_analytics.ads_conversion_label'));
 
         $analytics = array_filter([
+            'googleTagId' => $googleTagId !== '' ? $googleTagId : null,
             'googleMeasurementId' => $googleMeasurementId !== '' ? $googleMeasurementId : null,
             'googleAdsId' => $googleAdsId !== '' ? $googleAdsId : null,
             'googleAdsConversionLabel' => $googleAdsConversionLabel !== '' ? $googleAdsConversionLabel : null,
