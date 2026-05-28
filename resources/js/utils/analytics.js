@@ -4,6 +4,7 @@ const GTAG_SCRIPT_ATTR = "data-creditzona-gtag";
 
 const state = {
     initialized: false,
+    googleTagId: "",
     measurementId: "",
     adsId: "",
     adsConversionLabel: "",
@@ -15,6 +16,10 @@ function readConfig() {
     const config = getAnalyticsConfig();
 
     return {
+        googleTagId:
+            typeof config.googleTagId === "string"
+                ? config.googleTagId.trim()
+                : "",
         measurementId:
             typeof config.googleMeasurementId === "string"
                 ? config.googleMeasurementId.trim()
@@ -35,9 +40,12 @@ function injectGtagScript() {
         return;
     }
 
-    const primaryTagId = state.measurementId || state.adsId;
+    // When a Google Tag (GT-XXX) is configured, it acts as the loader and
+    // dispatches events to its destinations (GA4 and Ads). Otherwise fall
+    // back to loading gtag.js directly with the GA4 or Ads ID.
+    const loaderId = state.googleTagId || state.measurementId || state.adsId;
 
-    if (!primaryTagId) {
+    if (!loaderId) {
         return;
     }
 
@@ -51,18 +59,24 @@ function injectGtagScript() {
 
     const script = document.createElement("script");
     script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(primaryTagId)}`;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(loaderId)}`;
     script.setAttribute(GTAG_SCRIPT_ATTR, "true");
     document.head.appendChild(script);
 
     window.gtag("js", new Date());
 
-    if (state.measurementId) {
-        window.gtag("config", state.measurementId, { send_page_view: false });
-    }
+    if (state.googleTagId) {
+        window.gtag("config", state.googleTagId, { send_page_view: false });
+    } else {
+        if (state.measurementId) {
+            window.gtag("config", state.measurementId, {
+                send_page_view: false,
+            });
+        }
 
-    if (state.adsId) {
-        window.gtag("config", state.adsId, { send_page_view: false });
+        if (state.adsId) {
+            window.gtag("config", state.adsId, { send_page_view: false });
+        }
     }
 
     state.scriptInjected = true;
@@ -89,12 +103,14 @@ export function initializeAnalytics({ initialConsent } = {}) {
 
     state.initialized = true;
 
-    const { measurementId, adsId, adsConversionLabel } = readConfig();
+    const { googleTagId, measurementId, adsId, adsConversionLabel } =
+        readConfig();
 
-    if (!measurementId && !adsId) {
+    if (!googleTagId && !measurementId && !adsId) {
         return;
     }
 
+    state.googleTagId = googleTagId;
     state.measurementId = measurementId;
     state.adsId = adsId;
     state.adsConversionLabel = adsConversionLabel;
