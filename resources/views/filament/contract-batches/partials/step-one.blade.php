@@ -4,8 +4,10 @@
     $showCredits = in_array(($layout ?? null), [
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_FULL,
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
     ], true);
+    $hideAvalist = ($layout ?? null) === \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR;
 @endphp
 
 <div class="cz-cb">
@@ -31,15 +33,17 @@
     </div>
 
     {{-- Row 2 + 3: Client / Avalist sections --}}
-    <div class="cz-cb-row cz-cb-row-2">
+    <div class="cz-cb-row {{ $hideAvalist ? 'cz-cb-row-1' : 'cz-cb-row-2' }}">
         @include('filament.contract-batches.partials.party-section', [
             'title' => 'Данни на Клиент',
             'namespace' => 'client',
         ])
-        @include('filament.contract-batches.partials.party-section', [
-            'title' => 'Данни на Авалист',
-            'namespace' => 'co_applicant',
-        ])
+        @unless($hideAvalist)
+            @include('filament.contract-batches.partials.party-section', [
+                'title' => 'Данни на Авалист',
+                'namespace' => 'co_applicant',
+            ])
+        @endunless
     </div>
 
     {{-- Row 4: Credit data (Пълен + Опростен) --}}

@@ -42,6 +42,8 @@ class ContractBatch extends Model
 
     public const DOCUMENT_LAYOUT_SIMPLIFIED = 'simplified';
 
+    public const DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR = 'simplified_no_guarantor';
+
     public const DOCUMENT_LAYOUT_LOAN_ONLY = 'loan_only';
 
     public const DOCUMENT_LAYOUT_CONTRACT_12M = 'contract_12m';
@@ -139,6 +141,7 @@ class ContractBatch extends Model
         return [
             self::DOCUMENT_LAYOUT_FULL => 'Пълен',
             self::DOCUMENT_LAYOUT_SIMPLIFIED => 'Опростен',
+            self::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR => 'Опростен договор без поръчител',
             self::DOCUMENT_LAYOUT_LOAN_ONLY => 'Договор за Заем + Заповед',
             self::DOCUMENT_LAYOUT_CONTRACT_12M => 'Договор 12м',
         ];
@@ -167,6 +170,11 @@ class ContractBatch extends Model
                 self::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
                 self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
                 self::DOCUMENT_TYPE_DECLARATION,
+            ],
+            self::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR => [
+                self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
+                self::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
+                self::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
             ],
             self::DOCUMENT_LAYOUT_CONTRACT_12M => [
                 self::DOCUMENT_TYPE_APPLICATION_REQUEST,

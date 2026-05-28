@@ -447,6 +447,7 @@ class ContractGenerationService
 
         $layoutsWithoutLoanCard = [
             ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+            ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
             ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
         ];
 

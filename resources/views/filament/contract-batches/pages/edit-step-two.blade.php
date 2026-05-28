@@ -5,10 +5,11 @@
     $companyOptions = \App\Models\ContractBatch::getCompanyOptions();
     $isFull = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_FULL;
     $isSimplified = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED;
+    $isSimplifiedNoGuarantor = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR;
     $isLoanOnly = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY;
     $isContract12m = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M;
     $showLoan = $isFull || $isLoanOnly;
-    $showConsultation = $isFull || $isSimplified || $isContract12m;
+    $showConsultation = $isFull || $isSimplified || $isSimplifiedNoGuarantor || $isContract12m;
 @endphp
 
 <x-filament-panels::page>

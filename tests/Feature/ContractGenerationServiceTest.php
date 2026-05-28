@@ -329,6 +329,66 @@ class ContractGenerationServiceTest extends TestCase
         $this->assertEquals(12000, data_get($batch->getSubmittedInput(), 'financial.total_loan_amount_eur'));
     }
 
+    public function test_simplified_no_guarantor_layout_generates_three_documents_without_co_applicant(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
+            'client' => [
+                'city' => 'Пловдив',
+            ],
+            'co_applicant' => [
+                'full_name' => null,
+                'egn' => null,
+                'id_card_number' => null,
+                'id_card_issued_at' => null,
+                'id_card_issued_by' => null,
+                'permanent_address' => null,
+                'email' => null,
+            ],
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'credit_count_in_institutions' => 1,
+                'institution_count' => 1,
+                'credit_count_in_banks' => 1,
+                'bank_count' => 1,
+                'total_loan_amount_eur' => 8000,
+                'commission_eur' => 400,
+                'monthly_payments_eur' => 300,
+                'net_income_eur' => 1800,
+            ]),
+            'dates' => [
+                'request_date' => '2026-03-20',
+                'consultation_contract_date' => '2026-03-20',
+                'company_promissory_note_due_date' => '2026-05-12',
+            ],
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR, $batch->document_layout);
+        $this->assertNull($batch->co_applicant_full_name);
+        $this->assertNull(data_get($batch->getSubmittedInput(), 'co_applicant.full_name'));
+        $this->assertSame([
+            ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
+            ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL,
+            ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+        ], $batch->selected_document_types);
+
+        $documentKeys = array_column($batch->generated_documents ?? [], 'document_key');
+
+        $this->assertSame([
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_CONSULTATION_PROTOCOL),
+            ContractBatch::buildGeneratedDocumentKey(ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE),
+        ], $documentKeys);
+
+        $this->assertCount(3, $batch->generated_documents ?? []);
+        $this->assertTrue($batch->combinedPdfExists());
+    }
+
     public function test_full_layout_generates_all_nine_document_types(): void
     {
         $operator = User::factory()->create([

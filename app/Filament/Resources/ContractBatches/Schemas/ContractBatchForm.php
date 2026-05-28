@@ -53,10 +53,12 @@ class ContractBatchForm
                         Section::make('Данни на Клиент')
                             ->extraAttributes(['class' => 'cz-contract-flat-section'])
                             ->columns(2)
+                            ->columnSpan(fn (Get $get): int => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR) ? 2 : 1)
                             ->schema(static::partyFields('client', strictRequired: true)),
                         Section::make('Данни на Авалист')
                             ->extraAttributes(['class' => 'cz-contract-flat-section'])
                             ->columns(2)
+                            ->visible(fn (Get $get): bool => ! static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR))
                             ->schema(static::partyFields('co_applicant', strictRequired: true)),
                     ]),
 
@@ -66,6 +68,7 @@ class ContractBatchForm
                     ->visible(fn (Get $get): bool => static::isLayout($get, [
                         ContractBatch::DOCUMENT_LAYOUT_FULL,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                         ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                     ]))
                     ->schema([
@@ -77,12 +80,14 @@ class ContractBatchForm
                             ->required(fn (Get $get): bool => static::isLayout($get, [
                                 ContractBatch::DOCUMENT_LAYOUT_FULL,
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                                 ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                             ])),
                         static::euroAmountField('financial.commission_eur', 'Комисионна', 'Пример: 2500')
                             ->required(fn (Get $get): bool => static::isLayout($get, [
                                 ContractBatch::DOCUMENT_LAYOUT_FULL,
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                                 ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                             ])),
                         static::euroAmountField('financial.monthly_payments_eur', 'Месечни Вноски', 'Пример: 1000'),
@@ -117,10 +122,11 @@ class ContractBatchForm
                         static::loanSection()->columnSpan(6),
                     ]),
 
-                // Опростен / Договор 12м: 2 boxed cards in ONE row
+                // Опростен / Опростен без поръчител / Договор 12м: 2 boxed cards in ONE row
                 Grid::make(2)
                     ->visible(fn (Get $get): bool => static::isLayout($get, [
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                         ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                     ]))
                     ->schema([
@@ -146,6 +152,7 @@ class ContractBatchForm
                     ->required(fn (Get $get): bool => static::isLayout($get, [
                         ContractBatch::DOCUMENT_LAYOUT_FULL,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                         ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                     ]))
                     ->live(onBlur: true)
@@ -173,6 +180,7 @@ class ContractBatchForm
                     ->required(fn (Get $get): bool => static::isLayout($get, [
                         ContractBatch::DOCUMENT_LAYOUT_FULL,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                         ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
                     ])),
             ]);
