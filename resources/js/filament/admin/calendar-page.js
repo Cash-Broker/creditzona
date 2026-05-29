@@ -50,6 +50,8 @@ window.creditzonaCalendarPage = function creditzonaCalendarPage(config) {
                     day: 'Ден',
                 },
                 dayMaxEvents: true,
+                displayEventEnd: false,
+                nextDayThreshold: '09:00:00',
                 nowIndicator: true,
                 editable: true,
                 eventResizableFromStart: true,
@@ -58,6 +60,12 @@ window.creditzonaCalendarPage = function creditzonaCalendarPage(config) {
                 slotMinTime: '07:00:00',
                 slotMaxTime: '21:00:00',
                 allDaySlot: true,
+                views: {
+                    dayGridMonth: {
+                        dayMaxEvents: 4,
+                        eventDisplay: 'list-item',
+                    },
+                },
                 eventSources: [
                     (fetchInfo, successCallback, failureCallback) => {
                         this.fetchEvents(fetchInfo)
