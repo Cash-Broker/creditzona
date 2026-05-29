@@ -54,7 +54,8 @@ window.creditzonaCalendarPage = function creditzonaCalendarPage(config) {
                 nextDayThreshold: '09:00:00',
                 nowIndicator: true,
                 editable: true,
-                eventResizableFromStart: true,
+                eventDurationEditable: false,
+                eventResizableFromStart: false,
                 selectable: Boolean(config.canCreate),
                 selectMirror: true,
                 slotMinTime: '07:00:00',
@@ -128,7 +129,7 @@ window.creditzonaCalendarPage = function creditzonaCalendarPage(config) {
 
             this.$wire.mountAction('createEvent', {
                 starts_at: selectionInfo.startStr,
-                ends_at: selectionInfo.endStr,
+                ends_at: null,
                 all_day: selectionInfo.allDay,
                 user_id: this.filters.userId || this.config.currentUserId,
             })
@@ -167,7 +168,7 @@ window.creditzonaCalendarPage = function creditzonaCalendarPage(config) {
                     credentials: 'same-origin',
                     body: JSON.stringify({
                         starts_at: event.start?.toISOString(),
-                        ends_at: event.end?.toISOString() ?? null,
+                        ends_at: null,
                         all_day: event.allDay,
                     }),
                 },

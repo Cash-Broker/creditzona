@@ -25,8 +25,8 @@ class CalendarEventService
         $events = CalendarEvent::query()
             ->visibleToUser($viewer)
             ->with(['user'])
+            ->where('starts_at', '>=', $visibleStart)
             ->where('starts_at', '<', $visibleEnd)
-            ->where('ends_at', '>', $visibleStart)
             ->when(filled($filters['user_id'] ?? null), fn ($query) => $query->where('user_id', $filters['user_id']))
             ->when(filled($filters['event_type'] ?? null), fn ($query) => $query->where('event_type', $filters['event_type']))
             ->when(filled($filters['status'] ?? null), fn ($query) => $query->where('status', $filters['status']))
@@ -233,13 +233,12 @@ class CalendarEventService
     private function toCalendarPayload(CalendarEvent $event, User $viewer): array
     {
         $color = $event->getResolvedColor();
-        $eventEnd = $event->all_day ? $event->ends_at?->copy()->addSecond() : $event->ends_at;
 
         return [
             'id' => (string) $event->getKey(),
             'title' => $event->title,
             'start' => $event->starts_at?->toIso8601String(),
-            'end' => $eventEnd?->toIso8601String(),
+            'end' => null,
             'allDay' => $event->all_day,
             'backgroundColor' => $color,
             'borderColor' => $color,

@@ -13,12 +13,12 @@ use Tests\TestCase;
 
 class CalendarEventFormDateInputTest extends TestCase
 {
-    public function test_calendar_date_inputs_can_be_typed_manually_in_day_month_year_format(): void
+    public function test_calendar_form_uses_start_date_input_without_end_field(): void
     {
         $fields = $this->calendarEventFormFields();
 
         $this->assertManualCalendarDateTimeInput($fields['starts_at']);
-        $this->assertManualCalendarDateTimeInput($fields['ends_at']);
+        $this->assertArrayNotHasKey('ends_at', $fields);
     }
 
     /**

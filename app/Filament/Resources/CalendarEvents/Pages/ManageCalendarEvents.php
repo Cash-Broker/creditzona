@@ -38,16 +38,12 @@ class ManageCalendarEvents extends Page
                 $startsAt = filled($arguments['starts_at'] ?? null)
                     ? Carbon::parse((string) $arguments['starts_at'], config('app.timezone'))->format('Y-m-d H:i:s')
                     : now()->format('Y-m-d H:i:s');
-                $endsAt = filled($arguments['ends_at'] ?? null)
-                    ? Carbon::parse((string) $arguments['ends_at'], config('app.timezone'))->format('Y-m-d H:i:s')
-                    : now()->addHour()->format('Y-m-d H:i:s');
 
                 return [
                     'title' => '',
                     'description' => null,
                     'location' => null,
                     'starts_at' => $startsAt,
-                    'ends_at' => $endsAt,
                     'all_day' => (bool) ($arguments['all_day'] ?? false),
                     'event_type' => CalendarEvent::TYPE_APPOINTMENT,
                     'status' => CalendarEvent::STATUS_SCHEDULED,
@@ -95,9 +91,6 @@ class ManageCalendarEvents extends Page
                 'description' => $record->description,
                 'location' => $record->location,
                 'starts_at' => $record->starts_at?->format('Y-m-d H:i:s'),
-                'ends_at' => $record->all_day
-                    ? $record->ends_at?->copy()->addSecond()?->format('Y-m-d H:i:s')
-                    : $record->ends_at?->format('Y-m-d H:i:s'),
                 'all_day' => $record->all_day,
                 'event_type' => $record->event_type,
                 'status' => $record->status,

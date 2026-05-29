@@ -85,6 +85,44 @@ class CalendarEventFeatureTest extends TestCase
             ]);
     }
 
+    public function test_calendar_feed_uses_only_start_date_for_cross_day_events(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        CalendarEvent::query()->create([
+            'title' => 'Cross-day meeting',
+            'starts_at' => Carbon::parse('2026-05-20 20:00:00'),
+            'ends_at' => Carbon::parse('2026-05-21 02:00:00'),
+            'all_day' => false,
+            'event_type' => CalendarEvent::TYPE_APPOINTMENT,
+            'status' => CalendarEvent::STATUS_SCHEDULED,
+            'user_id' => $admin->id,
+            'created_by_user_id' => $admin->id,
+            'updated_by_user_id' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.calendar-events.feed', [
+                'start' => '2026-05-20T00:00:00+03:00',
+                'end' => '2026-05-21T00:00:00+03:00',
+            ]))
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.title', 'Cross-day meeting')
+            ->assertJsonPath('0.end', null);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.calendar-events.feed', [
+                'start' => '2026-05-21T00:00:00+03:00',
+                'end' => '2026-05-22T00:00:00+03:00',
+            ]))
+            ->assertOk()
+            ->assertJsonCount(0);
+    }
+
     public function test_operator_cannot_move_other_users_event(): void
     {
         $admin = User::factory()->create([

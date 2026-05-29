@@ -47,11 +47,6 @@ class CalendarEventForm
                             ->label('Начало')
                             ->required(),
                     ),
-                    ManualCalendarDateTimeInput::configure(
-                        DateTimePicker::make('ends_at')
-                            ->label('Край (по избор)')
-                            ->after('starts_at'),
-                    ),
                     $canManageUsers
                         ? Select::make('user_id')
                             ->label('Потребител')
