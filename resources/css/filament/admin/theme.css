@@ -895,14 +895,20 @@ body:has(.fi-resource-contract-batches) .fi-main-ctn {
     white-space: nowrap;
 }
 
-/* Month view: wrap long titles onto multiple lines instead of clipping them on one line. */
+/* Month view: let titles wrap to a maximum of two lines instead of clipping to one. */
 .cz-admin-calendar .fc .fc-daygrid-event .fc-event-main-frame,
-.cz-admin-calendar .fc .fc-daygrid-event .fc-event-title-container,
-.cz-admin-calendar .fc .fc-daygrid-event .fc-event-title {
+.cz-admin-calendar .fc .fc-daygrid-event .fc-event-title-container {
     overflow: visible;
-    text-overflow: clip;
     white-space: normal;
     word-break: break-word;
+}
+
+.cz-admin-calendar .fc .fc-daygrid-event .fc-event-title {
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2;
+    max-height: 2.4em;
 }
 
 .cz-admin-calendar .fc .fc-daygrid-day-frame {
