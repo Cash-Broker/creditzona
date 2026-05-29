@@ -895,6 +895,16 @@ body:has(.fi-resource-contract-batches) .fi-main-ctn {
     white-space: nowrap;
 }
 
+/* Month view: wrap long titles onto multiple lines instead of clipping them on one line. */
+.cz-admin-calendar .fc .fc-daygrid-event .fc-event-main-frame,
+.cz-admin-calendar .fc .fc-daygrid-event .fc-event-title-container,
+.cz-admin-calendar .fc .fc-daygrid-event .fc-event-title {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    word-break: break-word;
+}
+
 .cz-admin-calendar .fc .fc-daygrid-day-frame {
     min-height: 6.75rem;
 }
@@ -908,7 +918,7 @@ body:has(.fi-resource-contract-batches) .fi-main-ctn {
 }
 
 .cz-admin-calendar .fc .fc-daygrid-dot-event {
-    align-items: center;
+    align-items: flex-start;
     color: #0f172a;
     gap: 0.125rem;
     padding: 0.0625rem 0.125rem;
@@ -931,7 +941,7 @@ body:has(.fi-resource-contract-batches) .fi-main-ctn {
 
 .cz-admin-calendar .fc .fc-daygrid-dot-event .fc-daygrid-event-dot {
     border-width: 0.25rem;
-    margin: 0 0.125rem 0 0;
+    margin: 0.3125rem 0.125rem 0 0;
 }
 
 .cz-admin-calendar .fc .fc-daygrid-block-event {
