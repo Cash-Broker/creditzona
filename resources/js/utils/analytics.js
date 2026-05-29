@@ -136,11 +136,31 @@ export function trackPageView(route) {
             ? route.fullPath
             : window.location.pathname + window.location.search;
 
-    window.gtag("event", "page_view", {
+    const params = {
         page_path: path,
         page_location: window.location.href,
         page_title: document.title,
-    });
+    };
+
+    // When a Google Tag (GT-XXX) is the loader it fans every untargeted event
+    // out to all of its destinations (GA4 *and* Google Ads). That produced
+    // duplicate page_view hits on the Google Ads tag. Routing the page view to
+    // the GA4 destination explicitly keeps page views out of the Ads stream.
+    const ga4Target = state.measurementId || state.googleTagId;
+
+    if (ga4Target) {
+        params.send_to = ga4Target;
+    }
+
+    window.gtag("event", "page_view", params);
+}
+
+function generateConversionId() {
+    if (typeof window.crypto?.randomUUID === "function") {
+        return window.crypto.randomUUID();
+    }
+
+    return `cz-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function trackLeadConversion() {
@@ -148,11 +168,17 @@ export function trackLeadConversion() {
         return;
     }
 
+    // A unique id per submission lets Google Ads de-duplicate conversions and
+    // stops the Ads tag from reporting the conversion label as the transaction
+    // id, which previously made every conversion look identical.
+    const transactionId = generateConversionId();
+
     // GA4 standard lead-generation event — visible in GA4 reports.
     // Mark it as a Key Event in the GA4 console to count it as a conversion.
     if (state.measurementId) {
         window.gtag("event", "generate_lead", {
             send_to: state.measurementId,
+            transaction_id: transactionId,
         });
     }
 
@@ -161,6 +187,7 @@ export function trackLeadConversion() {
     if (state.adsId && state.adsConversionLabel) {
         window.gtag("event", "conversion", {
             send_to: `${state.adsId}/${state.adsConversionLabel}`,
+            transaction_id: transactionId,
         });
     }
 }
