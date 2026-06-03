@@ -64,7 +64,6 @@ class StoreLeadRequest extends FormRequest
                 'required',
                 'string',
                 'max:30',
-                ExclusiveLeadParticipantPhone::forApplicant(),
                 function (string $attribute, mixed $value, Closure $fail): void {
                     if (! is_string($value) || $value === '') {
                         return;

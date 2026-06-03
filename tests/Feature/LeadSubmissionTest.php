@@ -493,7 +493,7 @@ class LeadSubmissionTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_submission_rejects_applicant_phone_when_it_is_already_used_by_existing_guarantor(): void
+    public function test_submission_accepts_applicant_phone_when_it_is_already_used_only_by_existing_guarantor(): void
     {
         $lead = Lead::query()->create([
             'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
@@ -517,15 +517,12 @@ class LeadSubmissionTest extends TestCase
             'phone' => '0888 123 456',
         ]));
 
-        $response
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['phone'])
-            ->assertJsonPath(
-                'errors.phone.0',
-                'Този телефон вече е използван за поръчител и не може да се използва и за кредитоискател.',
-            );
+        $response->assertSuccessful();
 
-        $this->assertDatabaseCount('leads', 1);
+        $this->assertDatabaseCount('leads', 2);
+        $this->assertDatabaseHas('leads', [
+            'normalized_phone' => '0888123456',
+        ]);
     }
 
     public function test_submission_rejects_guarantor_phone_when_it_is_already_used_by_existing_applicant(): void
