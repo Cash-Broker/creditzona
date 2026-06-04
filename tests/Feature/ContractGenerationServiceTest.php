@@ -501,6 +501,54 @@ class ContractGenerationServiceTest extends TestCase
         $this->assertLessThan($positions['mediation_protocol'], $positions['mediation_agreement']);
     }
 
+    public function test_combined_docx_footer_numbers_each_contract_independently(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'selected_document_types' => [
+                ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
+                ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
+                ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+            ],
+            'dates' => [
+                'request_date' => '2026-03-20',
+                'mediation_contract_date' => '2026-03-26',
+                'company_promissory_note_due_date' => '2026-05-12',
+            ],
+        ]), $operator);
+
+        $combinedDocxPath = Storage::disk('legal')->path($batch->combined_docx_path);
+        $this->assertFileExists($combinedDocxPath);
+
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($combinedDocxPath) === true);
+
+        $footerXml = '';
+        $footerCount = 0;
+
+        for ($index = 0; $index < $zip->numFiles; $index++) {
+            $name = $zip->getNameIndex($index);
+
+            if ($name === false || ! preg_match('#^word/footer\d+\.xml$#', $name)) {
+                continue;
+            }
+
+            $footerCount++;
+            $footerXml .= (string) $zip->getFromIndex($index);
+        }
+
+        $zip->close();
+
+        $this->assertGreaterThan(0, $footerCount, 'Combined DOCX is missing footer parts.');
+        $this->assertStringContainsString('SECTIONPAGES', $footerXml);
+        $this->assertStringNotContainsString('NUMPAGES', $footerXml);
+        $this->assertStringContainsString('PAGE', $footerXml);
+    }
+
     public function test_it_requires_co_applicant_for_declaration(): void
     {
         $operator = User::factory()->create([

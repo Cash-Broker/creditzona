@@ -1246,6 +1246,10 @@ CSS;
             $textRun->addText('Страница ', $fontStyle);
             $textRun->addField('PAGE', [], ['PreserveFormat']);
             $textRun->addText(' от ', $fontStyle);
+            // Всеки договор е отделна секция, която рестартира номерацията (pageNumberingStart => 1).
+            // PhpWord поддържа само NUMPAGES (общия брой страници на целия файл), затова добавяме
+            // NUMPAGES тук и след записа го заменяме със SECTIONPAGES, за да брои страниците на
+            // конкретния договор, а не общия брой на всички договори.
             $textRun->addField('NUMPAGES', [], ['PreserveFormat']);
 
             WordHtml::addHtml(
@@ -1259,8 +1263,12 @@ CSS;
         $relativePath = 'generated/'.$directoryKey.'/dogovori-'.Str::uuid().'.docx';
         Storage::disk('legal')->makeDirectory(dirname($relativePath));
 
+        $absolutePath = Storage::disk('legal')->path($relativePath);
+
         WordIOFactory::createWriter($phpWord, 'Word2007')
-            ->save(Storage::disk('legal')->path($relativePath));
+            ->save($absolutePath);
+
+        $this->convertNumPagesToSectionPages($absolutePath);
 
         $clientSegment = Str::slug((string) $clientFullName);
         $downloadName = trim(implode('-', array_filter([
@@ -1272,6 +1280,42 @@ CSS;
             'path' => $relativePath,
             'download_name' => $downloadName,
         ];
+    }
+
+    /**
+     * Замества полето NUMPAGES (общ брой страници на целия документ) със SECTIONPAGES
+     * в долните колонтитули на записания .docx файл. Така всеки договор показва броя
+     * на собствените си страници, вместо общия брой на всички договори в общия файл.
+     */
+    private function convertNumPagesToSectionPages(string $absolutePath): void
+    {
+        if (! class_exists(ZipArchive::class)) {
+            return;
+        }
+
+        $archive = new ZipArchive;
+
+        if ($archive->open($absolutePath) !== true) {
+            return;
+        }
+
+        for ($index = 0; $index < $archive->numFiles; $index++) {
+            $name = $archive->getNameIndex($index);
+
+            if ($name === false || ! preg_match('#^word/footer\d+\.xml$#', $name)) {
+                continue;
+            }
+
+            $contents = $archive->getFromIndex($index);
+
+            if (! is_string($contents) || ! str_contains($contents, 'NUMPAGES')) {
+                continue;
+            }
+
+            $archive->addFromString($name, str_replace('NUMPAGES', 'SECTIONPAGES', $contents));
+        }
+
+        $archive->close();
     }
 
     private function renderDocx(string $contentHtml, string $relativePath): void
