@@ -1101,6 +1101,9 @@ class ContractGenerationService
         .signature-row { margin-top: 28px; }
         .small { font-size: 9.8pt; }
         .spacer { height: 18px; }
+        .promissory-note p { margin-bottom: 6px; }
+        .promissory-note .title { margin-bottom: 10px; }
+        .promissory-note .signature-row { margin-top: 16px; }
 CSS;
 
         $documentSpecs = $this->expandDocumentSpecs($documentTypes, $layout);

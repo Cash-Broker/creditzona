@@ -549,6 +549,41 @@ class ContractGenerationServiceTest extends TestCase
         $this->assertStringContainsString('PAGE', $footerXml);
     }
 
+    public function test_company_promissory_note_fits_on_single_pdf_page_with_co_applicant(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'selected_document_types' => [
+                ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+            ],
+            'dates' => [
+                'request_date' => '2026-03-20',
+                'company_promissory_note_due_date' => '2026-05-12',
+            ],
+        ]), $operator);
+
+        $this->assertNotNull(data_get($batch->getSubmittedInput(), 'co_applicant.full_name'));
+        $this->assertTrue($batch->combinedPdfExists());
+
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'tempDir' => storage_path('app/private/mpdf-temp'),
+        ]);
+
+        $pageCount = $mpdf->setSourceFile(Storage::disk('legal')->path($batch->combined_pdf_path));
+
+        $this->assertSame(
+            1,
+            $pageCount,
+            'Записът на заповед за комисионна трябва да се събира на една страница.',
+        );
+    }
+
     public function test_it_requires_co_applicant_for_declaration(): void
     {
         $operator = User::factory()->create([

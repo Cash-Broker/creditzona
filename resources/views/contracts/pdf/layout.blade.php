@@ -57,6 +57,18 @@
             padding: 15px;
             margin-top: 20px;
         }
+
+        .promissory-note p {
+            margin-bottom: 6px;
+        }
+
+        .promissory-note .title {
+            margin-bottom: 10px;
+        }
+
+        .promissory-note .signature-row {
+            margin-top: 16px;
+        }
     </style>
 </head>
 <body>

@@ -2,6 +2,7 @@
     $company = $derived['company'];
 @endphp
 
+<div class="promissory-note">
 <div class="title">ЗАПИС НА ЗАПОВЕД</div>
 
 <p>Подписаният:</p>
@@ -32,7 +33,7 @@
 </div>
 
 @if (filled($submitted['co_applicant']['full_name']))
-    <div style="margin-top: 18px; page-break-inside: avoid;">
+    <div style="margin-top: 12px; page-break-inside: avoid;">
         <p>Подписаният:</p>
         <p>{{ $derived['identities']['co_applicant'] }}</p>
         <p>в качеството си на ПОРЪЧИТЕЛ /авалист/, поръчителствам за изпълнението на задълженията на {{ $submitted['client']['full_name'] }} по настоящия Запис на заповед.</p>
@@ -41,3 +42,4 @@
         <p class="small">(трите имена - собственоръчно) (подпис)</p>
     </div>
 @endif
+</div>
