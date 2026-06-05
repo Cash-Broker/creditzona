@@ -53,6 +53,21 @@ class AttachedContactMessageResource extends Resource
         return (string) static::getEloquentQuery()->count();
     }
 
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User || ! $user->isOperator() || static::getEloquentQuery()->count() === 0) {
+            return null;
+        }
+
+        // Когато операторът вече е в това меню, бройката остава в основния (син) цвят.
+        // Иначе свети в червено, за да се набива на очи, че има съобщения към него.
+        return request()->routeIs(static::getNavigationItemActiveRoutePattern())
+            ? 'primary'
+            : 'danger';
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return ContactMessageInfolist::configure($schema);
