@@ -237,12 +237,14 @@ class ContractBatchForm
             Hidden::make('client.id_card_number')->dehydrated(),
             Hidden::make('client.id_card_issued_at')->dehydrated(),
             Hidden::make('client.id_card_issued_by')->dehydrated(),
+            Hidden::make('client.property')->dehydrated(),
             Hidden::make('co_applicant.full_name')->dehydrated(),
             Hidden::make('co_applicant.egn')->dehydrated(),
             Hidden::make('co_applicant.permanent_address')->dehydrated(),
             Hidden::make('co_applicant.id_card_number')->dehydrated(),
             Hidden::make('co_applicant.id_card_issued_at')->dehydrated(),
             Hidden::make('co_applicant.id_card_issued_by')->dehydrated(),
+            Hidden::make('co_applicant.property')->dehydrated(),
         ];
     }
 
@@ -304,6 +306,10 @@ class ContractBatchForm
                         ->required($strictRequired)
                         ->maxLength(255),
                 ]),
+            Textarea::make("{$namespace}.property")
+                ->label('Движимо/недвижимо имущество')
+                ->rows(3)
+                ->columnSpanFull(),
         ];
     }
 

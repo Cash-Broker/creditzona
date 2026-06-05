@@ -595,6 +595,7 @@ class ContractGenerationService
             'id_card_issued_at' => $this->normalizeDateString($party['id_card_issued_at'] ?? null),
             'id_card_issued_by' => $this->normalizeText($party['id_card_issued_by'] ?? null),
             'permanent_address' => $this->normalizeText($party['permanent_address'] ?? null),
+            'property' => $this->normalizeText($party['property'] ?? null),
             'email' => $this->normalizeText($party['email'] ?? null),
         ];
     }
@@ -713,6 +714,7 @@ class ContractGenerationService
             'id_card_issued_at' => null,
             'id_card_issued_by' => null,
             'permanent_address' => $this->normalizeText($lead->city),
+            'property' => null,
             'email' => $this->normalizeText($lead->email),
         ];
     }
@@ -730,6 +732,7 @@ class ContractGenerationService
                 'id_card_issued_at' => null,
                 'id_card_issued_by' => null,
                 'permanent_address' => null,
+                'property' => null,
                 'email' => null,
             ];
         }
@@ -745,6 +748,7 @@ class ContractGenerationService
             'id_card_issued_at' => null,
             'id_card_issued_by' => null,
             'permanent_address' => $this->normalizeText($guarantor->city),
+            'property' => null,
             'email' => $this->normalizeText($guarantor->email),
         ];
     }
@@ -1579,6 +1583,7 @@ CSS;
             filled($party['id_card_issued_at'] ?? null) ? 'издадена на '.$this->dateFormatter->format($party['id_card_issued_at']).' г.' : null,
             filled($party['id_card_issued_by'] ?? null) ? 'от '.$party['id_card_issued_by'] : null,
             filled($party['permanent_address'] ?? null) ? 'с постоянен адрес: '.$party['permanent_address'] : null,
+            filled($party['property'] ?? null) ? 'притежаващ/а движимо/недвижимо имущество: '.$party['property'] : null,
         ])));
     }
 
