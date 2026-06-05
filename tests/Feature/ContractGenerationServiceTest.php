@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ContractBatch;
 use App\Models\Lead;
+use App\Models\LeadGuarantor;
 use App\Models\User;
 use App\Services\Contracts\ContractGenerationService;
 use Carbon\CarbonImmutable;
@@ -582,6 +583,116 @@ class ContractGenerationServiceTest extends TestCase
             $pageCount,
             'Записът на заповед за комисионна трябва да се събира на една страница.',
         );
+    }
+
+    public function test_it_defaults_to_the_suitable_guarantor_when_multiple_exist(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = $this->leadWithGuarantors($operator);
+
+        $lead->guarantors()->create([
+            'first_name' => 'Първи', 'last_name' => 'Поръчител',
+            'egn' => '8101010000', 'phone' => '0888000001',
+            'status' => LeadGuarantor::STATUS_UNSUITABLE,
+        ]);
+
+        $suitable = $lead->guarantors()->create([
+            'first_name' => 'Мария', 'middle_name' => 'Петрова', 'last_name' => 'Годна',
+            'egn' => '8202020000', 'phone' => '0888000002',
+            'city' => 'София', 'email' => 'maria@example.com',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        $prefill = app(ContractGenerationService::class)
+            ->buildFormPrefillFromLead($lead->fresh('guarantors'));
+
+        $this->assertSame($suitable->id, $prefill['lead_guarantor_id']);
+        $this->assertSame('Мария Петрова Годна', data_get($prefill, 'co_applicant.full_name'));
+        $this->assertSame('София', data_get($prefill, 'co_applicant.permanent_address'));
+    }
+
+    public function test_it_does_not_default_a_guarantor_when_none_or_many_are_suitable(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = $this->leadWithGuarantors($operator);
+
+        $lead->guarantors()->create([
+            'first_name' => 'Първи', 'last_name' => 'Годен',
+            'egn' => '8101010000', 'phone' => '0888000001',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        $lead->guarantors()->create([
+            'first_name' => 'Втори', 'last_name' => 'Годен',
+            'egn' => '8202020000', 'phone' => '0888000002',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        $prefill = app(ContractGenerationService::class)
+            ->buildFormPrefillFromLead($lead->fresh('guarantors'));
+
+        $this->assertNull($prefill['lead_guarantor_id']);
+        $this->assertNull(data_get($prefill, 'co_applicant.full_name'));
+    }
+
+    public function test_it_exposes_guarantor_select_options_and_prefill_by_id(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = $this->leadWithGuarantors($operator);
+
+        $first = $lead->guarantors()->create([
+            'first_name' => 'Първи', 'last_name' => 'Поръчител',
+            'egn' => '8101010000', 'phone' => '0888000001',
+            'city' => 'Пловдив', 'email' => 'first@example.com',
+            'status' => LeadGuarantor::STATUS_UNSUITABLE,
+        ]);
+
+        $second = $lead->guarantors()->create([
+            'first_name' => 'Втори', 'last_name' => 'Поръчител',
+            'egn' => '8202020000', 'phone' => '0888000002',
+            'status' => LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        $service = app(ContractGenerationService::class);
+
+        $this->assertSame(2, $service->countLeadGuarantors($lead->id));
+
+        $options = $service->guarantorSelectOptions($lead->id);
+        $this->assertCount(2, $options);
+        $this->assertSame('Първи Поръчител — Негоден', $options[$first->id]);
+        $this->assertSame('Втори Поръчител — Годен', $options[$second->id]);
+
+        $prefill = $service->buildCoApplicantPrefillForGuarantorId($lead->id, $first->id);
+        $this->assertSame('Първи Поръчител', $prefill['full_name']);
+        $this->assertSame('Пловдив', $prefill['permanent_address']);
+        $this->assertNull($prefill['id_card_number']);
+
+        $empty = $service->buildCoApplicantPrefillForGuarantorId($lead->id, null);
+        $this->assertNull($empty['full_name']);
+    }
+
+    private function leadWithGuarantors(User $operator): Lead
+    {
+        return Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'first_name' => 'Иван', 'middle_name' => 'Петров', 'last_name' => 'Иванов',
+            'egn' => '8501010000', 'phone' => '0888123456',
+            'email' => 'ivan@example.com', 'city' => 'Пловдив',
+            'salary' => 2600, 'credit_bank' => 'Test Bank', 'amount' => 12000,
+            'status' => 'new', 'assigned_user_id' => $operator->id,
+        ]);
     }
 
     public function test_it_requires_co_applicant_for_declaration(): void

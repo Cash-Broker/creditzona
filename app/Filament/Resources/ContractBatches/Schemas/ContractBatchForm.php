@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ContractBatches\Schemas;
 
 use App\Models\ContractBatch;
+use App\Services\Contracts\ContractGenerationService;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -26,7 +27,6 @@ class ContractBatchForm
         return $schema
             ->components([
                 Hidden::make('lead_id'),
-                Hidden::make('lead_guarantor_id'),
                 Hidden::make('dates.request_date')->dehydrated(),
                 Hidden::make('company_key')->default(ContractBatch::COMPANY_REKREDO_KONSULT_DPK)->dehydrated(),
 
@@ -59,7 +59,10 @@ class ContractBatchForm
                             ->extraAttributes(['class' => 'cz-contract-flat-section'])
                             ->columns(2)
                             ->visible(fn (Get $get): bool => ! static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR))
-                            ->schema(static::partyFields('co_applicant', strictRequired: true)),
+                            ->schema([
+                                static::guarantorSelectField(),
+                                ...static::partyFields('co_applicant', strictRequired: true),
+                            ]),
                     ]),
 
                 Section::make('Данни за Кредити')
@@ -241,6 +244,31 @@ class ContractBatchForm
             Hidden::make('co_applicant.id_card_issued_at')->dehydrated(),
             Hidden::make('co_applicant.id_card_issued_by')->dehydrated(),
         ];
+    }
+
+    /**
+     * Падащ списък с поръчителите на запитването. Показва се само когато има повече
+     * от един поръчител, позволява търсене и попълва данните на авалиста при избор.
+     */
+    private static function guarantorSelectField(): Select
+    {
+        return Select::make('lead_guarantor_id')
+            ->label('Избери поръчител от запитването')
+            ->helperText('Запитването има няколко поръчителя — изберете кой да е авалист по договора.')
+            ->options(fn (Get $get): array => app(ContractGenerationService::class)->guarantorSelectOptions($get('lead_id')))
+            ->searchable()
+            ->native(false)
+            ->live()
+            ->columnSpanFull()
+            ->visible(fn (Get $get): bool => app(ContractGenerationService::class)->countLeadGuarantors($get('lead_id')) >= 2)
+            ->afterStateUpdated(function (mixed $state, Get $get, Set $set): void {
+                $prefill = app(ContractGenerationService::class)
+                    ->buildCoApplicantPrefillForGuarantorId($get('lead_id'), $state);
+
+                foreach ($prefill as $field => $value) {
+                    $set("co_applicant.{$field}", $value);
+                }
+            });
     }
 
     /**

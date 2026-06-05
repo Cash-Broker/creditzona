@@ -54,6 +54,45 @@ class ContractBatchLeadPrefillTest extends TestCase
             ->assertSet('data.loan.institution_name', 'Test Bank');
     }
 
+    public function test_create_page_defaults_to_suitable_guarantor_and_allows_switching(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = $this->createLeadForContracts($operator);
+        $maria = $lead->guarantors()->firstOrFail();
+
+        $suitable = $lead->guarantors()->create([
+            'first_name' => 'Petar',
+            'middle_name' => 'Stoyanov',
+            'last_name' => 'Suitable',
+            'egn' => '8202020000',
+            'phone' => '0888000002',
+            'email' => 'petar@example.com',
+            'city' => 'Burgas',
+            'status' => \App\Models\LeadGuarantor::STATUS_SUITABLE,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::withQueryParams([
+            'lead_id' => $lead->id,
+        ])->test(CreateContractBatch::class)
+            ->assertSet('data.lead_guarantor_id', $suitable->id)
+            ->assertSet('data.co_applicant.full_name', 'Petar Stoyanov Suitable')
+            ->assertSet('data.co_applicant.permanent_address', 'Burgas')
+            ->set('data.lead_guarantor_id', $maria->id)
+            ->assertSet('data.co_applicant.full_name', 'Maria Petrova Ivanova')
+            ->assertSet('data.co_applicant.permanent_address', 'Sofia');
+    }
+
     public function test_create_contract_batch_page_returns_empty_when_lead_id_does_not_exist(): void
     {
         $admin = User::factory()->create([

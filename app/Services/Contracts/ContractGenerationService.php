@@ -73,7 +73,9 @@ class ContractGenerationService
      */
     public function buildFormPrefillFromLead(Lead $lead, ?LeadGuarantor $guarantor = null): array
     {
-        $selectedGuarantor = $this->resolveLeadGuarantor($lead, $guarantor);
+        $selectedGuarantor = $guarantor instanceof LeadGuarantor
+            ? $this->resolveLeadGuarantor($lead, $guarantor)
+            : $this->resolveDefaultLeadGuarantor($lead);
         $requestDate = $this->buildRequestDateFromLead($lead)
             ?? CarbonImmutable::now('Europe/Sofia')->format('Y-m-d');
 
@@ -108,6 +110,52 @@ class ContractGenerationService
      */
     public function buildCoApplicantPrefillFromGuarantor(?LeadGuarantor $guarantor): array
     {
+        return $this->buildPartyPrefillFromGuarantor($guarantor);
+    }
+
+    /**
+     * Опции за падащия списък с поръчителите на дадено запитване (id => етикет с име и статус).
+     *
+     * @return array<int, string>
+     */
+    public function guarantorSelectOptions(mixed $leadId): array
+    {
+        $lead = $this->resolveLeadById($leadId);
+
+        if (! $lead instanceof Lead) {
+            return [];
+        }
+
+        return $lead->guarantors
+            ->sortBy('id')
+            ->mapWithKeys(fn (LeadGuarantor $guarantor): array => [
+                $guarantor->id => $this->buildGuarantorOptionLabel($guarantor),
+            ])
+            ->all();
+    }
+
+    public function countLeadGuarantors(mixed $leadId): int
+    {
+        $lead = $this->resolveLeadById($leadId);
+
+        return $lead instanceof Lead ? $lead->guarantors->count() : 0;
+    }
+
+    /**
+     * Попълва данните на авалиста от конкретно избран поръчител по неговото id.
+     * Празните полета на личната карта се изчистват, тъй като те не идват от запитването.
+     *
+     * @return array<string, string|null>
+     */
+    public function buildCoApplicantPrefillForGuarantorId(mixed $leadId, mixed $guarantorId): array
+    {
+        if (! is_numeric($guarantorId)) {
+            return $this->buildPartyPrefillFromGuarantor(null);
+        }
+
+        $lead = $this->resolveLeadById($leadId);
+        $guarantor = $lead?->guarantors->firstWhere('id', (int) $guarantorId);
+
         return $this->buildPartyPrefillFromGuarantor($guarantor);
     }
 
@@ -597,6 +645,39 @@ class ContractGenerationService
         return $lead->guarantors
             ->sortBy('id')
             ->first();
+    }
+
+    /**
+     * Поръчителят, който се избира по подразбиране при префилване на формата.
+     * При един поръчител се ползва той. При няколко се ползва само ако има точно един
+     * със статус „Годен"; иначе операторът избира ръчно от падащия списък.
+     */
+    private function resolveDefaultLeadGuarantor(Lead $lead): ?LeadGuarantor
+    {
+        $lead->loadMissing('guarantors');
+
+        $guarantors = $lead->guarantors->sortBy('id')->values();
+
+        if ($guarantors->count() <= 1) {
+            return $guarantors->first();
+        }
+
+        $suitable = $guarantors
+            ->where('status', LeadGuarantor::STATUS_SUITABLE)
+            ->values();
+
+        return $suitable->count() === 1 ? $suitable->first() : null;
+    }
+
+    private function buildGuarantorOptionLabel(LeadGuarantor $guarantor): string
+    {
+        $name = $this->buildPersonFullName(
+            $guarantor->first_name,
+            $guarantor->middle_name,
+            $guarantor->last_name,
+        ) ?? 'Поръчител #'.$guarantor->id;
+
+        return $name.' — '.LeadGuarantor::getStatusLabel($guarantor->status);
     }
 
     private function resolveLeadGuarantorById(?Lead $lead, mixed $guarantorId): ?LeadGuarantor
