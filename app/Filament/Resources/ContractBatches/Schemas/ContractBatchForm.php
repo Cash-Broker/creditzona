@@ -308,7 +308,6 @@ class ContractBatchForm
                 ]),
             Textarea::make("{$namespace}.property")
                 ->label('Движимо/недвижимо имущество')
-                ->helperText('Опишете движимо и/или недвижимо имущество (по желание).')
                 ->rows(3)
                 ->columnSpanFull(),
         ];
