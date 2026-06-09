@@ -40,6 +40,7 @@ class LeadGuarantor extends Model implements HasRichContent
         'amount',
         'property_type',
         'property_location',
+        'movable_immovable_property',
         'documents',
         'document_file_names',
         'internal_notes',

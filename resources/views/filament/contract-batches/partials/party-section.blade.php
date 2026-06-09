@@ -50,13 +50,4 @@
             @error("data.{$namespace}.id_card_issued_by") <span class="cz-error">{{ $message }}</span> @enderror
         </div>
     </div>
-
-    {{-- Row D: Движимо/недвижимо имущество --}}
-    <div class="cz-cb-row cz-cb-row-1">
-        <div class="cz-field">
-            <label class="cz-label">Движимо/недвижимо имущество</label>
-            <textarea wire:model="data.{{ $namespace }}.property" class="cz-input cz-textarea" rows="3" placeholder="Опишете движимо и/или недвижимо имущество (по желание)"></textarea>
-            @error("data.{$namespace}.property") <span class="cz-error">{{ $message }}</span> @enderror
-        </div>
-    </div>
 </div>

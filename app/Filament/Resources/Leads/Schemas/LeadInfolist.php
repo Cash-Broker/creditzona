@@ -91,6 +91,10 @@ class LeadInfolist
                         TextEntry::make('credit_bank')
                             ->label('Банка по кредита')
                             ->placeholder('Няма'),
+                        TextEntry::make('movable_immovable_property')
+                            ->label('Движимо/недвижимо имущество')
+                            ->placeholder('Няма')
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Данни за имота')
                     ->columns(2)
@@ -197,6 +201,10 @@ class LeadInfolist
                                         TextEntry::make('credit_bank')
                                             ->label('Банка по кредита')
                                             ->placeholder('Няма'),
+                                        TextEntry::make('movable_immovable_property')
+                                            ->label('Движимо/недвижимо имущество')
+                                            ->placeholder('Няма')
+                                            ->columnSpanFull(),
                                         ViewEntry::make('internal_notes_history')
                                             ->label('История на съобщенията за поръчителя')
                                             ->view('filament.resources.leads.infolists.note-history')

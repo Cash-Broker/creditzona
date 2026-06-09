@@ -68,6 +68,7 @@ class Lead extends Model implements HasRichContent
         'amount',
         'property_type',
         'property_location',
+        'movable_immovable_property',
         'status',
         'assigned_user_id',
         'additional_user_id',

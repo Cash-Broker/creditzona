@@ -19,6 +19,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Livewire as LivewireComponent;
 use Filament\Schemas\Components\Section;
@@ -227,6 +228,13 @@ class LeadForm
                             ->maxLength(120)
                             ->rule(CyrillicText::withoutLatin('Банката по кредита'))
                             ->columnSpan(4),
+                        Textarea::make('movable_immovable_property')
+                            ->label('Движимо/недвижимо имущество')
+                            ->placeholder('Опишете движимо и/или недвижимо имущество')
+                            ->nullable()
+                            ->rows(3)
+                            ->maxLength(2000)
+                            ->columnSpanFull(),
                         FileUpload::make('documents')
                             ->label('Документи към клиента')
                             ->disk('local')
@@ -447,6 +455,13 @@ class LeadForm
                         ->maxLength(120)
                         ->rule(CyrillicText::withoutLatin('Банката по кредита на поръчителя'))
                         ->columnSpan(4),
+                    Textarea::make('movable_immovable_property')
+                        ->label('Движимо/недвижимо имущество')
+                        ->placeholder('Опишете движимо и/или недвижимо имущество')
+                        ->nullable()
+                        ->rows(3)
+                        ->maxLength(2000)
+                        ->columnSpanFull(),
                     FileUpload::make('documents')
                         ->label('Документи към поръчителя')
                         ->disk('local')
@@ -584,6 +599,7 @@ class LeadForm
             $get('credit_bank'),
             $get('property_type'),
             $get('property_location'),
+            $get('movable_immovable_property'),
             $get('documents'),
             $get('document_file_names'),
             $get('new_internal_note'),

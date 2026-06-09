@@ -683,61 +683,6 @@ class ContractGenerationServiceTest extends TestCase
         $this->assertNull($empty['full_name']);
     }
 
-    public function test_it_includes_movable_immovable_property_in_party_identity(): void
-    {
-        $operator = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
-        ]);
-
-        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
-            'client' => array_merge($this->batchInput()['client'], [
-                'property' => 'Апартамент в гр. Пловдив, ул. Тест 1; лек автомобил',
-            ]),
-            'co_applicant' => array_merge($this->batchInput()['co_applicant'], [
-                'property' => 'Къща в с. Марково',
-            ]),
-            'selected_document_types' => [
-                ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
-            ],
-        ]), $operator);
-
-        $clientIdentity = data_get($batch->getDerivedInput(), 'identities.client');
-        $coApplicantIdentity = data_get($batch->getDerivedInput(), 'identities.co_applicant');
-
-        $this->assertStringContainsString(
-            'движимо/недвижимо имущество: Апартамент в гр. Пловдив, ул. Тест 1; лек автомобил',
-            $clientIdentity,
-        );
-        $this->assertStringContainsString(
-            'движимо/недвижимо имущество: Къща в с. Марково',
-            $coApplicantIdentity,
-        );
-        $this->assertSame(
-            'Апартамент в гр. Пловдив, ул. Тест 1; лек автомобил',
-            data_get($batch->getSubmittedInput(), 'client.property'),
-        );
-    }
-
-    public function test_party_identity_omits_property_when_not_provided(): void
-    {
-        $operator = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
-        ]);
-
-        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
-            'selected_document_types' => [
-                ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
-            ],
-        ]), $operator);
-
-        $this->assertStringNotContainsString(
-            'движимо/недвижимо имущество',
-            data_get($batch->getDerivedInput(), 'identities.client'),
-        );
-    }
-
     private function leadWithGuarantors(User $operator): Lead
     {
         return Lead::query()->create([

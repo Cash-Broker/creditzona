@@ -93,49 +93,6 @@ class ContractBatchLeadPrefillTest extends TestCase
             ->assertSet('data.co_applicant.permanent_address', 'Sofia');
     }
 
-    public function test_property_field_renders_and_is_saved_through_create_form(): void
-    {
-        $admin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
-            'email' => 'renata@creditzona.test',
-        ]);
-
-        $this->actingAs($admin);
-
-        Livewire::test(CreateContractBatch::class)
-            ->assertSee('Движимо/недвижимо имущество')
-            ->set('data.document_layout', ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY)
-            ->set('data.client.city', 'Пловдив')
-            ->set('data.client.full_name', 'Иван Иванов')
-            ->set('data.client.egn', '8501010000')
-            ->set('data.client.permanent_address', 'гр. Пловдив')
-            ->set('data.client.id_card_number', '123456789')
-            ->set('data.client.id_card_issued_at', '2020-05-20')
-            ->set('data.client.id_card_issued_by', 'МВР Пловдив')
-            ->set('data.client.property', 'Апартамент в гр. Пловдив; лек автомобил')
-            ->set('data.co_applicant.full_name', 'Мария Иванова')
-            ->set('data.co_applicant.egn', '8602020000')
-            ->set('data.co_applicant.permanent_address', 'гр. Пловдив')
-            ->set('data.co_applicant.id_card_number', '987654321')
-            ->set('data.co_applicant.id_card_issued_at', '2021-06-18')
-            ->set('data.co_applicant.id_card_issued_by', 'МВР Пловдив')
-            ->set('data.co_applicant.property', 'Къща в с. Марково')
-            ->call('create')
-            ->assertHasNoFormErrors();
-
-        $batch = ContractBatch::query()->latest('id')->first();
-
-        $this->assertNotNull($batch);
-        $this->assertSame(
-            'Апартамент в гр. Пловдив; лек автомобил',
-            data_get($batch->getSubmittedInput(), 'client.property'),
-        );
-        $this->assertSame(
-            'Къща в с. Марково',
-            data_get($batch->getSubmittedInput(), 'co_applicant.property'),
-        );
-    }
-
     public function test_create_contract_batch_page_returns_empty_when_lead_id_does_not_exist(): void
     {
         $admin = User::factory()->create([
