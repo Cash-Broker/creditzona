@@ -170,6 +170,7 @@ class ContractGenerationServiceTest extends TestCase
 
         $this->assertSame($lead->id, $prefill['lead_id']);
         $this->assertSame($guarantor->id, $prefill['lead_guarantor_id']);
+        $this->assertArrayNotHasKey('city', $prefill['client']);
         $this->assertSame('Ivan Petrov Ivanov', data_get($prefill, 'client.full_name'));
         $this->assertSame('Maria Petrova Ivanova', data_get($prefill, 'co_applicant.full_name'));
         $this->assertSame('2026-03-20', data_get($prefill, 'dates.request_date'));
@@ -695,6 +696,59 @@ class ContractGenerationServiceTest extends TestCase
         ]);
     }
 
+    public function test_it_requires_a_signing_city(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Попълнете град на подписване на договора.');
+
+        app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'client' => [
+                'city' => null,
+            ],
+        ]), $operator);
+    }
+
+    public function test_generated_documents_use_the_submitted_signing_city(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'client' => [
+                'city' => 'София',
+            ],
+            'selected_document_types' => [
+                ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT,
+                ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE,
+                ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE,
+            ],
+        ]), $operator);
+
+        $combinedDocxPath = Storage::disk('legal')->path($batch->combined_docx_path);
+        $this->assertFileExists($combinedDocxPath);
+
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($combinedDocxPath) === true);
+        $documentXml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        $this->assertIsString($documentXml);
+        preg_match_all('/<w:t[^>]*>([^<]*)<\/w:t>/', $documentXml, $matches);
+        $joined = implode(' ', $matches[1]);
+
+        $this->assertStringContainsString('в гр. София, се сключи настоящият договор за заем', $joined);
+        $this->assertStringContainsString('гр. София, по банкова сметка', $joined);
+        $this->assertStringContainsString('гр. София, 26.03.2026 г.', $joined);
+        $this->assertStringNotContainsString('в гр. Пловдив', $joined);
+    }
+
     public function test_it_requires_co_applicant_for_declaration(): void
     {
         $operator = User::factory()->create([
@@ -736,6 +790,7 @@ class ContractGenerationServiceTest extends TestCase
                 'id_card_issued_by' => 'МВР Пловдив',
                 'permanent_address' => 'гр. Пловдив, ул. Тест 1',
                 'email' => 'ivan@example.com',
+                'city' => 'Пловдив',
             ],
             'co_applicant' => [
                 'full_name' => 'Мария Иванова',

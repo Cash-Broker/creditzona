@@ -81,10 +81,6 @@ class ContractGenerationService
 
         $clientPrefill = $this->buildPartyPrefillFromLead($lead);
 
-        if (filled($lead->city)) {
-            $clientPrefill['city'] = $lead->city;
-        }
-
         return [
             'lead_id' => $lead->id,
             'lead_guarantor_id' => $selectedGuarantor?->id,
@@ -777,6 +773,10 @@ class ContractGenerationService
     private function validateSubmittedInput(array $submitted): void
     {
         $this->ensurePartyIsComplete($submitted['client'], 'клиента');
+
+        if (blank($submitted['client']['city'] ?? null)) {
+            throw new RuntimeException('Попълнете град на подписване на договора.');
+        }
 
         if ($this->requiresStrictCoApplicant($submitted['selected_document_types'])) {
             $this->ensurePartyIsComplete($submitted['co_applicant'], 'съкредитоискателя');

@@ -4,7 +4,7 @@
 
 <div class="title">ПРОТОКОЛ ЗА ИЗВЪРШЕНА КОНСУЛТАЦИЯ</div>
 
-<p>Днес, {{ $derived['dates']['consultation_protocol_date_formatted'] }} г. в гр. Пловдив, между:</p>
+<p>Днес, {{ $derived['dates']['consultation_protocol_date_formatted'] }} г. в гр. {{ $submitted['client']['city'] }}, между:</p>
 <p>{{ $derived['identities']['client'] }} - <strong>ВЪЗЛОЖИТЕЛ</strong>, и</p>
 <p>{{ $company['full_identity'] }} - <strong>ИЗПЪЛНИТЕЛ</strong>,</p>
 <p>Се подписа настоящия двустранен протокол, по силата на който <strong>ИЗПЪЛНИТЕЛЯТ</strong> е осъществил, а <strong>ВЪЗЛОЖИТЕЛЯТ</strong> декларира, че е приел изцяло и без забележки извършената от <strong>ИЗПЪЛНИТЕЛЯ</strong> работа включваща неизчерпателно изброените - консултации, финансов анализ, план за редуциране на кредитна експозиция и др.</p>

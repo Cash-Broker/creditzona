@@ -315,7 +315,7 @@ class ContractBatchForm
             ->displayFormat('d.m.Y')
             ->placeholder('дд.мм.гггг')
             ->locale('bg')
-            ->native(true);
+            ->native(false);
     }
 
     private static function euroAmountField(string $name, string $label, ?string $placeholder = null): TextInput

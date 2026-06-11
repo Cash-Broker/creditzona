@@ -1,6 +1,6 @@
 <div class="title">ДОГОВОР ЗА ПАРИЧЕН ЗАЕМ</div>
 
-<p>Днес, {{ $derived['dates']['loan_agreement_date_formatted'] }} г., в гр. Пловдив, се сключи настоящият договор за заем между страните:</p>
+<p>Днес, {{ $derived['dates']['loan_agreement_date_formatted'] }} г., в гр. {{ $submitted['client']['city'] }}, се сключи настоящият договор за заем между страните:</p>
 <p>{{ $derived['identities']['co_applicant'] }}, наричан/а за краткост <strong>ЗАЕМОДАТЕЛ</strong>,</p>
 <p>от една страна - и от друга</p>
 <p>{{ $derived['identities']['client'] }}, наричан/а за краткост <strong>ЗАЕМАТЕЛ</strong>,</p>

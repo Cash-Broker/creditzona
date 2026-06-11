@@ -15,13 +15,13 @@
 <p>(словом: {{ $derived['dates']['company_promissory_note_due_date_words'] }})</p>
 
 <p>Място на плащане:</p>
-<p>гр. Пловдив, по банкова сметка на <strong>ПОЕМАТЕЛЯ</strong>,</p>
+<p>гр. {{ $submitted['client']['city'] }}, по банкова сметка на <strong>ПОЕМАТЕЛЯ</strong>,</p>
 
 <p><strong>ПОЕМАТЕЛ</strong>:</p>
 <p>{{ $company['full_identity'] }}</p>
 
 <p>Място и дата на издаване:</p>
-<p>гр. Пловдив, {{ $derived['dates']['company_promissory_note_issue_date_formatted'] }} г. ({{ $derived['dates']['company_promissory_note_issue_date_words'] }})</p>
+<p>гр. {{ $submitted['client']['city'] }}, {{ $derived['dates']['company_promissory_note_issue_date_formatted'] }} г. ({{ $derived['dates']['company_promissory_note_issue_date_words'] }})</p>
 
 <p>Допълнителна клауза:</p>
 <p>„БЕЗ ПРОТЕСТ", съгласно чл. 500, ал. 1 от Търговския закон на Република България.</p>

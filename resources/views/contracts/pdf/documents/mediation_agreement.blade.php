@@ -4,7 +4,7 @@
 
 <div class="title">ДОГОВОР ЗА ПОСРЕДНИЧЕСТВО</div>
 
-<p>Днес, {{ $derived['dates']['mediation_contract_date_formatted'] }} г., в гр. Пловдив, се сключи настоящият договор между:</p>
+<p>Днес, {{ $derived['dates']['mediation_contract_date_formatted'] }} г., в гр. {{ $submitted['client']['city'] }}, се сключи настоящият договор между:</p>
 <p>{{ $derived['identities']['client'] }}, наричан/а по-долу <strong>ВЪЗЛОЖИТЕЛ</strong>,</p>
 <p>от една страна и от друга -</p>
 <p>{{ $company['full_identity'] }}, наричано по-долу <strong>ПОСРЕДНИК</strong>/<strong>ИЗПЪЛНИТЕЛ</strong>,</p>

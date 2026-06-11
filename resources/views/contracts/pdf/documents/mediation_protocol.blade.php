@@ -5,7 +5,7 @@
 <div class="title">ПРИЕМО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ</div>
 <div class="subtitle">към Договор за посредничество при обединяване и редуциране на потребителски кредити от {{ $derived['dates']['mediation_contract_date_formatted'] }} г.</div>
 
-<p>Днес, {{ $derived['dates']['mediation_protocol_date_formatted'] }} г., в гр. Пловдив, се състави и подписа настоящият протокол между:</p>
+<p>Днес, {{ $derived['dates']['mediation_protocol_date_formatted'] }} г., в гр. {{ $submitted['client']['city'] }}, се състави и подписа настоящият протокол между:</p>
 <p>{{ $derived['identities']['client'] }}, наричан/а по-долу <strong>ВЪЗЛОЖИТЕЛ</strong>,</p>
 @if (filled($submitted['co_applicant']['full_name']))
     <p>и {{ $derived['identities']['co_applicant'] }}, наричан/а по-долу <strong>СЪКРЕДИТОИСКАТЕЛ</strong>,</p>

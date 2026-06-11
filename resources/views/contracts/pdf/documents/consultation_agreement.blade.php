@@ -4,7 +4,7 @@
 
 <div class="title">ДОГОВОР ЗА ФИНАНСОВА КОНСУЛТАНТСКА УСЛУГА</div>
 
-<p>Днес, {{ $derived['dates']['consultation_agreement_date_formatted'] }} г., в гр. Пловдив, се сключи настоящият договор между:</p>
+<p>Днес, {{ $derived['dates']['consultation_agreement_date_formatted'] }} г., в гр. {{ $submitted['client']['city'] }}, се сключи настоящият договор между:</p>
 <p>{{ $company['full_identity'] }}, наричано по-долу <strong>КОНСУЛТАНТ</strong>,</p>
 <p>и</p>
 <p>{{ $derived['identities']['client'] }}, наричан/а по-долу <strong>ВЪЗЛОЖИТЕЛ</strong>,</p>

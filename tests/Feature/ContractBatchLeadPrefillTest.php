@@ -46,7 +46,7 @@ class ContractBatchLeadPrefillTest extends TestCase
             ->assertSet('data.document_layout', ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY)
             ->assertSet('data.client.full_name', 'Ivan Petrov Ivanov')
             ->assertSet('data.client.egn', '8501010000')
-            ->assertSet('data.client.city', 'Plovdiv')
+            ->assertSet('data.client.city', null)
             ->assertSet('data.co_applicant.full_name', 'Maria Petrova Ivanova')
             ->assertSet('data.dates.request_date', fn (mixed $state): bool => is_string($state) && str_starts_with($state, '2026-03-20'))
             ->assertSet('data.financial.monthly_net_income_eur', 2600)

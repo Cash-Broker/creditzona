@@ -1,7 +1,7 @@
 @php
     $company = $derived['company'];
     $client = $submitted['client'];
-    $clientCity = $submitted['client']['city'] ?? 'Пловдив';
+    $clientCity = $submitted['client']['city'];
     $contractDate = $derived['dates']['consultation_agreement_date_formatted'];
 @endphp
 
