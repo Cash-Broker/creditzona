@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\AttachedLeads\Pages\EditAttachedLead;
 use App\Filament\Resources\AttachedLeads\Pages\ViewAttachedLead;
 use App\Filament\Resources\ContractBatches\Pages\CreateContractBatch;
+use App\Filament\Resources\ContractBatches\Pages\EditDocumentsContractBatch;
 use App\Filament\Resources\Leads\Pages\EditLead;
 use App\Filament\Resources\Leads\Pages\ViewLead;
 use App\Filament\Resources\ReturnedToMeLeads\Pages\EditReturnedToMeLead;
@@ -108,6 +109,34 @@ class ContractBatchLeadPrefillTest extends TestCase
             ->assertSet('data.lead_id', null)
             ->assertSet('data.client.full_name', null)
             ->assertSet('data.dates.request_date', null);
+    }
+
+    public function test_contract_pages_render_bulgarian_date_inputs_instead_of_native_date_fields(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateContractBatch::class)
+            ->assertSee('дд.мм.гггг')
+            ->assertDontSee('type="date"', false);
+
+        $batch = app(\App\Services\Contracts\ContractGenerationService::class)->saveDraftBatch([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_FULL,
+            'client' => [
+                'full_name' => 'Иван Иванов',
+                'city' => 'Пловдив',
+            ],
+        ], $admin);
+
+        Livewire::test(EditDocumentsContractBatch::class, [
+            'record' => (string) $batch->getKey(),
+        ])
+            ->assertSee('дд.мм.гггг')
+            ->assertDontSee('type="date"', false);
     }
 
     public function test_lead_pages_show_generate_contracts_action(): void

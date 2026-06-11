@@ -41,7 +41,7 @@
         </div>
         <div class="cz-field">
             <label class="cz-label">Дата на Издаване<span class="cz-req">*</span></label>
-            <input type="date" wire:model="data.{{ $namespace }}.id_card_issued_at" class="cz-input">
+            @include('filament.contract-batches.partials.date-input', ['model' => "data.{$namespace}.id_card_issued_at"])
             @error("data.{$namespace}.id_card_issued_at") <span class="cz-error">{{ $message }}</span> @enderror
         </div>
         <div class="cz-field">

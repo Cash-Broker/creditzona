@@ -299,23 +299,6 @@ body:has(.fi-resource-contract-batches) .fi-main-ctn {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
 }
 
-/* Hide the native "mm/dd/yyyy" placeholder for empty date inputs.
-   Uses an Alpine-managed cz-date-empty class on date inputs. */
-.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit,
-.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-text,
-.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-month-field,
-.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-day-field,
-.cz-input.cz-date-empty:not(:focus)::-webkit-datetime-edit-year-field {
-    color: transparent !important;
-}
-
-/* Firefox fallback: just hide the spinner area for empty dates */
-@-moz-document url-prefix() {
-    .cz-input.cz-date-empty::-moz-placeholder {
-        color: transparent;
-    }
-}
-
 .cz-textarea {
     min-height: 2.4rem;
     resize: vertical;

@@ -7,6 +7,4 @@
             <button type="button" class="cz-btn cz-btn-danger" wire:click="mountAction('deleteFromForm')">Изтрий</button>
         </div>
     </form>
-
-    @include('filament.contract-batches.partials.date-empty-script')
 </x-filament-panels::page>

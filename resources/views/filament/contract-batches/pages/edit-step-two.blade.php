@@ -22,12 +22,12 @@
                     <div class="cz-cb-row cz-cb-row-3">
                         <div class="cz-field">
                             <label class="cz-label">Дата на Договор<span class="cz-req">*</span></label>
-                            <input type="date" wire:model="data.dates.consultation_contract_date" class="cz-input">
+                            @include('filament.contract-batches.partials.date-input', ['model' => 'data.dates.consultation_contract_date'])
                             @error('data.dates.consultation_contract_date') <span class="cz-error">{{ $message }}</span> @enderror
                         </div>
                         <div class="cz-field">
                             <label class="cz-label">Дата на Протокол</label>
-                            <input type="date" wire:model="data.dates.consultation_protocol_date" class="cz-input">
+                            @include('filament.contract-batches.partials.date-input', ['model' => 'data.dates.consultation_protocol_date'])
                         </div>
                         <div class="cz-field">
                             <label class="cz-label">Фирма<span class="cz-req">*</span></label>
@@ -47,11 +47,11 @@
                     <div class="cz-cb-row cz-cb-row-2">
                         <div class="cz-field">
                             <label class="cz-label">Дата на Издаване</label>
-                            <input type="date" wire:model="data.dates.company_promissory_note_issue_date" class="cz-input">
+                            @include('filament.contract-batches.partials.date-input', ['model' => 'data.dates.company_promissory_note_issue_date'])
                         </div>
                         <div class="cz-field">
                             <label class="cz-label">Дата на Плащане<span class="cz-req">*</span></label>
-                            <input type="date" wire:model="data.dates.company_promissory_note_due_date" class="cz-input">
+                            @include('filament.contract-batches.partials.date-input', ['model' => 'data.dates.company_promissory_note_due_date'])
                             @error('data.dates.company_promissory_note_due_date') <span class="cz-error">{{ $message }}</span> @enderror
                         </div>
                     </div>
@@ -67,7 +67,7 @@
                 <div class="cz-cb-row cz-cb-row-4">
                     <div class="cz-field">
                         <label class="cz-label">Дата на Договор<span class="cz-req">*</span></label>
-                        <input type="date" wire:model="data.dates.loan_agreement_date" class="cz-input">
+                        @include('filament.contract-batches.partials.date-input', ['model' => 'data.dates.loan_agreement_date'])
                         @error('data.dates.loan_agreement_date') <span class="cz-error">{{ $message }}</span> @enderror
                     </div>
                     <div class="cz-field">
@@ -114,7 +114,7 @@
                     </div>
                     <div class="cz-field">
                         <label class="cz-label">Дата на последна вноска</label>
-                        <input type="date" wire:model="data.dates.loan_last_installment_date" class="cz-input">
+                        @include('filament.contract-batches.partials.date-input', ['model' => 'data.dates.loan_last_installment_date'])
                     </div>
                 </div>
 
@@ -122,7 +122,7 @@
                 <div class="cz-cb-row cz-cb-row-4">
                     <div class="cz-field cz-col-span-2">
                         <label class="cz-label">Падеж на запис на заповед<span class="cz-req">*</span></label>
-                        <input type="date" wire:model="data.dates.co_applicant_promissory_note_due_date" class="cz-input">
+                        @include('filament.contract-batches.partials.date-input', ['model' => 'data.dates.co_applicant_promissory_note_due_date'])
                         @error('data.dates.co_applicant_promissory_note_due_date') <span class="cz-error">{{ $message }}</span> @enderror
                     </div>
                     <div class="cz-field cz-col-span-2">
@@ -143,6 +143,4 @@
             <button type="button" class="cz-btn cz-btn-danger" wire:click="mountAction('deleteFromForm')">Изтрий</button>
         </div>
     </form>
-
-    @include('filament.contract-batches.partials.date-empty-script')
 </x-filament-panels::page>

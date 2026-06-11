@@ -7,6 +7,4 @@
             <a href="{{ \App\Filament\Resources\ContractBatches\ContractBatchResource::getUrl('index') }}" class="cz-btn cz-btn-ghost">Отказ</a>
         </div>
     </form>
-
-    @include('filament.contract-batches.partials.date-empty-script')
 </x-filament-panels::page>
