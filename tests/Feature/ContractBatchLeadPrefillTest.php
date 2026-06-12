@@ -94,6 +94,64 @@ class ContractBatchLeadPrefillTest extends TestCase
             ->assertSet('data.co_applicant.permanent_address', 'Sofia');
     }
 
+    public function test_create_page_prefills_field_memory_from_previous_contract_of_the_lead(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = $this->createLeadForContracts($operator);
+        $guarantor = $lead->guarantors()->firstOrFail();
+
+        app(\App\Services\Contracts\ContractGenerationService::class)->saveDraftBatch([
+            'lead_id' => $lead->id,
+            'lead_guarantor_id' => $guarantor->id,
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_FULL,
+            'client' => [
+                'full_name' => 'Ivan Petrov Ivanov',
+                'egn' => '8501010000',
+                'id_card_number' => '111222333',
+                'id_card_issued_at' => '2020-05-20',
+                'id_card_issued_by' => 'МВР Пловдив',
+                'permanent_address' => 'гр. Пловдив, ул. Тест 1',
+                'email' => null,
+                'city' => 'Пловдив',
+            ],
+            'co_applicant' => [
+                'full_name' => 'Maria Petrova Ivanova',
+                'egn' => '8602020000',
+                'id_card_number' => '999888777',
+            ],
+            'financial' => [
+                'total_loan_amount_eur' => 30000,
+                'commission_eur' => 2500,
+            ],
+        ], $admin);
+
+        $this->actingAs($admin);
+
+        Livewire::withQueryParams([
+            'lead_id' => $lead->id,
+        ])->test(CreateContractBatch::class)
+            ->assertSet('data.lead_id', $lead->id)
+            ->assertSet('data.lead_guarantor_id', $guarantor->id)
+            ->assertSet('data.document_layout', ContractBatch::DOCUMENT_LAYOUT_FULL)
+            ->assertSet('data.client.id_card_number', '111222333')
+            ->assertSet('data.client.id_card_issued_by', 'МВР Пловдив')
+            ->assertSet('data.client.permanent_address', 'гр. Пловдив, ул. Тест 1')
+            ->assertSet('data.client.city', 'Пловдив')
+            ->assertSet('data.client.email', 'ivan@example.com')
+            ->assertSet('data.co_applicant.id_card_number', '999888777')
+            ->assertSet('data.financial.total_loan_amount_eur', 30000)
+            ->assertSet('data.financial.commission_eur', 2500);
+    }
+
     public function test_create_contract_batch_page_returns_empty_when_lead_id_does_not_exist(): void
     {
         $admin = User::factory()->create([

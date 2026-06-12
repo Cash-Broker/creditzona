@@ -10,6 +10,7 @@ use App\Http\Controllers\LeadGuarantorDocumentDownloadController;
 use App\Http\Controllers\LeadGuarantorPrivacyConsentDocumentDownloadController;
 use App\Http\Controllers\LeadPrivacyConsentDocumentDownloadController;
 use App\Http\Controllers\PageController;
+use App\Models\ContractBatch;
 use Filament\Http\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +55,14 @@ Route::middleware([Authenticate::class])
             ->name('contract-batches.combined-docx.download');
         Route::get('/contract-batches/{contractBatch}/archive/download', [ContractBatchFileController::class, 'downloadArchive'])
             ->name('contract-batches.archive.download');
+        Route::get('/contract-batches/{contractBatch}/history/{version}/{kind}/download', [ContractBatchFileController::class, 'downloadHistoryFile'])
+            ->whereNumber('version')
+            ->whereIn('kind', [
+                ContractBatch::HISTORY_FILE_COMBINED_PDF,
+                ContractBatch::HISTORY_FILE_COMBINED_DOCX,
+                ContractBatch::HISTORY_FILE_ARCHIVE,
+            ])
+            ->name('contract-batches.history.download');
         Route::get('/contract-batches/{contractBatch}/documents/{documentKey}/download', [ContractBatchFileController::class, 'downloadDocument'])
             ->name('contract-batches.documents.download');
         Route::get('/leads/{lead}/documents/download', LeadDocumentDownloadController::class)

@@ -778,6 +778,228 @@ class ContractGenerationServiceTest extends TestCase
     /**
      * @return array<string, mixed>
      */
+    public function test_it_keeps_previous_generated_files_and_records_history_on_update(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput(), $operator);
+
+        $previousDocumentPaths = $this->generatedVariantPaths($batch);
+        $previousCombinedPdfPath = $batch->combined_pdf_path;
+        $previousCombinedDocxPath = $batch->combined_docx_path;
+        $previousGeneratedAt = $batch->generated_at;
+
+        $this->assertNotEmpty($previousDocumentPaths);
+
+        $updated = app(ContractGenerationService::class)->updateBatch($batch, $this->batchInput([
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'fee_eur' => 300,
+            ]),
+        ]), $operator);
+
+        foreach ($previousDocumentPaths as $path) {
+            Storage::disk('legal')->assertExists($path);
+        }
+
+        Storage::disk('legal')->assertExists($previousCombinedPdfPath);
+        Storage::disk('legal')->assertExists($previousCombinedDocxPath);
+
+        $this->assertNotSame($previousCombinedPdfPath, $updated->combined_pdf_path);
+        Storage::disk('legal')->assertExists($updated->combined_pdf_path);
+        Storage::disk('legal')->assertExists($updated->combined_docx_path);
+
+        $history = $updated->generated_document_history ?? [];
+
+        $this->assertCount(1, $history);
+        $this->assertSame($previousCombinedPdfPath, $history[0]['combined_pdf_path']);
+        $this->assertSame($previousCombinedDocxPath, $history[0]['combined_docx_path']);
+        $this->assertSame($previousGeneratedAt->toIso8601String(), $history[0]['generated_at']);
+        $this->assertNotEmpty($history[0]['generated_documents']);
+
+        $historyFile = $updated->findHistoryFile(0, ContractBatch::HISTORY_FILE_COMBINED_PDF);
+
+        $this->assertNotNull($historyFile);
+        $this->assertSame($previousCombinedPdfPath, $historyFile['path']);
+
+        $secondUpdate = app(ContractGenerationService::class)->updateBatch($updated, $this->batchInput([
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'fee_eur' => 350,
+            ]),
+        ]), $operator);
+
+        $this->assertCount(2, $secondUpdate->generated_document_history ?? []);
+
+        $display = $secondUpdate->getGeneratedDocumentHistoryForDisplay();
+
+        $this->assertCount(2, $display);
+        $this->assertSame(1, $display[0]['version']);
+        $this->assertSame(0, $display[1]['version']);
+        $this->assertTrue($display[1]['combined_pdf_available']);
+    }
+
+    public function test_it_deletes_current_and_history_files_when_batch_is_deleted(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput(), $operator);
+
+        $previousPaths = [
+            ...$this->generatedVariantPaths($batch),
+            $batch->combined_pdf_path,
+            $batch->combined_docx_path,
+        ];
+
+        $updated = app(ContractGenerationService::class)->updateBatch($batch, $this->batchInput(), $operator);
+
+        $allPaths = array_filter([
+            ...$previousPaths,
+            ...$this->generatedVariantPaths($updated),
+            $updated->combined_pdf_path,
+            $updated->combined_docx_path,
+            $updated->archive_path,
+        ]);
+
+        foreach ($allPaths as $path) {
+            Storage::disk('legal')->assertExists($path);
+        }
+
+        $updated->delete();
+
+        foreach ($allPaths as $path) {
+            Storage::disk('legal')->assertMissing($path);
+        }
+    }
+
+    public function test_it_prefills_all_fields_from_latest_contract_of_the_lead(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $lead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'first_name' => 'Ivan',
+            'middle_name' => 'Petrov',
+            'last_name' => 'Ivanov',
+            'egn' => '8501010000',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Plovdiv',
+            'salary' => 2600,
+            'credit_bank' => 'Test Bank',
+            'amount' => 12000,
+            'status' => 'new',
+            'assigned_user_id' => $operator->id,
+        ]);
+
+        $guarantor = $lead->guarantors()->create([
+            'first_name' => 'Maria',
+            'middle_name' => 'Petrova',
+            'last_name' => 'Ivanova',
+            'egn' => '8602020000',
+            'phone' => '0888999999',
+            'email' => 'maria@example.com',
+            'city' => 'Sofia',
+        ]);
+
+        app(ContractGenerationService::class)->saveDraftBatch([
+            'lead_id' => $lead->id,
+            'lead_guarantor_id' => $guarantor->id,
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_FULL,
+            'client' => [
+                'full_name' => 'Иван Петров Иванов',
+                'egn' => '8501010000',
+                'id_card_number' => '111222333',
+                'id_card_issued_at' => '2020-05-20',
+                'id_card_issued_by' => 'МВР Пловдив',
+                'permanent_address' => 'гр. Пловдив, ул. Тест 1',
+                'email' => null,
+                'city' => 'Пловдив',
+            ],
+            'co_applicant' => [
+                'full_name' => 'Мария Петрова Иванова',
+                'egn' => '8602020000',
+                'id_card_number' => '999888777',
+                'id_card_issued_at' => '2021-06-18',
+                'id_card_issued_by' => 'МВР София',
+                'permanent_address' => 'гр. София, ул. Тест 2',
+                'email' => null,
+            ],
+            'financial' => [
+                'total_loan_amount_eur' => 30000,
+                'commission_eur' => 2500,
+            ],
+            'loan' => [
+                'institution_name' => 'Друга Банка',
+            ],
+            'dates' => [
+                'request_date' => '2026-03-21',
+            ],
+        ], $operator);
+
+        $prefill = app(ContractGenerationService::class)
+            ->buildFormPrefillFromLead($lead->fresh('guarantors'));
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_FULL, $prefill['document_layout']);
+        $this->assertSame($guarantor->id, $prefill['lead_guarantor_id']);
+        $this->assertSame('Иван Петров Иванов', data_get($prefill, 'client.full_name'));
+        $this->assertSame('111222333', data_get($prefill, 'client.id_card_number'));
+        $this->assertSame('2020-05-20', data_get($prefill, 'client.id_card_issued_at'));
+        $this->assertSame('гр. Пловдив, ул. Тест 1', data_get($prefill, 'client.permanent_address'));
+        $this->assertSame('Пловдив', data_get($prefill, 'client.city'));
+        $this->assertSame('ivan@example.com', data_get($prefill, 'client.email'));
+        $this->assertSame('999888777', data_get($prefill, 'co_applicant.id_card_number'));
+        $this->assertSame('гр. София, ул. Тест 2', data_get($prefill, 'co_applicant.permanent_address'));
+        $this->assertSame('maria@example.com', data_get($prefill, 'co_applicant.email'));
+        $this->assertEquals(30000, data_get($prefill, 'financial.total_loan_amount_eur'));
+        $this->assertEquals(2500, data_get($prefill, 'financial.commission_eur'));
+        $this->assertEquals(2600, data_get($prefill, 'financial.monthly_net_income_eur'));
+        $this->assertSame('Друга Банка', data_get($prefill, 'loan.institution_name'));
+        $this->assertSame('2026-03-21', data_get($prefill, 'dates.request_date'));
+
+        app(ContractGenerationService::class)->saveDraftBatch([
+            'lead_id' => $lead->id,
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+            'client' => [
+                'full_name' => 'Иван Петров Иванов',
+                'id_card_number' => '444555666',
+                'city' => 'София',
+            ],
+        ], $operator);
+
+        $latestPrefill = app(ContractGenerationService::class)
+            ->buildFormPrefillFromLead($lead->fresh('guarantors'));
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED, $latestPrefill['document_layout']);
+        $this->assertSame('444555666', data_get($latestPrefill, 'client.id_card_number'));
+        $this->assertSame('София', data_get($latestPrefill, 'client.city'));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function generatedVariantPaths(ContractBatch $batch): array
+    {
+        $paths = [];
+
+        foreach ($batch->generated_documents ?? [] as $document) {
+            foreach (($document['variants'] ?? []) as $variant) {
+                if (filled($variant['path'] ?? null)) {
+                    $paths[] = $variant['path'];
+                }
+            }
+        }
+
+        return $paths;
+    }
+
     private function batchInput(array $overrides = []): array
     {
         $input = array_replace_recursive([

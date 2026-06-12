@@ -69,24 +69,50 @@ class ContractGenerationService
     ) {}
 
     /**
+     * Префилва формата от запитването и — когато клиентът вече има договор —
+     * допълва всички попълнени полета от последния му договор (памет на полетата).
+     *
      * @return array<string, mixed>
      */
     public function buildFormPrefillFromLead(Lead $lead, ?LeadGuarantor $guarantor = null): array
     {
-        $selectedGuarantor = $guarantor instanceof LeadGuarantor
-            ? $this->resolveLeadGuarantor($lead, $guarantor)
-            : $this->resolveDefaultLeadGuarantor($lead);
+        $previousSubmitted = $this->resolveLatestContractBatchForLead($lead)?->getSubmittedInput() ?? [];
+
+        $memory = $this->buildMemoryPrefill($previousSubmitted);
+        $memoryCoApplicant = $memory['co_applicant'] ?? [];
+        unset($memory['co_applicant']);
+
+        $memoryGuarantor = $this->resolveMemoryGuarantor($lead, $previousSubmitted);
+
+        if ($guarantor instanceof LeadGuarantor) {
+            $selectedGuarantor = $this->resolveLeadGuarantor($lead, $guarantor);
+            $applyMemoryCoApplicant = $selectedGuarantor !== null
+                && $memoryGuarantor?->id === $selectedGuarantor->id;
+        } elseif ($memoryCoApplicant !== [] || $memoryGuarantor instanceof LeadGuarantor) {
+            $selectedGuarantor = $memoryGuarantor;
+            $applyMemoryCoApplicant = true;
+        } else {
+            $selectedGuarantor = $this->resolveDefaultLeadGuarantor($lead);
+            $applyMemoryCoApplicant = false;
+        }
+
+        $coApplicant = $this->buildPartyPrefillFromGuarantor($selectedGuarantor);
+
+        if ($applyMemoryCoApplicant) {
+            $coApplicant = array_replace($coApplicant, $memoryCoApplicant);
+        }
+
         $requestDate = $this->buildRequestDateFromLead($lead)
             ?? CarbonImmutable::now('Europe/Sofia')->format('Y-m-d');
 
         $clientPrefill = $this->buildPartyPrefillFromLead($lead);
 
-        return [
+        $prefill = [
             'lead_id' => $lead->id,
             'lead_guarantor_id' => $selectedGuarantor?->id,
             'document_layout' => ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY,
             'client' => $clientPrefill,
-            'co_applicant' => $this->buildPartyPrefillFromGuarantor($selectedGuarantor),
+            'co_applicant' => $coApplicant,
             'financial' => array_filter([
                 'monthly_net_income_eur' => $lead->salary,
                 'loan_amount_eur' => $lead->amount,
@@ -99,6 +125,81 @@ class ContractGenerationService
                 'request_date' => $requestDate,
             ],
         ];
+
+        return array_replace_recursive($prefill, $memory);
+    }
+
+    private function resolveLatestContractBatchForLead(Lead $lead): ?ContractBatch
+    {
+        return $lead->contractBatches()
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * Само попълнените стойности от последния договор, ограничени до секциите на формата.
+     *
+     * @param  array<string, mixed>  $previousSubmitted
+     * @return array<string, mixed>
+     */
+    private function buildMemoryPrefill(array $previousSubmitted): array
+    {
+        $memory = array_intersect_key($previousSubmitted, array_flip([
+            'document_layout',
+            'company_key',
+            'client',
+            'co_applicant',
+            'financial',
+            'loan',
+            'dates',
+        ]));
+
+        return $this->filterFilledRecursive($memory);
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    private function filterFilledRecursive(array $values): array
+    {
+        $filtered = [];
+
+        foreach ($values as $key => $value) {
+            if (is_array($value)) {
+                $nested = $this->filterFilledRecursive($value);
+
+                if ($nested !== []) {
+                    $filtered[$key] = $nested;
+                }
+
+                continue;
+            }
+
+            if (filled($value)) {
+                $filtered[$key] = $value;
+            }
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Поръчителят, избран в последния договор на запитването, ако още съществува.
+     *
+     * @param  array<string, mixed>  $previousSubmitted
+     */
+    private function resolveMemoryGuarantor(Lead $lead, array $previousSubmitted): ?LeadGuarantor
+    {
+        $guarantorId = $previousSubmitted['lead_guarantor_id'] ?? null;
+
+        if (! is_numeric($guarantorId)) {
+            return null;
+        }
+
+        $lead->loadMissing('guarantors');
+
+        return $lead->guarantors->firstWhere('id', (int) $guarantorId);
     }
 
     /**
@@ -242,10 +343,17 @@ class ContractGenerationService
         $combinedPdf = null;
         $combinedDocx = null;
         $archive = null;
-        $previousGeneratedDocuments = $existingBatch?->generated_documents;
-        $previousCombinedPdfPath = $existingBatch?->combined_pdf_path;
-        $previousCombinedDocxPath = $existingBatch?->combined_docx_path;
-        $previousArchivePath = $existingBatch?->archive_path;
+        $previousHistory = $existingBatch?->generated_document_history ?? [];
+        $previousSnapshot = $existingBatch === null ? null : [
+            'generated_at' => $existingBatch->generated_at?->toIso8601String(),
+            'generated_documents' => $existingBatch->generated_documents ?? [],
+            'combined_pdf_path' => $existingBatch->combined_pdf_path,
+            'combined_pdf_file_name' => $existingBatch->combined_pdf_file_name,
+            'combined_docx_path' => $existingBatch->combined_docx_path,
+            'combined_docx_file_name' => $existingBatch->combined_docx_file_name,
+            'archive_path' => $existingBatch->archive_path,
+            'archive_file_name' => $existingBatch->archive_file_name,
+        ];
 
         try {
             $generatedDocuments = $this->generateDocuments(
@@ -285,6 +393,8 @@ class ContractGenerationService
                 $combinedPdf,
                 $combinedDocx,
                 $archive,
+                $previousHistory,
+                $previousSnapshot,
                 $actor
             ): ContractBatch {
                 $batch = $existingBatch ?? new ContractBatch;
@@ -303,6 +413,7 @@ class ContractGenerationService
                         'derived' => $derived,
                     ],
                     'generated_documents' => $generatedDocuments,
+                    'generated_document_history' => $this->appendGeneratedDocumentHistory($previousHistory, $previousSnapshot),
                     'combined_pdf_path' => $combinedPdf['path'] ?? null,
                     'combined_pdf_file_name' => $combinedPdf['download_name'] ?? null,
                     'combined_docx_path' => $combinedDocx['path'] ?? null,
@@ -324,8 +435,6 @@ class ContractGenerationService
 
                 return $batch->fresh();
             });
-
-            $this->deleteGeneratedSnapshot($previousGeneratedDocuments, $previousCombinedPdfPath, $previousCombinedDocxPath, $previousArchivePath);
 
             return $batch;
         } catch (Throwable $throwable) {
@@ -1110,6 +1219,39 @@ class ContractGenerationService
     }
 
     /**
+     * Записва предишните генерирани документи като архивна версия, вместо да ги трие.
+     * Генерираните договори се пазят дори след регенериране за същия клиент.
+     *
+     * @param  array<int, array<string, mixed>>  $history
+     * @param  array<string, mixed>|null  $previousSnapshot
+     * @return array<int, array<string, mixed>>
+     */
+    private function appendGeneratedDocumentHistory(array $history, ?array $previousSnapshot): array
+    {
+        if ($previousSnapshot === null) {
+            return $history;
+        }
+
+        $hasFiles = ($previousSnapshot['generated_documents'] ?? []) !== []
+            || filled($previousSnapshot['combined_pdf_path'] ?? null)
+            || filled($previousSnapshot['combined_docx_path'] ?? null)
+            || filled($previousSnapshot['archive_path'] ?? null);
+
+        if (! $hasFiles) {
+            return $history;
+        }
+
+        $history[] = array_merge($previousSnapshot, [
+            'archived_at' => CarbonImmutable::now('Europe/Sofia')->toIso8601String(),
+        ]);
+
+        return $history;
+    }
+
+    /**
+     * Изтрива новогенерирани файлове при неуспешен запис (rollback). Не се използва
+     * за вече запазени версии — те остават като история на договора.
+     *
      * @param  array<int, array<string, mixed>>|null  $generatedDocuments
      */
     private function deleteGeneratedSnapshot(?array $generatedDocuments, ?string $combinedPdfPath, ?string $combinedDocxPath, ?string $archivePath): void

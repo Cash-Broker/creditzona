@@ -62,6 +62,73 @@
             </div>
         @endif
 
+        @php
+            $historyEntries = $record->getGeneratedDocumentHistoryForDisplay();
+        @endphp
+
+        @if ($historyEntries !== [])
+            <div class="rounded-[1.5rem] border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-950/60">
+                <div class="space-y-1">
+                    <div class="text-sm font-semibold text-gray-950 dark:text-white">
+                        Предишни версии
+                    </div>
+
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        По-стари генерирани договори. Запазват се и при повторно генериране.
+                    </div>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                    @foreach ($historyEntries as $entry)
+                        <div class="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3 lg:flex-row lg:items-center lg:justify-between dark:border-white/5 dark:bg-white/5">
+                            <div class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                @if ($entry['generated_at'])
+                                    Версия от {{ $entry['generated_at']->format('d.m.Y H:i') }}
+                                @else
+                                    Версия №{{ $entry['version'] + 1 }}
+                                @endif
+                            </div>
+
+                            <div class="flex flex-wrap gap-2">
+                                @if ($entry['combined_pdf_available'])
+                                    <a
+                                        href="{{ route('admin.contract-batches.history.download', [$record, $entry['version'], \App\Models\ContractBatch::HISTORY_FILE_COMBINED_PDF]) }}"
+                                        class="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 shadow-sm transition hover:border-primary-200 hover:text-primary-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary-500/40 dark:hover:text-primary-200"
+                                    >
+                                        <span>Свали PDF</span>
+                                    </a>
+                                @endif
+
+                                @if ($entry['combined_docx_available'])
+                                    <a
+                                        href="{{ route('admin.contract-batches.history.download', [$record, $entry['version'], \App\Models\ContractBatch::HISTORY_FILE_COMBINED_DOCX]) }}"
+                                        class="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 shadow-sm transition hover:border-primary-200 hover:text-primary-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary-500/40 dark:hover:text-primary-200"
+                                    >
+                                        <span>Свали DOCX</span>
+                                    </a>
+                                @endif
+
+                                @if ($entry['archive_available'])
+                                    <a
+                                        href="{{ route('admin.contract-batches.history.download', [$record, $entry['version'], \App\Models\ContractBatch::HISTORY_FILE_ARCHIVE]) }}"
+                                        class="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 shadow-sm transition hover:border-primary-200 hover:text-primary-700 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary-500/40 dark:hover:text-primary-200"
+                                    >
+                                        <span>Свали ZIP</span>
+                                    </a>
+                                @endif
+
+                                @if (! $entry['combined_pdf_available'] && ! $entry['combined_docx_available'] && ! $entry['archive_available'])
+                                    <span class="text-xs text-red-600 dark:text-red-300">
+                                        Файловете не са налични в хранилището.
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         <div class="space-y-3">
             @foreach ($record->getGeneratedDocumentsForDisplay() as $document)
                 <div class="rounded-[1.5rem] border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-950/60">

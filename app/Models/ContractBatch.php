@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class ContractBatch extends Model
 {
@@ -52,6 +54,12 @@ class ContractBatch extends Model
 
     public const COMPANY_D_CONSULTING_EOOD = 'd_consulting_eood';
 
+    public const HISTORY_FILE_COMBINED_PDF = 'combined-pdf';
+
+    public const HISTORY_FILE_COMBINED_DOCX = 'combined-docx';
+
+    public const HISTORY_FILE_ARCHIVE = 'archive';
+
     protected $fillable = [
         'lead_id',
         'company_key',
@@ -63,6 +71,7 @@ class ContractBatch extends Model
         'selected_document_types',
         'input_payload',
         'generated_documents',
+        'generated_document_history',
         'combined_pdf_path',
         'combined_pdf_file_name',
         'combined_docx_path',
@@ -305,6 +314,7 @@ class ContractBatch extends Model
             'selected_document_types' => 'array',
             'input_payload' => 'encrypted:array',
             'generated_documents' => 'array',
+            'generated_document_history' => 'array',
             'generated_at' => 'datetime',
         ];
     }
@@ -422,6 +432,87 @@ class ContractBatch extends Model
         return null;
     }
 
+    /**
+     * Архивирани версии на генерираните документи, най-новата първа.
+     * Всеки запис носи 'version' — индексът в колоната, използван за сваляне.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getGeneratedDocumentHistoryForDisplay(): array
+    {
+        $entries = [];
+
+        foreach ($this->generated_document_history ?? [] as $index => $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $entries[] = [
+                'version' => $index,
+                'generated_at' => self::parseHistoryTimestamp($entry['generated_at'] ?? null),
+                'combined_pdf_available' => self::historyPathExists($entry['combined_pdf_path'] ?? null),
+                'combined_docx_available' => self::historyPathExists($entry['combined_docx_path'] ?? null),
+                'archive_available' => self::historyPathExists($entry['archive_path'] ?? null),
+            ];
+        }
+
+        return array_reverse($entries);
+    }
+
+    /**
+     * @return array{path: string, download_name: string}|null
+     */
+    public function findHistoryFile(int $version, string $kind): ?array
+    {
+        $entry = ($this->generated_document_history ?? [])[$version] ?? null;
+
+        if (! is_array($entry)) {
+            return null;
+        }
+
+        [$pathKey, $nameKey, $fallbackName] = match ($kind) {
+            self::HISTORY_FILE_COMBINED_PDF => ['combined_pdf_path', 'combined_pdf_file_name', 'dogovori.pdf'],
+            self::HISTORY_FILE_COMBINED_DOCX => ['combined_docx_path', 'combined_docx_file_name', 'dogovori.docx'],
+            self::HISTORY_FILE_ARCHIVE => ['archive_path', 'archive_file_name', 'dogovori.zip'],
+            default => [null, null, null],
+        };
+
+        if ($pathKey === null) {
+            return null;
+        }
+
+        $path = $entry[$pathKey] ?? null;
+
+        if (! is_string($path) || ! self::historyPathExists($path)) {
+            return null;
+        }
+
+        $downloadName = $entry[$nameKey] ?? null;
+
+        return [
+            'path' => $path,
+            'download_name' => is_string($downloadName) && filled($downloadName) ? $downloadName : $fallbackName,
+        ];
+    }
+
+    private static function historyPathExists(mixed $path): bool
+    {
+        return is_string($path) && filled($path) && Storage::disk('legal')->exists($path);
+    }
+
+    private static function parseHistoryTimestamp(mixed $value): ?Carbon
+    {
+        if (! is_string($value) || blank($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->setTimezone('Europe/Sofia');
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     public function combinedPdfExists(): bool
     {
         if (blank($this->combined_pdf_path)) {
@@ -465,45 +556,68 @@ class ContractBatch extends Model
 
     public function deleteStoredFiles(): void
     {
+        $paths = [
+            ...self::collectGeneratedDocumentPaths($this->generated_documents ?? []),
+            $this->combined_pdf_path,
+            $this->combined_docx_path,
+            $this->archive_path,
+        ];
+
+        foreach ($this->generated_document_history ?? [] as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $entryDocuments = is_array($entry['generated_documents'] ?? null) ? $entry['generated_documents'] : [];
+
+            $paths = [
+                ...$paths,
+                ...self::collectGeneratedDocumentPaths($entryDocuments),
+                $entry['combined_pdf_path'] ?? null,
+                $entry['combined_docx_path'] ?? null,
+                $entry['archive_path'] ?? null,
+            ];
+        }
+
         $directories = [];
 
-        foreach ($this->generated_documents ?? [] as $document) {
+        foreach ($paths as $path) {
+            if (! is_string($path) || blank($path)) {
+                continue;
+            }
+
+            $directories[] = dirname($path);
+            Storage::disk('legal')->delete($path);
+        }
+
+        foreach (array_unique($directories) as $directory) {
+            Storage::disk('legal')->deleteDirectory($directory);
+        }
+    }
+
+    /**
+     * @param  array<int, mixed>  $documents
+     * @return array<int, string>
+     */
+    private static function collectGeneratedDocumentPaths(array $documents): array
+    {
+        $paths = [];
+
+        foreach ($documents as $document) {
             if (! is_array($document)) {
                 continue;
             }
 
-            $variants = self::normalizeGeneratedDocumentVariants($document);
-
-            foreach ($variants as $variant) {
+            foreach (self::normalizeGeneratedDocumentVariants($document) as $variant) {
                 $path = $variant['path'] ?? null;
 
-                if (! filled($path)) {
-                    continue;
+                if (is_string($path) && filled($path)) {
+                    $paths[] = $path;
                 }
-
-                $directories[] = dirname($path);
-                Storage::disk('legal')->delete($path);
             }
         }
 
-        if (filled($this->combined_pdf_path)) {
-            $directories[] = dirname($this->combined_pdf_path);
-            Storage::disk('legal')->delete($this->combined_pdf_path);
-        }
-
-        if (filled($this->combined_docx_path)) {
-            $directories[] = dirname($this->combined_docx_path);
-            Storage::disk('legal')->delete($this->combined_docx_path);
-        }
-
-        if (filled($this->archive_path)) {
-            $directories[] = dirname($this->archive_path);
-            Storage::disk('legal')->delete($this->archive_path);
-        }
-
-        foreach (array_unique(array_filter($directories)) as $directory) {
-            Storage::disk('legal')->deleteDirectory($directory);
-        }
+        return $paths;
     }
 
     public static function maskEgn(?string $value): string

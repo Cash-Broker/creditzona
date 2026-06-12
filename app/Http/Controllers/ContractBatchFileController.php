@@ -51,6 +51,23 @@ class ContractBatchFileController extends Controller
         );
     }
 
+    public function downloadHistoryFile(Request $request, ContractBatch $contractBatch, int $version, string $kind): StreamedResponse
+    {
+        abort_unless($request->user()?->can('view', $contractBatch), 403);
+
+        $file = $contractBatch->findHistoryFile($version, $kind);
+
+        abort_unless($file !== null, 404);
+
+        return Storage::disk('legal')->download(
+            $file['path'],
+            $file['download_name'],
+            [
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            ],
+        );
+    }
+
     public function downloadDocument(Request $request, ContractBatch $contractBatch, string $documentKey): StreamedResponse
     {
         abort_unless($request->user()?->can('view', $contractBatch), 403);

@@ -232,6 +232,95 @@ class ContractDocumentAuthorizationTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_history_file_downloads_follow_contract_batch_permissions(): void
+    {
+        Storage::disk('legal')->put('generated/old-version/dogovori.pdf', 'pdf');
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $attachedOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $otherOperator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'elena@creditzona.test',
+        ]);
+
+        $nonStaff = User::factory()->create([
+            'role' => 'customer',
+        ]);
+
+        $batch = ContractBatch::query()->create([
+            'company_key' => ContractBatch::COMPANY_REKREDO_KONSULT_DPK,
+            'client_full_name' => 'Иван Иванов',
+            'co_applicant_full_name' => null,
+            'request_date' => '2026-03-20',
+            'selected_document_types' => [],
+            'input_payload' => ['submitted' => [], 'derived' => []],
+            'generated_documents' => [],
+            'generated_document_history' => [
+                [
+                    'archived_at' => '2026-03-25T10:00:00+02:00',
+                    'generated_at' => '2026-03-20T10:00:00+02:00',
+                    'generated_documents' => [],
+                    'combined_pdf_path' => 'generated/old-version/dogovori.pdf',
+                    'combined_pdf_file_name' => 'dogovori-stari.pdf',
+                    'combined_docx_path' => null,
+                    'combined_docx_file_name' => null,
+                    'archive_path' => null,
+                    'archive_file_name' => null,
+                ],
+            ],
+            'generated_at' => now(),
+            'created_by_user_id' => $admin->id,
+            'attached_user_id' => $attachedOperator->id,
+        ]);
+
+        $historyRoute = route('admin.contract-batches.history.download', [
+            $batch,
+            0,
+            ContractBatch::HISTORY_FILE_COMBINED_PDF,
+        ]);
+
+        $this->actingAs($admin)
+            ->get($historyRoute)
+            ->assertOk()
+            ->assertDownload('dogovori-stari.pdf');
+
+        $this->actingAs($attachedOperator)
+            ->get($historyRoute)
+            ->assertOk();
+
+        $this->actingAs($otherOperator)
+            ->get($historyRoute)
+            ->assertForbidden();
+
+        $this->actingAs($nonStaff)
+            ->get($historyRoute)
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('admin.contract-batches.history.download', [
+                $batch,
+                5,
+                ContractBatch::HISTORY_FILE_COMBINED_PDF,
+            ]))
+            ->assertNotFound();
+
+        $this->actingAs($admin)
+            ->get(route('admin.contract-batches.history.download', [
+                $batch,
+                0,
+                ContractBatch::HISTORY_FILE_COMBINED_DOCX,
+            ]))
+            ->assertNotFound();
+    }
+
     public function test_every_staff_role_can_create_and_attach_only_own_contracts(): void
     {
         $admin = User::factory()->create([
