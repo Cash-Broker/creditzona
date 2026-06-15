@@ -1,6 +1,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { trackLeadConversion } from "@/utils/analytics";
 import { getStoredUtmParameters } from "@/utils/utmTracking";
+import { isValidNationalMobile, toNationalDigits } from "@/utils/phone";
 
 const amountMin = 5000;
 const amountDefault = 5500;
@@ -244,22 +245,25 @@ export function useLeadForm(options = {}) {
                 }
 
                 break;
-            case "phone":
-                if (!phone) {
+            case "phone": {
+                const nationalPhone = toNationalDigits(phone);
+
+                if (!nationalPhone) {
                     return setFieldError(
                         "phone",
                         "Моля, въведете телефон за връзка.",
                     );
                 }
 
-                if (phone.length > 30) {
+                if (!isValidNationalMobile(nationalPhone)) {
                     return setFieldError(
                         "phone",
-                        "Телефонът не може да бъде по-дълъг от 30 символа.",
+                        "Моля, въведете валиден мобилен телефонен номер.",
                     );
                 }
 
                 break;
+            }
             case "email":
                 if (!email) {
                     return setFieldError(
@@ -360,26 +364,29 @@ export function useLeadForm(options = {}) {
                 }
 
                 break;
-            case "guarantor_phone":
+            case "guarantor_phone": {
                 if (!isConsumerWithGuarantor.value) {
                     break;
                 }
 
-                if (!guarantorPhone) {
+                const nationalGuarantorPhone = toNationalDigits(guarantorPhone);
+
+                if (!nationalGuarantorPhone) {
                     return setFieldError(
                         "guarantor_phone",
                         "Моля, въведете телефон на поръчител.",
                     );
                 }
 
-                if (guarantorPhone.length > 30) {
+                if (!isValidNationalMobile(nationalGuarantorPhone)) {
                     return setFieldError(
                         "guarantor_phone",
-                        "Телефонът на поръчителя не може да бъде по-дълъг от 30 символа.",
+                        "Моля, въведете валиден мобилен телефонен номер.",
                     );
                 }
 
                 break;
+            }
             case "amount":
                 if (!Number.isInteger(amount)) {
                     return setFieldError(

@@ -154,13 +154,14 @@
 
                     <div class="grid gap-1.5 sm:grid-cols-2 sm:gap-4">
                         <div class="grid gap-1.5">
-                            <label class="input-label">Телефон</label>
+                            <label class="input-label" for="contact-phone">Телефон</label>
 
-                            <input
+                            <PhoneInput
+                                id="contact-phone"
                                 v-model="form.phone"
-                                type="text"
-                                class="input"
-                                placeholder="08XXXXXXXX"
+                                variant="default"
+                                :has-error="Boolean(getFieldError('phone'))"
+                                autocomplete="tel-national"
                                 required
                             />
 
@@ -252,6 +253,7 @@
 <script setup>
 import { contactInfo } from "@/data/contactInfo";
 import { useContactForm } from "@/composables/useContactForm";
+import PhoneInput from "@/components/forms/PhoneInput.vue";
 
 const { form, loading, success, generalError, getFieldError, submitForm } =
     useContactForm();

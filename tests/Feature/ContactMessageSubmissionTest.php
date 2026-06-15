@@ -41,6 +41,20 @@ class ContactMessageSubmissionTest extends TestCase
         Mail::assertNothingQueued();
     }
 
+    public function test_contact_message_submission_rejects_invalid_mobile_phone(): void
+    {
+        $response = $this->postJson('/api/contact-messages', $this->validPayload([
+            'phone' => '4368860324616',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath('errors.phone.0', 'Моля, въведете валиден мобилен телефонен номер.');
+
+        $this->assertDatabaseCount('contact_messages', 0);
+    }
+
     public function test_contact_message_submission_rejects_honeypot(): void
     {
         $response = $this->postJson('/api/contact-messages', $this->validPayload([

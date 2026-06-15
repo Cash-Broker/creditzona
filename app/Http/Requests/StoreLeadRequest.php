@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Concerns\ProtectsPublicForms;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
+use App\Rules\BulgarianMobilePhone;
 use App\Rules\CyrillicText;
 use App\Rules\ExclusiveLeadParticipantPhone;
 use Closure;
@@ -64,6 +65,7 @@ class StoreLeadRequest extends FormRequest
                 'required',
                 'string',
                 'max:30',
+                new BulgarianMobilePhone,
                 function (string $attribute, mixed $value, Closure $fail): void {
                     if (! is_string($value) || $value === '') {
                         return;
@@ -110,9 +112,11 @@ class StoreLeadRequest extends FormRequest
             'guarantors.*.first_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Името на поръчителя')],
             'guarantors.*.last_name' => ['required', 'string', 'max:60', CyrillicText::lettersOnly('Фамилията на поръчителя')],
             'guarantors.*.phone' => [
+                'bail',
                 'required',
                 'string',
                 'max:30',
+                new BulgarianMobilePhone,
                 ExclusiveLeadParticipantPhone::forGuarantor([$this->input('phone')]),
             ],
             'guarantors.*.status' => ['required', Rule::in(array_keys(LeadGuarantor::getStatusOptions()))],

@@ -460,6 +460,63 @@ class LeadSubmissionTest extends TestCase
         ]);
     }
 
+    public function test_submission_rejects_invalid_mobile_phone_for_applicant(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'phone' => '4368860324616',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath('errors.phone.0', 'Моля, въведете валиден мобилен телефонен номер.');
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_submission_rejects_landline_phone_for_applicant(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'phone' => '029876543',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['phone'])
+            ->assertJsonPath('errors.phone.0', 'Моля, въведете валиден мобилен телефонен номер.');
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_submission_rejects_invalid_mobile_phone_for_guarantor(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'guarantors' => [
+                [
+                    'first_name' => 'Мария',
+                    'last_name' => 'Петрова',
+                    'phone' => '4368860324616',
+                    'status' => LeadGuarantor::STATUS_SUITABLE,
+                ],
+            ],
+        ]));
+
+        $errors = $response->json('errors');
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['guarantors.0.phone']);
+
+        $this->assertSame(
+            'Моля, въведете валиден мобилен телефонен номер.',
+            $errors['guarantors.0.phone'][0] ?? null,
+        );
+
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertDatabaseCount('lead_guarantors', 0);
+    }
+
     public function test_recent_lead_with_same_phone_format_variant_returns_validation_error(): void
     {
         Carbon::setTestNow('2026-03-12 10:00:00');

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\ProtectsPublicForms;
+use App\Rules\BulgarianMobilePhone;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreContactMessageRequest extends FormRequest
@@ -33,7 +34,7 @@ class StoreContactMessageRequest extends FormRequest
     {
         return array_merge([
             'full_name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
+            'phone' => ['bail', 'required', 'string', 'max:50', new BulgarianMobilePhone],
             'email' => ['required', 'email', 'max:255'],
             'message' => ['required', 'string', 'min:10', 'max:5000'],
         ], $this->publicFormProtectionRules());

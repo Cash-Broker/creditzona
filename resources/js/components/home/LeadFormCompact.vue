@@ -178,19 +178,14 @@
 
                     <div class="field">
                         <label class="field-label" for="phone">Телефон</label>
-                        <input
+                        <PhoneInput
                             id="phone"
                             v-model="form.phone"
-                            type="tel"
-                            placeholder="08XXXXXXXX"
-                            class="input"
-                            :class="{
-                                'input-error':
-                                    getFieldError('phone') &&
-                                    getFieldError('phone') !== submitError,
-                            }"
-                            inputmode="tel"
-                            autocomplete="tel"
+                            :has-error="
+                                Boolean(getFieldError('phone')) &&
+                                getFieldError('phone') !== submitError
+                            "
+                            autocomplete="tel-national"
                             required
                             @input="handleInput('phone')"
                             @blur="handleBlur('phone')"
@@ -347,16 +342,10 @@
                                 <label class="field-label" for="guarantor-phone">
                                     Телефон на поръчител
                                 </label>
-                                <input
+                                <PhoneInput
                                     id="guarantor-phone"
                                     v-model="form.guarantor_phone"
-                                    type="tel"
-                                    placeholder="08XXXXXXXX"
-                                    class="input"
-                                    :class="{
-                                        'input-error': getFieldError('guarantor_phone'),
-                                    }"
-                                    inputmode="tel"
+                                    :has-error="Boolean(getFieldError('guarantor_phone'))"
                                     autocomplete="off"
                                     required
                                     @input="handleInput('guarantor_phone')"
@@ -603,6 +592,7 @@
 import { nextTick, ref, watch } from "vue";
 import { useLeadForm } from "../../composables/useLeadForm";
 import { getInitialData } from "../../utils/appConfig";
+import PhoneInput from "../forms/PhoneInput.vue";
 
 const props = defineProps({
     initialCreditType: {
