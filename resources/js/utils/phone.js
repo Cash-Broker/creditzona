@@ -1,6 +1,10 @@
 export const PHONE_DIAL_PREFIX = "+359";
 
-const MAX_NATIONAL_LENGTH = 9;
+// Safety bound for the field length. A valid mobile is exactly 9 digits
+// (see isValidNationalMobile); this cap only stops pathological pastes and is
+// deliberately above 9 so an over-length entry is surfaced as invalid rather
+// than silently shortened into a different, valid-looking number.
+const MAX_NATIONAL_LENGTH = 12;
 
 /**
  * Reduce any user input to the Bulgarian national subscriber digits, mirroring

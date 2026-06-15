@@ -17,7 +17,8 @@
             :autocomplete="autocomplete"
             :placeholder="placeholder"
             :required="required"
-            :aria-describedby="prefixId"
+            :aria-invalid="hasError ? 'true' : null"
+            :aria-describedby="describedBy"
             class="phone-field__input"
             @input="onInput"
             @blur="$emit('blur')"
@@ -58,6 +59,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    errorId: {
+        type: String,
+        default: "",
+    },
     variant: {
         type: String,
         default: "compact",
@@ -72,6 +77,19 @@ const national = ref(toNationalDigits(props.modelValue));
 
 const prefixId = computed(() => (props.id ? `${props.id}-prefix` : undefined));
 
+const describedBy = computed(() => {
+    const ids = [
+        prefixId.value,
+        props.hasError && props.errorId ? props.errorId : null,
+    ].filter(Boolean);
+
+    return ids.length ? ids.join(" ") : undefined;
+});
+
+// modelValue contract: callers seed it with an empty string or the emitted
+// "+359XXXXXXXXX" shape. The watch keeps the field in sync when the parent
+// resets it; sanitising an externally seeded national-format value is out of
+// scope because neither consumer ever does that.
 watch(
     () => props.modelValue,
     (value) => {
@@ -84,14 +102,22 @@ watch(
 );
 
 function onInput(event) {
-    const sanitized = toNationalDigits(event.target.value);
+    const el = event.target;
+    const raw = el.value;
+    const caret = el.selectionStart ?? raw.length;
+    const sanitized = toNationalDigits(raw);
 
     national.value = sanitized;
 
     // Vue skips the DOM patch when the bound value is unchanged, so force the
-    // field back in sync whenever sanitisation rejected a character.
-    if (event.target.value !== sanitized) {
-        event.target.value = sanitized;
+    // field back in sync whenever sanitisation rejected a character, while
+    // preserving the caret so mid-string edits aren't yanked to the end.
+    if (raw !== sanitized) {
+        const digitsBeforeCaret = (raw.slice(0, caret).match(/\d/g) || []).length;
+        const nextCaret = Math.min(digitsBeforeCaret, sanitized.length);
+
+        el.value = sanitized;
+        el.setSelectionRange(nextCaret, nextCaret);
     }
 
     emit("update:modelValue", composeInternationalPhone(sanitized));
@@ -178,6 +204,13 @@ function onInput(event) {
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error, #dc2626) 10%, white);
 }
 
+/* Keep a visible focus indicator even while the field is in error. */
+.phone-field--compact.phone-field--error:focus-within {
+    box-shadow:
+        0 0 0 4px color-mix(in oklab, var(--color-accent) 15%, white),
+        0 0 0 1px var(--color-error, #dc2626);
+}
+
 /* Default variant — matches the global .input look (contact form). */
 .phone-field--default {
     border-radius: 0.75rem;
@@ -185,6 +218,10 @@ function onInput(event) {
     background: var(--color-surface);
     padding: 0.75rem 1rem;
     box-shadow: 0 1px 2px rgb(17 24 39 / 0.06);
+}
+
+.phone-field--default:hover:not(:focus-within) {
+    border-color: var(--color-border-strong);
 }
 
 .phone-field--default .phone-field__prefix {

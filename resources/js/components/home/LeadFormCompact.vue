@@ -185,6 +185,7 @@
                                 Boolean(getFieldError('phone')) &&
                                 getFieldError('phone') !== submitError
                             "
+                            error-id="phone-error"
                             autocomplete="tel-national"
                             required
                             @input="handleInput('phone')"
@@ -196,6 +197,7 @@
                                 getFieldError('phone') &&
                                 getFieldError('phone') !== submitError
                             "
+                            id="phone-error"
                             class="field-error"
                         >
                             {{ getFieldError("phone") }}
@@ -346,6 +348,7 @@
                                     id="guarantor-phone"
                                     v-model="form.guarantor_phone"
                                     :has-error="Boolean(getFieldError('guarantor_phone'))"
+                                    error-id="guarantor-phone-error"
                                     autocomplete="off"
                                     required
                                     @input="handleInput('guarantor_phone')"
@@ -354,6 +357,7 @@
 
                                 <p
                                     v-if="getFieldError('guarantor_phone')"
+                                    id="guarantor-phone-error"
                                     class="field-error"
                                 >
                                     {{ getFieldError("guarantor_phone") }}

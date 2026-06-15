@@ -161,12 +161,14 @@
                                 v-model="form.phone"
                                 variant="default"
                                 :has-error="Boolean(getFieldError('phone'))"
+                                error-id="contact-phone-error"
                                 autocomplete="tel-national"
                                 required
                             />
 
                             <p
                                 v-if="getFieldError('phone')"
+                                id="contact-phone-error"
                                 class="text-xs text-error"
                             >
                                 {{ getFieldError("phone") }}
