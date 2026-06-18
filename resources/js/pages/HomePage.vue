@@ -7,6 +7,8 @@
             image-fetch-priority="high"
         />
 
+        <ServiceDisclosure class="mt-10" />
+
         <ServicesSection class="mt-20" />
 
         <div class="mt-12">
@@ -20,6 +22,7 @@
 <script setup>
 import LeadInfo from "@/components/home/LeadInfo.vue";
 import QuickConsultationCard from "@/components/home/QuickConsultationCard.vue";
+import ServiceDisclosure from "@/components/home/ServiceDisclosure.vue";
 import ServicesSection from "@/components/home/ServicesSection.vue";
 import WhyChooseUs from "@/components/home/WhyChooseUs.vue";
 </script>
