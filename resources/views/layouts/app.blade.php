@@ -40,7 +40,18 @@
 </head>
 
 <body>
-    <div id="app" data-page="{{ $page }}"></div>
+    <div id="app" data-page="{{ $page }}">
+        {{-- Server-rendered fallback: гарантира, че разяснението за консултантския
+             статут присъства в суровия HTML (за crawler и ръчен преглед на ad
+             destination), преди Vue SPA да поеме рендирането. Огледало на
+             resources/js/data/serviceDisclosure.js — при промяна обновете и двете. --}}
+        <noscript>
+            <section style="max-width:64rem;margin:1.5rem auto;padding:1.25rem;border:1px solid #b7dbe3;border-radius:16px;background:#e8f4f7;color:#083943;font-family:system-ui,-apple-system,sans-serif;line-height:1.6;">
+                <p style="font-weight:700;margin:0 0 .5rem;">CreditZona е финансов консултант, а не кредитор</p>
+                <p style="margin:0;">CreditZona предоставя единствено финансово консултиране и съдействие — не предлага собствени кредитни продукти и не е кредитодател. Не отпускаме кредити и не вземаме решения за одобрение; решението се взема изцяло от съответния кредитор. Конкретните условия по кредита (лихва, ГПР, срок, такси) се определят от кредитора, а не от нас.</p>
+            </section>
+        </noscript>
+    </div>
 
     <script>
         window.appConfig = {{ Illuminate\Support\Js::from($appConfig) }};

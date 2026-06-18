@@ -61,7 +61,7 @@
                     <div
                         class="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-subtle"
                     >
-                        Желана сума
+                        Ориентировъчна сума
                     </div>
 
                     <div class="mt-2 amount-value">
@@ -96,7 +96,7 @@
                     id="loan-amount-hint"
                     class="mt-3 text-center text-xs text-text-subtle"
                 >
-                    Плъзнете скалата, за да изберете подходяща сума.
+                    Плъзнете скалата за ориентир към подходяща сума за обсъждане.
                 </p>
 
                 <p v-if="getFieldError('amount')" class="field-error mt-3 text-center">
@@ -510,12 +510,13 @@
                     </h3>
 
                     <p class="guard-text">
-                        ПОРЪЧИТЕЛЯТ ТРЯБВА ДА ИМА СТАБИЛЕН ДОХОД, ДОБРА КРЕДИТНА
-                        ИСТОРИЯ, БЕЗ ПРОСРОЧИЯ.
+                        Добре е поръчителят да има стабилен доход и редовна
+                        кредитна история — това разширява вариантите, които
+                        можем да разгледаме.
                     </p>
 
                     <p class="guard-note">
-                        Ако това е налице, продължете с изпращането на заявката.
+                        Ако случаят е такъв, продължете със заявката за консултация.
                     </p>
 
                     <div class="guard-actions">
@@ -1445,9 +1446,8 @@ watch(() => form.credit_type, (value) => {
     max-width: 28rem;
     font-size: 1rem;
     line-height: 1.8;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0.01em;
-    text-transform: uppercase;
     color: var(--color-accent-ink);
 }
 
