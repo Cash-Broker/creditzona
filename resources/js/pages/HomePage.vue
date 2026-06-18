@@ -16,10 +16,13 @@
         </div>
 
         <WhyChooseUs />
+
+        <CreditDisclosure class="mt-20" />
     </div>
 </template>
 
 <script setup>
+import CreditDisclosure from "@/components/home/CreditDisclosure.vue";
 import LeadInfo from "@/components/home/LeadInfo.vue";
 import QuickConsultationCard from "@/components/home/QuickConsultationCard.vue";
 import ServiceDisclosure from "@/components/home/ServiceDisclosure.vue";
