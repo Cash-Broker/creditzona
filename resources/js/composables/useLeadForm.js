@@ -5,7 +5,7 @@ import { isValidNationalMobile, toNationalDigits } from "@/utils/phone";
 
 const amountMin = 5000;
 const amountDefault = 5500;
-const amountMax = 50000;
+const amountMax = 10000;
 const amountStep = 500;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const defaultCreditType = "consumer";
@@ -405,7 +405,7 @@ export function useLeadForm(options = {}) {
                 if (amount > amountMax) {
                     return setFieldError(
                         "amount",
-                        "Сумата не може да бъде повече от 50000.",
+                        "Сумата не може да бъде повече от 10000.",
                     );
                 }
 

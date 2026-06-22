@@ -86,7 +86,7 @@ class StoreLeadRequest extends FormRequest
             'marital_status' => ['nullable', Rule::in(array_keys(Lead::getMaritalStatusOptions()))],
             'children_under_18' => ['nullable', 'integer', 'min:0'],
             'salary_bank' => ['nullable', 'string', 'max:120', CyrillicText::withoutLatin('Банката за заплатата')],
-            'amount' => ['required', 'integer', 'min:5000', 'max:50000'],
+            'amount' => ['required', 'integer', 'min:5000', 'max:10000'],
             'property_type' => ['nullable', 'required_if:credit_type,'.Lead::CREDIT_TYPE_MORTGAGE, 'in:house,apartment'],
             'property_location' => ['nullable', 'required_if:credit_type,'.Lead::CREDIT_TYPE_MORTGAGE, 'string', 'max:120', CyrillicText::withoutLatin('Местонахождението на имота')],
             'source' => ['nullable', 'string', 'max:120'],
@@ -175,7 +175,7 @@ class StoreLeadRequest extends FormRequest
             'amount.required' => 'Моля, изберете желаната сума.',
             'amount.integer' => 'Сумата трябва да бъде цяло число.',
             'amount.min' => 'Сумата трябва да бъде поне 5000.',
-            'amount.max' => 'Сумата не може да бъде повече от 50000.',
+            'amount.max' => 'Сумата не може да бъде повече от 10000.',
 
             'property_type.required_if' => 'Моля, изберете вид на имота.',
             'property_type.in' => 'Моля, изберете валиден вид на имота.',

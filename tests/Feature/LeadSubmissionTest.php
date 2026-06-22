@@ -308,16 +308,46 @@ class LeadSubmissionTest extends TestCase
         $this->assertDatabaseCount('leads', 0);
     }
 
-    public function test_amount_out_of_range_returns_validation_error(): void
+    public function test_amount_below_minimum_returns_validation_error(): void
     {
         $response = $this->postJson('/leads', $this->validPayload([
-            'amount' => 60000,
+            'amount' => 4500,
         ]));
 
         $response
             ->assertStatus(422)
             ->assertJsonValidationErrors(['amount'])
-            ->assertJsonPath('errors.amount.0', 'Сумата не може да бъде повече от 50000.');
+            ->assertJsonPath('errors.amount.0', 'Сумата трябва да бъде поне 5000.');
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_amount_above_maximum_returns_validation_error(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'amount' => 10500,
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['amount'])
+            ->assertJsonPath('errors.amount.0', 'Сумата не може да бъде повече от 10000.');
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_amount_at_maximum_is_accepted(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'amount' => 10000,
+        ]));
+
+        $response->assertSuccessful();
+
+        $this->assertDatabaseHas('leads', [
+            'phone' => '0888123456',
+            'amount' => 10000,
+        ]);
     }
 
     public function test_recent_lead_with_same_phone_returns_validation_error(): void
