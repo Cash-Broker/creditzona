@@ -57,6 +57,30 @@ class LeadTrafficAccessTest extends TestCase
             ->assertSee('Mozilla/5.0 (TestDevice)');
     }
 
+    public function test_lead_traffic_page_excludes_old_leads_without_captured_ip(): void
+    {
+        $newLead = $this->leadWithTraffic();
+
+        $oldLead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'first_name' => 'Стара',
+            'last_name' => 'Заявка',
+            'phone' => '0888999000',
+            'email' => 'old@example.com',
+            'city' => 'София',
+            'amount' => 8000,
+            'status' => 'new',
+            'ip_address' => null,
+            'user_agent' => null,
+        ]);
+
+        $this->actingAs($this->renata());
+
+        Livewire::test(ListLeadTraffic::class)
+            ->assertCanSeeTableRecords([$newLead])
+            ->assertCanNotSeeTableRecords([$oldLead]);
+    }
+
     public function test_lead_traffic_page_is_forbidden_for_non_viewer(): void
     {
         $operator = User::factory()->create([

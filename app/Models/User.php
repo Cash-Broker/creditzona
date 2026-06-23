@@ -39,7 +39,6 @@ class User extends Authenticatable implements FilamentUser
      * Restricted deliberately — this exposes personal data of applicants.
      */
     public const LEAD_TRAFFIC_VIEWER_EMAILS = [
-        'renata@creditzona.test',
         'renata@creditzona.bg',
     ];
 

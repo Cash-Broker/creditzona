@@ -49,8 +49,13 @@ class LeadTrafficResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Newest submissions first; this page is a read-only source feed.
-        return parent::getEloquentQuery()->latest('created_at')->latest('id');
+        // Only submissions that actually carry traffic data (an IP was captured)
+        // — i.e. the new leads since this feature shipped, never the historical
+        // ones that predate IP/User-Agent tracking. Newest first.
+        return parent::getEloquentQuery()
+            ->whereNotNull('ip_address')
+            ->latest('created_at')
+            ->latest('id');
     }
 
     public static function getPages(): array
