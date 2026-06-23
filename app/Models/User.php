@@ -34,6 +34,15 @@ class User extends Authenticatable implements FilamentUser
         'renata@creditzona.bg',
     ];
 
+    /**
+     * Staff allowed to see the lead traffic page (IP / User-Agent of submissions).
+     * Restricted deliberately — this exposes personal data of applicants.
+     */
+    public const LEAD_TRAFFIC_VIEWER_EMAILS = [
+        'renata@creditzona.test',
+        'renata@creditzona.bg',
+    ];
+
     public const ROLE_ADMIN = 'admin';
 
     public const ROLE_OPERATOR = 'operator';
@@ -176,6 +185,11 @@ class User extends Authenticatable implements FilamentUser
     public function canBeLeadAdditionalAssignee(): bool
     {
         return in_array($this->email, self::LEAD_ADDITIONAL_ASSIGNMENT_EMAILS, strict: true);
+    }
+
+    public function canViewLeadTraffic(): bool
+    {
+        return in_array($this->email, self::LEAD_TRAFFIC_VIEWER_EMAILS, strict: true);
     }
 
     public function canAccessPanel(Panel $panel): bool

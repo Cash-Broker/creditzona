@@ -88,10 +88,25 @@ class Lead extends Model implements HasRichContent
         'utm_campaign',
         'utm_medium',
         'gclid',
+        'ip_address',
+        'user_agent',
         'privacy_consent_accepted',
         'privacy_consent_accepted_at',
         'privacy_consent_document_name',
         'privacy_consent_document_path',
+    ];
+
+    /**
+     * Hidden from array/JSON serialization. IP and User-Agent are personal data
+     * (GDPR) and must never leak through the public or mobile/CRM API responses;
+     * they are surfaced only in the admin traffic page, which reads attributes
+     * directly rather than serializing the model.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'ip_address',
+        'user_agent',
     ];
 
     public static function getPrivacyConsentDocumentPath(): string

@@ -40,7 +40,7 @@ class LeadService
         private readonly NotificationService $notificationService,
     ) {}
 
-    public function createLead(array $data): Lead
+    public function createLead(array $data, ?string $ipAddress = null, ?string $userAgent = null): Lead
     {
         $normalizedPhone = PhoneNormalizer::normalize($data['phone'] ?? null);
         $privacyConsentAccepted = (bool) ($data['privacy_consent'] ?? false);
@@ -50,9 +50,15 @@ class LeadService
         $data['phone'] = $normalizedPhone;
         $data['normalized_phone'] = $normalizedPhone;
 
+        // Cap pathologically long User-Agent strings; the column is TEXT but we
+        // do not need an unbounded value from an untrusted client.
+        $userAgent = $userAgent !== null ? mb_substr($userAgent, 0, 1024) : null;
+
         try {
             $lead = DB::transaction(function () use (
                 $data,
+                $ipAddress,
+                $userAgent,
                 $privacyConsentAccepted,
                 $privacyConsentAcceptedAt,
                 &$privacyConsentSnapshotPath,
@@ -88,6 +94,8 @@ class LeadService
                     'utm_campaign' => $data['utm_campaign'] ?? null,
                     'utm_medium' => $data['utm_medium'] ?? null,
                     'gclid' => $data['gclid'] ?? null,
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
                     'privacy_consent_accepted' => $privacyConsentAccepted,
                     'privacy_consent_accepted_at' => $privacyConsentAcceptedAt,
                     'privacy_consent_document_name' => null,

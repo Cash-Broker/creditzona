@@ -787,6 +787,47 @@ class LeadSubmissionTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_submission_persists_ip_address_and_user_agent(): void
+    {
+        $client = $this->withServerVariables([
+            'REMOTE_ADDR' => '203.0.113.7',
+            'HTTP_USER_AGENT' => 'Mozilla/5.0 (TestDevice) SpamCatcher/1.0',
+        ]);
+
+        $client->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'guarantors' => [],
+            'phone' => '0888123456',
+        ]))->assertOk();
+
+        $this->assertDatabaseHas('leads', [
+            'phone' => '0888123456',
+            'ip_address' => '203.0.113.7',
+            'user_agent' => 'Mozilla/5.0 (TestDevice) SpamCatcher/1.0',
+        ]);
+    }
+
+    public function test_ip_address_and_user_agent_are_hidden_from_model_serialization(): void
+    {
+        $lead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'amount' => 10000,
+            'status' => 'new',
+            'ip_address' => '203.0.113.7',
+            'user_agent' => 'Mozilla/5.0 (TestDevice)',
+        ]);
+
+        $serialized = $lead->fresh()->toArray();
+
+        $this->assertArrayNotHasKey('ip_address', $serialized);
+        $this->assertArrayNotHasKey('user_agent', $serialized);
+    }
+
     public function test_old_lead_with_same_phone_reuses_historical_assigned_user(): void
     {
         Carbon::setTestNow('2026-03-12 10:00:00');

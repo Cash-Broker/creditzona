@@ -20,7 +20,11 @@ class LeadController extends Controller
         $errorMessage = 'Възникна грешка при изпращането на заявката. Моля, опитайте отново.';
 
         try {
-            $this->leadService->createLead($request->validated());
+            $this->leadService->createLead(
+                $request->validated(),
+                $request->ip(),
+                $request->userAgent(),
+            );
         } catch (\Throwable $exception) {
             Log::error('Failed to store lead.', [
                 'error' => $exception->getMessage(),

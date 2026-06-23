@@ -76,6 +76,8 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Заявки и контакти'),
                 NavigationGroup::make('Организация'),
                 NavigationGroup::make('Съдържание'),
+                NavigationGroup::make('Документи'),
+                NavigationGroup::make('Трафик'),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
