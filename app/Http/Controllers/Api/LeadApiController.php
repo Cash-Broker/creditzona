@@ -200,7 +200,8 @@ class LeadApiController extends Controller
                 'additionalUser:id,name',
                 'messages' => fn ($q) => $q->latest()->limit(1)->with('author:id,name'),
             ])
-            ->orderByDesc('created_at');
+            ->orderByDesc('additional_assigned_at')
+            ->orderByDesc('id');
 
         if ($request->filled('search')) {
             $search = $request->input('search');

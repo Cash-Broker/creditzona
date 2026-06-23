@@ -38,6 +38,7 @@ class LeadsTable
         bool $isAttachedResource = false,
         bool $isReturnedToMeResource = false,
         bool $isApprovedReturnedResource = false,
+        bool $showAttachedMeta = false,
         bool $showReturnedMeta = false,
         bool $showAttachedArchiveMeta = false,
         bool $showReturnedToMeArchiveMeta = false,
@@ -108,6 +109,12 @@ class LeadsTable
                     ->sortable()
                     ->placeholder('Няма')
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('additional_assigned_at')
+                    ->label('Закачена на')
+                    ->dateTime('d.m.Y H:i', 'Europe/Sofia')
+                    ->sortable()
+                    ->visible($showAttachedMeta),
 
                 TextColumn::make('returnedAdditionalUser.name')
                     ->label('Върната от')

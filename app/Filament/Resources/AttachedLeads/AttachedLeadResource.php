@@ -74,7 +74,13 @@ class AttachedLeadResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return LeadsTable::configure($table, static::class, isAttachedResource: true);
+        return LeadsTable::configure(
+            $table,
+            static::class,
+            isAttachedResource: true,
+            showAttachedMeta: true,
+            defaultSortColumn: 'additional_assigned_at',
+        );
     }
 
     public static function makeReturnToPrimaryAction(): Action

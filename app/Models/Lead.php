@@ -72,6 +72,7 @@ class Lead extends Model implements HasRichContent
         'status',
         'assigned_user_id',
         'additional_user_id',
+        'additional_assigned_at',
         'returned_additional_user_id',
         'returned_to_primary_at',
         'returned_to_primary_archived_user_id',
@@ -108,6 +109,22 @@ class Lead extends Model implements HasRichContent
         'ip_address',
         'user_agent',
     ];
+
+    protected static function booted(): void
+    {
+        // Track the moment a lead is attached to an additional consultant so the
+        // "Закачени към мен" listings can sort by attachment time rather than by the
+        // lead's creation date. Attachment happens through the Filament form (and the
+        // mobile API), not a dedicated service method, so the model is the only place
+        // that reliably observes every write path.
+        static::saving(function (Lead $lead): void {
+            if (! $lead->isDirty('additional_user_id')) {
+                return;
+            }
+
+            $lead->additional_assigned_at = $lead->additional_user_id !== null ? now() : null;
+        });
+    }
 
     public static function getPrivacyConsentDocumentPath(): string
     {
@@ -391,6 +408,7 @@ class Lead extends Model implements HasRichContent
             'document_file_names' => 'array',
             'privacy_consent_accepted' => 'boolean',
             'privacy_consent_accepted_at' => 'datetime',
+            'additional_assigned_at' => 'datetime',
             'returned_to_primary_at' => 'datetime',
             'returned_to_primary_archived_at' => 'datetime',
             'approved_returned_at' => 'datetime',
