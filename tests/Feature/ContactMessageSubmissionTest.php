@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\ContactMessageReceived;
+use App\Support\Forms\FormTimingToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -97,7 +98,7 @@ class ContactMessageSubmissionTest extends TestCase
             'email' => 'ivan@example.com',
             'message' => 'Търся консултация за рефинансиране на текущ кредит.',
             'website' => '',
-            'form_started_at' => now()->subSeconds(5)->getTimestampMs(),
+            'form_timing_token' => FormTimingToken::issue(now()->subSeconds(5)->getTimestampMs()),
         ], $overrides);
     }
 }

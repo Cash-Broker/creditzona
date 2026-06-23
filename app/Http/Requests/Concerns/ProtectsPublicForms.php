@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Concerns;
 
+use App\Support\Forms\FormTimingToken;
 use App\Support\Phone\PhoneNormalizer;
+use App\Support\Turnstile\TurnstileVerifier;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 trait ProtectsPublicForms
 {
@@ -13,7 +15,8 @@ trait ProtectsPublicForms
     {
         $this->merge([
             'website' => $this->normalizeString($this->input('website')),
-            'form_started_at' => $this->normalizeTimestamp($this->input('form_started_at')),
+            'form_timing_token' => $this->normalizeString($this->input('form_timing_token')),
+            'cf_turnstile_response' => $this->normalizeString($this->input('cf_turnstile_response')),
         ]);
     }
 
@@ -24,24 +27,28 @@ trait ProtectsPublicForms
     {
         return [
             'website' => ['nullable', 'max:0'],
-            'form_started_at' => [
+            'form_timing_token' => [
                 'required',
-                'integer',
+                'string',
                 function (string $attribute, mixed $value, Closure $fail): void {
-                    if (! is_int($value) && ! ctype_digit((string) $value)) {
-                        return;
-                    }
-
-                    $startedAt = Carbon::createFromTimestampMs((int) $value);
-
-                    if ($startedAt->greaterThan(now()->addMinutes(5)) || $startedAt->lt(now()->subDay())) {
+                    if (! FormTimingToken::isValid(is_string($value) ? $value : null)) {
                         $fail('Моля, изпратете формата отново.');
-
-                        return;
                     }
+                },
+            ],
+            'cf_turnstile_response' => [
+                // Required only while Turnstile is configured, so the form keeps
+                // working before keys are set. `nullable` covers the disabled
+                // case; without the conditional `required`, a null token would
+                // short-circuit validation and skip verification entirely.
+                Rule::requiredIf(fn (): bool => app(TurnstileVerifier::class)->isEnabled()),
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $verifier = app(TurnstileVerifier::class);
 
-                    if ($startedAt->greaterThan(now()->subSeconds(3))) {
-                        $fail('Моля, изпратете формата отново.');
+                    if (! $verifier->verify(is_string($value) ? $value : null, $this->ip())) {
+                        $fail('Не успяхме да потвърдим заявката. Моля, презаредете страницата и опитайте отново.');
                     }
                 },
             ],
@@ -55,8 +62,9 @@ trait ProtectsPublicForms
     {
         return [
             'website.max' => 'Моля, изпратете формата отново.',
-            'form_started_at.required' => 'Моля, изпратете формата отново.',
-            'form_started_at.integer' => 'Моля, изпратете формата отново.',
+            'form_timing_token.required' => 'Моля, изпратете формата отново.',
+            'form_timing_token.string' => 'Моля, изпратете формата отново.',
+            'cf_turnstile_response.required' => 'Не успяхме да потвърдим заявката. Моля, презаредете страницата и опитайте отново.',
         ];
     }
 
@@ -74,24 +82,5 @@ trait ProtectsPublicForms
     protected function normalizePhone(mixed $value): ?string
     {
         return PhoneNormalizer::normalize($value);
-    }
-
-    private function normalizeTimestamp(mixed $value): ?int
-    {
-        if (is_int($value)) {
-            return $value > 0 ? $value : null;
-        }
-
-        if (! is_string($value)) {
-            return null;
-        }
-
-        $trimmed = trim($value);
-
-        if ($trimmed === '' || ! ctype_digit($trimmed)) {
-            return null;
-        }
-
-        return (int) $trimmed;
     }
 }

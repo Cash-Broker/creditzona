@@ -16,6 +16,16 @@ export function getAnalyticsConfig() {
     return appConfig.analytics ?? {};
 }
 
+export function getTurnstileConfig() {
+    return appConfig.turnstile ?? {};
+}
+
+export function getFormTimingToken() {
+    const token = appConfig.forms?.timingToken;
+
+    return typeof token === "string" ? token : "";
+}
+
 export function getInitialData(key, fallback = null) {
     if (!key || typeof key !== "string") {
         return fallback;

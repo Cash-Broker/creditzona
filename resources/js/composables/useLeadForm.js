@@ -1,6 +1,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { trackLeadConversion } from "@/utils/analytics";
 import { getStoredUtmParameters } from "@/utils/utmTracking";
+import { getFormTimingToken } from "@/utils/appConfig";
 import { isValidNationalMobile, toNationalDigits } from "@/utils/phone";
 
 const amountMin = 5000;
@@ -44,7 +45,6 @@ function createInitialForm(initialCreditType = "") {
         property_location: "",
         privacy_consent: false,
         website: "",
-        form_started_at: Date.now(),
     };
 }
 
@@ -567,7 +567,7 @@ export function useLeadForm(options = {}) {
         return headers;
     }
 
-    function buildLeadPayload() {
+    function buildLeadPayload(turnstileToken = "") {
         const {
             guarantor_first_name,
             guarantor_last_name,
@@ -595,10 +595,12 @@ export function useLeadForm(options = {}) {
             utm_campaign: utm?.utm_campaign ?? null,
             utm_medium: utm?.utm_medium ?? null,
             gclid: utm?.gclid ?? null,
+            form_timing_token: getFormTimingToken(),
+            cf_turnstile_response: turnstileToken,
         };
     }
 
-    async function submitForm() {
+    async function submitForm(turnstileToken = "") {
         success.value = false;
         submitError.value = "";
 
@@ -612,7 +614,7 @@ export function useLeadForm(options = {}) {
             const response = await fetch("/leads", {
                 method: "POST",
                 headers: getJsonHeaders(),
-                body: JSON.stringify(buildLeadPayload()),
+                body: JSON.stringify(buildLeadPayload(turnstileToken)),
             });
 
             if (!response.ok) {

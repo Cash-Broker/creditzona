@@ -5,8 +5,8 @@ namespace App\Providers;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,22 +32,24 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('lead-submissions', function (Request $request): Limit {
             return Limit::perMinutes(10, 5)
                 ->by($this->throttleKey($request))
-                ->response(fn(Request $request, array $headers) => $this->buildThrottleResponse($request, $headers));
+                ->response(fn (Request $request, array $headers) => $this->buildThrottleResponse($request, $headers));
         });
 
         RateLimiter::for('contact-messages', function (Request $request): Limit {
             return Limit::perMinutes(10, 5)
                 ->by($this->throttleKey($request))
-                ->response(fn(Request $request, array $headers) => $this->buildThrottleResponse($request, $headers));
+                ->response(fn (Request $request, array $headers) => $this->buildThrottleResponse($request, $headers));
         });
     }
 
     private function throttleKey(Request $request): string
     {
+        // Keyed by route + IP only. Including the User-Agent (as before) let a
+        // bot rotating its UA string mint a fresh quota on every request while
+        // keeping the same IP, which defeated the limit.
         return sha1(implode('|', [
             $request->route()?->getName() ?? $request->path(),
             $request->ip(),
-            (string) $request->userAgent(),
         ]));
     }
 

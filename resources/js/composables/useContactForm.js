@@ -1,4 +1,5 @@
 import { reactive, ref } from "vue";
+import { getFormTimingToken } from "@/utils/appConfig";
 
 function createInitialForm() {
     return {
@@ -7,7 +8,6 @@ function createInitialForm() {
         email: "",
         message: "",
         website: "",
-        form_started_at: Date.now(),
     };
 }
 
@@ -40,7 +40,7 @@ export function useContactForm() {
         return "";
     }
 
-    async function submitForm() {
+    async function submitForm(turnstileToken = "") {
         loading.value = true;
         success.value = false;
         clearErrors();
@@ -62,7 +62,11 @@ export function useContactForm() {
             const response = await fetch("/api/contact-messages", {
                 method: "POST",
                 headers,
-                body: JSON.stringify(form),
+                body: JSON.stringify({
+                    ...form,
+                    form_timing_token: getFormTimingToken(),
+                    cf_turnstile_response: turnstileToken,
+                }),
             });
 
             const payload = await response.json().catch(() => null);

@@ -3,6 +3,7 @@
 namespace App\Support\Seo;
 
 use App\Models\Blog;
+use App\Support\Forms\FormTimingToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
@@ -171,7 +172,19 @@ class SeoManager
                 'pages' => $this->pagePayloads(),
             ],
             'initialData' => $initialData,
+            'forms' => [
+                // Server-issued, signed proof of page-render time. The public
+                // forms echo it back on submit so the backend can enforce a
+                // minimum dwell time without trusting a client timestamp.
+                'timingToken' => FormTimingToken::issue(),
+            ],
         ];
+
+        $turnstileSiteKey = trim((string) config('services.turnstile.site_key'));
+
+        if ($turnstileSiteKey !== '') {
+            $payload['turnstile'] = ['siteKey' => $turnstileSiteKey];
+        }
 
         $googleTagId = trim((string) config('services.google_analytics.google_tag_id'));
         $googleMeasurementId = trim((string) config('services.google_analytics.measurement_id'));

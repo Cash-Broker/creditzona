@@ -6,8 +6,10 @@ use App\Mail\LeadSubmittedConfirmation;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
 use App\Models\User;
+use App\Support\Forms\FormTimingToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -686,6 +688,105 @@ class LeadSubmissionTest extends TestCase
             ->assertJsonPath('message', 'Изпращате твърде често. Моля, опитайте отново след малко.');
     }
 
+    public function test_submission_rejected_when_form_submitted_too_fast(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'form_timing_token' => FormTimingToken::issue(now()->getTimestampMs()),
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['form_timing_token']);
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_submission_rejected_when_timing_token_signature_is_forged(): void
+    {
+        $forgedToken = now()->subSeconds(10)->getTimestampMs().'.forged-signature';
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'form_timing_token' => $forgedToken,
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['form_timing_token']);
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_submission_rejected_when_timing_token_is_missing(): void
+    {
+        $response = $this->postJson('/leads', $this->validPayload([
+            'form_timing_token' => null,
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['form_timing_token']);
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_submission_passes_when_turnstile_verification_succeeds(): void
+    {
+        config()->set('services.turnstile.secret', 'test-secret');
+        Http::fake([
+            'challenges.cloudflare.com/*' => Http::response(['success' => true]),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER,
+            'guarantors' => [],
+            'cf_turnstile_response' => 'valid-token',
+        ]));
+
+        $response->assertOk();
+        $this->assertDatabaseCount('leads', 1);
+
+        Http::assertSent(function ($request): bool {
+            return str_contains($request->url(), 'siteverify')
+                && $request['response'] === 'valid-token'
+                && $request['secret'] === 'test-secret';
+        });
+    }
+
+    public function test_submission_rejected_when_turnstile_verification_fails(): void
+    {
+        config()->set('services.turnstile.secret', 'test-secret');
+        Http::fake([
+            'challenges.cloudflare.com/*' => Http::response(['success' => false, 'error-codes' => ['invalid-input-response']]),
+        ]);
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'cf_turnstile_response' => 'bad-token',
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['cf_turnstile_response']);
+
+        $this->assertDatabaseCount('leads', 0);
+    }
+
+    public function test_submission_rejected_when_turnstile_enabled_but_token_missing(): void
+    {
+        config()->set('services.turnstile.secret', 'test-secret');
+        Http::fake();
+
+        $response = $this->postJson('/leads', $this->validPayload([
+            'cf_turnstile_response' => null,
+        ]));
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['cf_turnstile_response']);
+
+        $this->assertDatabaseCount('leads', 0);
+        Http::assertNothingSent();
+    }
+
     public function test_old_lead_with_same_phone_reuses_historical_assigned_user(): void
     {
         Carbon::setTestNow('2026-03-12 10:00:00');
@@ -1048,7 +1149,7 @@ class LeadSubmissionTest extends TestCase
             'gclid' => 'test-gclid',
             'privacy_consent' => true,
             'website' => '',
-            'form_started_at' => now()->subSeconds(5)->getTimestampMs(),
+            'form_timing_token' => FormTimingToken::issue(now()->subSeconds(5)->getTimestampMs()),
         ], $overrides);
 
         if (

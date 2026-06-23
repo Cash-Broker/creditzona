@@ -233,11 +233,6 @@
                         class="hidden"
                     />
 
-                    <input
-                        v-model="form.form_started_at"
-                        type="hidden"
-                    />
-
                     <div class="field">
                         <label class="field-label" for="city">Град</label>
                         <input
@@ -461,6 +456,12 @@
                     </p>
                 </div>
 
+                <div
+                    v-show="turnstile.isEnabled"
+                    ref="turnstileEl"
+                    class="mt-5 flex justify-center"
+                ></div>
+
                 <div class="mt-5">
                     <button
                         type="submit"
@@ -594,8 +595,9 @@
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 import { useLeadForm } from "../../composables/useLeadForm";
+import { useTurnstile } from "../../composables/useTurnstile";
 import { getInitialData } from "../../utils/appConfig";
 import PhoneInput from "../forms/PhoneInput.vue";
 
@@ -643,6 +645,38 @@ const {
     lockCreditType: props.lockCreditType,
 });
 
+const turnstileEl = ref(null);
+const turnstile = useTurnstile();
+
+onMounted(() => {
+    turnstile.render(turnstileEl.value);
+});
+
+// Single entry point for the actual submit so every path (direct, guarantor
+// guard, consumer upsell) carries the Turnstile token and re-arms the widget
+// after a failed attempt — Turnstile tokens are single-use.
+async function runSubmit() {
+    if (turnstile.isEnabled && !turnstile.token.value) {
+        submitError.value = turnstile.failed.value
+            ? "Проверката за сигурност не можа да се зареди. Моля, презаредете страницата и опитайте отново."
+            : "Изчакайте момент да потвърдим заявката и опитайте отново.";
+
+        if (!turnstile.failed.value) {
+            turnstile.reset();
+        }
+
+        return { status: "turnstile_pending" };
+    }
+
+    const result = await submitForm(turnstile.token.value);
+
+    if (result?.status !== "submitted") {
+        turnstile.reset();
+    }
+
+    return result;
+}
+
 async function handleSubmit() {
     if (isConsumerWithGuarantor.value) {
         if (!validateForm()) {
@@ -664,7 +698,7 @@ async function handleSubmit() {
         return;
     }
 
-    await submitForm();
+    await runSubmit();
 }
 
 function closeGuarantorGuard() {
@@ -676,7 +710,7 @@ function closeGuarantorGuard() {
 }
 
 async function confirmGuarantorGuard() {
-    await submitForm();
+    await runSubmit();
     showGuarantorGuard.value = false;
 }
 
@@ -687,7 +721,7 @@ function acceptGuarantorUpsell() {
 
 async function declineGuarantorUpsell() {
     showConsumerUpsell.value = false;
-    await submitForm();
+    await runSubmit();
 }
 
 watch(success, async (isSuccess) => {

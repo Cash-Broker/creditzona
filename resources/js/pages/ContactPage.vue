@@ -129,7 +129,7 @@
 
             <form
                 class="form-card space-y-5"
-                @submit.prevent="submitForm"
+                @submit.prevent="handleContactSubmit"
                 novalidate
             >
                 <div class="grid gap-4">
@@ -204,11 +204,6 @@
                         class="hidden"
                     />
 
-                    <input
-                        v-model="form.form_started_at"
-                        type="hidden"
-                    />
-
                     <div class="grid gap-1.5">
                         <label class="input-label">Съобщение</label>
 
@@ -239,6 +234,12 @@
                     Съобщението беше изпратено успешно.
                 </div>
 
+                <div
+                    v-show="turnstile.isEnabled"
+                    ref="turnstileEl"
+                    class="flex justify-center"
+                ></div>
+
                 <button
                     type="submit"
                     class="primary-button cursor-pointer"
@@ -253,12 +254,43 @@
 </template>
 
 <script setup>
+import { onMounted, ref } from "vue";
 import { contactInfo } from "@/data/contactInfo";
 import { useContactForm } from "@/composables/useContactForm";
+import { useTurnstile } from "@/composables/useTurnstile";
 import PhoneInput from "@/components/forms/PhoneInput.vue";
 
 const { form, loading, success, generalError, getFieldError, submitForm } =
     useContactForm();
+
+const turnstileEl = ref(null);
+const turnstile = useTurnstile();
+
+onMounted(() => {
+    turnstile.render(turnstileEl.value);
+});
+
+async function handleContactSubmit() {
+    if (turnstile.isEnabled && !turnstile.token.value) {
+        generalError.value = turnstile.failed.value
+            ? "Проверката за сигурност не можа да се зареди. Моля, презаредете страницата и опитайте отново."
+            : "Изчакайте момент да потвърдим съобщението и опитайте отново.";
+
+        if (!turnstile.failed.value) {
+            turnstile.reset();
+        }
+
+        return;
+    }
+
+    const result = await submitForm(turnstile.token.value);
+
+    if (!success.value) {
+        turnstile.reset();
+    }
+
+    return result;
+}
 
 const {
     city,
