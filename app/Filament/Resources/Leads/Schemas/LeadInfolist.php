@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Leads\Schemas;
 use App\Filament\Resources\Leads\LeadResource;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
+use App\Support\Lead\ClientHistoryLookup;
 use App\Support\Notes\NoteHistory;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -63,6 +64,18 @@ class LeadInfolist
                         TextEntry::make('additionalUser.name')
                             ->label('Допълнителен служител')
                             ->placeholder('Няма'),
+                    ]),
+                Section::make('Предишни заявки на клиента')
+                    ->description('Заявки от същия клиент, свързани по телефон. Само за преглед — поръчителите и историята не се редактират тук.')
+                    ->collapsible()
+                    ->collapsed()
+                    ->visible(fn (Lead $record): bool => ClientHistoryLookup::hasPreviousSubmissions($record))
+                    ->schema([
+                        ViewEntry::make('client_history')
+                            ->hiddenLabel()
+                            ->view('filament.resources.leads.infolists.client-history')
+                            ->state(fn (Lead $record): array => static::buildClientHistoryState($record))
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Допълнителна информация')
                     ->columns(3)
@@ -292,5 +305,65 @@ class LeadInfolist
                             ->dateTime('d.m.Y H:i', 'Europe/Sofia'),
                     ]),
             ]);
+    }
+
+    /**
+     * Build a read-only, presentation-ready view of the client's previous
+     * submissions for the client-history infolist partial. EGN is masked and
+     * the deep link to the original lead is exposed to admins only, since the
+     * Filament resource scope (Lead::scopeVisibleToUser) would otherwise block
+     * a non-admin from opening another consultant's lead.
+     *
+     * @return array{submissions: array<int, array{
+     *     reference: string,
+     *     created_at: string,
+     *     status_label: string,
+     *     credit_type_label: string,
+     *     amount: int|null,
+     *     assigned_user: ?string,
+     *     url: ?string,
+     *     guarantors: array<int, array{name: string, status_label: string, status_classes: string, phone: ?string, egn_masked: string, notes: array<int, array<string, mixed>>}>,
+     *     notes: array<int, array<string, mixed>>,
+     * }>}
+     */
+    private static function buildClientHistoryState(Lead $record): array
+    {
+        $isAdmin = auth()->user()?->isAdmin() ?? false;
+
+        $submissions = ClientHistoryLookup::previousSubmissions($record)
+            ->map(static fn (Lead $lead): array => [
+                'reference' => '#'.$lead->getKey(),
+                'created_at' => $lead->created_at?->timezone('Europe/Sofia')->format('d.m.Y') ?? 'Няма',
+                'status_label' => LeadResource::getStatusLabel($lead->status),
+                'credit_type_label' => LeadResource::getCreditTypeLabel($lead->credit_type),
+                'amount' => $lead->amount,
+                'assigned_user' => $lead->assignedUser?->name,
+                'url' => $isAdmin ? LeadResource::getUrl('view', ['record' => $lead->getKey()]) : null,
+                'guarantors' => $lead->guarantors
+                    ->map(static fn (LeadGuarantor $guarantor): array => [
+                        'name' => static::composeGuarantorName($guarantor),
+                        'status_label' => LeadGuarantor::getStatusLabel($guarantor->status),
+                        'status_classes' => LeadGuarantor::getItemLabelClasses($guarantor->status),
+                        'phone' => $guarantor->phone,
+                        'egn_masked' => LeadGuarantor::maskEgn($guarantor->egn),
+                        'notes' => NoteHistory::entries($guarantor->internal_notes),
+                    ])
+                    ->all(),
+                'notes' => NoteHistory::entries($lead->internal_notes),
+            ])
+            ->all();
+
+        return ['submissions' => $submissions];
+    }
+
+    private static function composeGuarantorName(LeadGuarantor $guarantor): string
+    {
+        $name = trim(implode(' ', array_filter([
+            $guarantor->first_name,
+            $guarantor->middle_name,
+            $guarantor->last_name,
+        ])));
+
+        return $name !== '' ? $name : 'Без име';
     }
 }
