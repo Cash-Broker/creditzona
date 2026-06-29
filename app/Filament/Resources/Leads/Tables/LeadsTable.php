@@ -20,6 +20,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\CheckboxColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -49,6 +50,17 @@ class LeadsTable
 
         return $table
             ->poll('5s')
+            // Flag, in a single query, whether the same client (matched by phone)
+            // has any other lead — drives the discreet "has history" icon below
+            // without an EXISTS-per-row N+1.
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                ->addSelect('leads.*')
+                ->selectRaw(
+                    'EXISTS (SELECT 1 FROM leads AS client_history_siblings'
+                    .' WHERE client_history_siblings.id <> leads.id'
+                    .' AND COALESCE(client_history_siblings.normalized_phone, client_history_siblings.phone)'
+                    .' = COALESCE(leads.normalized_phone, leads.phone)) AS has_client_history'
+                ))
             ->recordClasses(fn (Lead $record): array => $record->isMarkedForLater() ? ['lead-record-later'] : [])
             ->columns([
                 TextColumn::make('status')
@@ -98,6 +110,15 @@ class LeadsTable
                     ->icon(fn (Lead $record): ?string => $record->isMarkedForLater() ? 'heroicon-m-clock' : null)
                     ->iconColor('warning')
                     ->searchable(['first_name', 'middle_name', 'last_name', 'credit_bank']),
+
+                IconColumn::make('has_client_history')
+                    ->label('История')
+                    ->alignCenter()
+                    ->state(fn (Lead $record): bool => (bool) $record->has_client_history)
+                    ->icon(fn (bool $state): ?string => $state ? Heroicon::OutlinedClock : null)
+                    ->color('gray')
+                    ->tooltip(fn (bool $state): ?string => $state ? 'Клиентът има предишни заявки' : null)
+                    ->toggleable(),
 
                 TextColumn::make('assignedUser.name')
                     ->label('Основен служител')

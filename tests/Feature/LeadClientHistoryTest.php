@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Leads\Pages\ListLeads;
 use App\Filament\Resources\Leads\Pages\ViewLead;
 use App\Models\Lead;
 use App\Models\LeadGuarantor;
@@ -154,6 +155,62 @@ class LeadClientHistoryTest extends TestCase
         $this->assertEqualsCanonicalizing([$first->id, $second->id], $previous->pluck('id')->all());
         $this->assertTrue(ClientHistoryLookup::hasPreviousSubmissions($current));
         $this->assertFalse(ClientHistoryLookup::hasPreviousSubmissions($unrelated));
+    }
+
+    public function test_table_marks_clients_that_have_previous_submissions(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        Lead::query()->create($this->leadAttributes([
+            'phone' => '0888123456',
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        Lead::query()->create($this->leadAttributes([
+            'phone' => '0888123456',
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListLeads::class)
+            ->assertSee('Клиентът има предишни заявки');
+    }
+
+    public function test_table_does_not_mark_clients_without_previous_submissions(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        Lead::query()->create($this->leadAttributes([
+            'phone' => '0899111111',
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        Lead::query()->create($this->leadAttributes([
+            'phone' => '0888222222',
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListLeads::class)
+            ->assertDontSee('Клиентът има предишни заявки');
     }
 
     /**
