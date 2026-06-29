@@ -115,7 +115,7 @@ class LeadsTable
                     ->label('История')
                     ->alignCenter()
                     ->state(fn (Lead $record): bool => (bool) $record->has_client_history)
-                    ->icon(fn (bool $state): ?string => $state ? Heroicon::OutlinedClock : null)
+                    ->icon(fn (bool $state): ?string => $state ? 'heroicon-o-clock' : null)
                     ->color('gray')
                     ->tooltip(fn (bool $state): ?string => $state ? 'Клиентът има предишни заявки' : null)
                     ->toggleable(),
