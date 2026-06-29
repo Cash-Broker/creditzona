@@ -157,60 +157,66 @@ class LeadClientHistoryTest extends TestCase
         $this->assertFalse(ClientHistoryLookup::hasPreviousSubmissions($unrelated));
     }
 
-    public function test_table_marks_clients_that_have_previous_submissions(): void
+    public function test_client_history_flag_is_true_only_for_clients_with_other_leads(): void
     {
-        $admin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
-            'email' => 'renata@creditzona.test',
-        ]);
+        $operator = User::factory()->create(['role' => User::ROLE_OPERATOR]);
 
-        $operator = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
-        ]);
-
-        Lead::query()->create($this->leadAttributes([
+        $repeatA = Lead::query()->create($this->leadAttributes([
             'phone' => '0888123456',
             'assigned_user_id' => $operator->id,
         ]));
 
-        Lead::query()->create($this->leadAttributes([
+        $repeatB = Lead::query()->create($this->leadAttributes([
             'phone' => '0888123456',
             'assigned_user_id' => $operator->id,
         ]));
 
-        $this->actingAs($admin);
-
-        Livewire::test(ListLeads::class)
-            ->assertSee('Клиентът има предишни заявки');
-    }
-
-    public function test_table_does_not_mark_clients_without_previous_submissions(): void
-    {
-        $admin = User::factory()->create([
-            'role' => User::ROLE_ADMIN,
-            'email' => 'renata@creditzona.test',
-        ]);
-
-        $operator = User::factory()->create([
-            'role' => User::ROLE_OPERATOR,
-            'email' => 'anna@creditzona.test',
-        ]);
-
-        Lead::query()->create($this->leadAttributes([
+        $unique = Lead::query()->create($this->leadAttributes([
             'phone' => '0899111111',
             'assigned_user_id' => $operator->id,
         ]));
 
+        $flaggedA = Lead::query()->withClientHistoryFlag()->whereKey($repeatA->id)->first();
+        $flaggedB = Lead::query()->withClientHistoryFlag()->whereKey($repeatB->id)->first();
+        $notFlagged = Lead::query()->withClientHistoryFlag()->whereKey($unique->id)->first();
+
+        $this->assertTrue((bool) $flaggedA->has_client_history);
+        $this->assertTrue((bool) $flaggedB->has_client_history);
+        $this->assertFalse((bool) $notFlagged->has_client_history);
+    }
+
+    public function test_leads_table_renders_with_the_history_indicator(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'renata@creditzona.test',
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
         Lead::query()->create($this->leadAttributes([
-            'phone' => '0888222222',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'phone' => '0888123456',
+            'assigned_user_id' => $operator->id,
+        ]));
+
+        Lead::query()->create($this->leadAttributes([
+            'first_name' => 'Петър',
+            'last_name' => 'Петров',
+            'phone' => '0888123456',
             'assigned_user_id' => $operator->id,
         ]));
 
         $this->actingAs($admin);
 
         Livewire::test(ListLeads::class)
-            ->assertDontSee('Клиентът има предишни заявки');
+            ->assertOk()
+            ->assertSee('Иванов')
+            ->assertSee('Петров');
     }
 
     /**

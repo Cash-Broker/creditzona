@@ -426,6 +426,26 @@ class Lead extends Model implements HasRichContent
         $this->attributes['normalized_phone'] = $normalizedPhone;
     }
 
+    /**
+     * Add a `has_client_history` boolean flag to each row indicating whether the
+     * same client (matched by phone) has any other lead. Computed as a single
+     * correlated subquery so a table can show a "returning client" indicator
+     * without an EXISTS-per-row N+1.
+     */
+    public function scopeWithClientHistoryFlag(Builder $query): Builder
+    {
+        $table = $this->getTable();
+
+        return $query
+            ->addSelect("{$table}.*")
+            ->selectRaw(
+                "EXISTS (SELECT 1 FROM {$table} AS client_history_siblings"
+                ." WHERE client_history_siblings.id <> {$table}.id"
+                .' AND COALESCE(client_history_siblings.normalized_phone, client_history_siblings.phone)'
+                ." = COALESCE({$table}.normalized_phone, {$table}.phone)) AS has_client_history"
+            );
+    }
+
     public function scopeForNormalizedPhone(Builder $query, string $phone): Builder
     {
         return $query->where(function (Builder $innerQuery) use ($phone): void {

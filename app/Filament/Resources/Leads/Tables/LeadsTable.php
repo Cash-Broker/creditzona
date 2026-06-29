@@ -50,17 +50,9 @@ class LeadsTable
 
         return $table
             ->poll('5s')
-            // Flag, in a single query, whether the same client (matched by phone)
-            // has any other lead — drives the discreet "has history" icon below
-            // without an EXISTS-per-row N+1.
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                ->addSelect('leads.*')
-                ->selectRaw(
-                    'EXISTS (SELECT 1 FROM leads AS client_history_siblings'
-                    .' WHERE client_history_siblings.id <> leads.id'
-                    .' AND COALESCE(client_history_siblings.normalized_phone, client_history_siblings.phone)'
-                    .' = COALESCE(leads.normalized_phone, leads.phone)) AS has_client_history'
-                ))
+            // Flag whether the same client (matched by phone) has any other lead,
+            // in a single query — drives the discreet "has history" icon below.
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withClientHistoryFlag())
             ->recordClasses(fn (Lead $record): array => $record->isMarkedForLater() ? ['lead-record-later'] : [])
             ->columns([
                 TextColumn::make('status')
