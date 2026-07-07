@@ -331,6 +331,66 @@ class ContractGenerationServiceTest extends TestCase
         $this->assertEquals(12000, data_get($batch->getSubmittedInput(), 'financial.total_loan_amount_eur'));
     }
 
+    public function test_operator_step_one_income_and_loan_override_source_lead_values(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        // Lead carries the values the client typed on the public website.
+        $lead = Lead::query()->create([
+            'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
+            'first_name' => 'Иван',
+            'middle_name' => 'Петров',
+            'last_name' => 'Иванов',
+            'egn' => '8501010000',
+            'phone' => '0888123456',
+            'email' => 'ivan@example.com',
+            'city' => 'Пловдив',
+            'salary' => 1620,
+            'credit_bank' => 'Test Bank',
+            'amount' => 5000,
+            'status' => 'new',
+            'assigned_user_id' => $operator->id,
+        ]);
+
+        $lead->guarantors()->create([
+            'first_name' => 'Мария',
+            'middle_name' => 'Петрова',
+            'last_name' => 'Иванова',
+            'egn' => '8602020000',
+            'phone' => '0888999999',
+            'email' => 'maria@example.com',
+            'city' => 'София',
+        ]);
+
+        // The operator corrects the income/amount in Step 1. The form has no
+        // monthly_net_income_eur / loan_amount_eur fields, so they arrive null —
+        // exactly the state that used to let the lead's salary/amount win.
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'lead_id' => $lead->id,
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+            'client' => [
+                'city' => 'Пловдив',
+            ],
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'credit_count_in_institutions' => 2,
+                'credit_count_in_banks' => 1,
+                'total_loan_amount_eur' => 9000,
+                'commission_eur' => 600,
+                'monthly_payments_eur' => 410,
+                'net_income_eur' => 2400,
+                'monthly_net_income_eur' => null,
+                'loan_amount_eur' => null,
+            ]),
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertEquals(2400, data_get($batch->getSubmittedInput(), 'financial.monthly_net_income_eur'));
+        $this->assertEquals(9000, data_get($batch->getSubmittedInput(), 'financial.loan_amount_eur'));
+    }
+
     public function test_simplified_no_guarantor_layout_generates_three_documents_without_co_applicant(): void
     {
         $operator = User::factory()->create([

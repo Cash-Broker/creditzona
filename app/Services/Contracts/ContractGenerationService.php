@@ -578,8 +578,10 @@ class ContractGenerationService
             $financial['monthly_repayment_burden_eur'] = $financial['monthly_payments_eur'];
         }
 
-        // Monthly net income → from "Доход (Нетно)"
-        if ($financial['monthly_net_income_eur'] === null && $financial['net_income_eur'] !== null) {
+        // Monthly net income → from "Доход (Нетно)". The operator-entered Step 1 value must
+        // override the lead-salary fallback applied in normalizeInput(); otherwise the lead's
+        // salary silently wins and the operator can never correct it from the form.
+        if ($financial['net_income_eur'] !== null) {
             $financial['monthly_net_income_eur'] = $financial['net_income_eur'];
         }
 
@@ -616,9 +618,11 @@ class ContractGenerationService
                 ?? $financial['monthly_payments_eur'];
         }
 
-        // When the loan card isn't shown — derive sensible fallbacks for documents that need it.
+        // When the loan card isn't shown, the loan amount comes from "Общ Размер". As with the
+        // income above, the operator's Step 1 value must override the lead-amount fallback baked
+        // into normalizeInput() so it can actually be corrected from the form.
         if (in_array($layout, $layoutsWithoutLoanCard, true)) {
-            if ($financial['loan_amount_eur'] === null && $financial['total_loan_amount_eur'] !== null) {
+            if ($financial['total_loan_amount_eur'] !== null) {
                 $financial['loan_amount_eur'] = $financial['total_loan_amount_eur'];
             }
         }
