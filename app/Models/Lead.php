@@ -29,6 +29,8 @@ class Lead extends Model implements HasRichContent
 
     public const PRIVACY_CONSENT_COMPANY_D_CONSULTING = 'd_consulting';
 
+    public const SOURCE_CONTACT_MESSAGE = 'contact_message';
+
     public const CREDIT_TYPE_CONSUMER = 'consumer';
 
     public const CREDIT_TYPE_MORTGAGE = 'mortgage';

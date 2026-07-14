@@ -7,6 +7,7 @@ use App\Mail\LeadSubmittedConfirmation;
 use App\Models\Lead;
 use App\Models\LeadEmail;
 use App\Models\User;
+use App\Support\Lead\ClientHistoryLookup;
 use App\Support\Notes\NoteHistory;
 use App\Support\Phone\PhoneNormalizer;
 use DomainException;
@@ -50,6 +51,13 @@ class LeadService
         $data['phone'] = $normalizedPhone;
         $data['normalized_phone'] = $normalizedPhone;
 
+        // Personal data a returning client already provided on earlier
+        // applications (matched by normalized phone) so operators don't
+        // re-enter EGN, employment and bank details. Submitted values always
+        // win; guarantors, notes/messages and documents are never carried over.
+        $clientHistoryDefaults = ClientHistoryLookup::missingPersonalData($data, $normalizedPhone);
+        $submittedLead = null;
+
         // Cap pathologically long User-Agent strings; the column is TEXT but we
         // do not need an unbounded value from an untrusted client.
         $userAgent = $userAgent !== null ? mb_substr($userAgent, 0, 1024) : null;
@@ -61,7 +69,9 @@ class LeadService
                 $userAgent,
                 $privacyConsentAccepted,
                 $privacyConsentAcceptedAt,
+                $clientHistoryDefaults,
                 &$privacyConsentSnapshotPath,
+                &$submittedLead,
             ): Lead {
                 $isMortgage = ($data['credit_type'] ?? null) === Lead::CREDIT_TYPE_MORTGAGE;
                 $assignedUserId = $this->resolveAssignedUserId($data);
@@ -71,6 +81,7 @@ class LeadService
                     'first_name' => $data['first_name'],
                     'middle_name' => $data['middle_name'] ?? null,
                     'last_name' => $data['last_name'],
+                    'egn' => $data['egn'] ?? null,
                     'phone' => $data['phone'],
                     'normalized_phone' => $data['normalized_phone'],
                     'email' => $data['email'] ?? null,
@@ -81,6 +92,8 @@ class LeadService
                     'marital_status' => $data['marital_status'] ?? null,
                     'children_under_18' => $data['children_under_18'] ?? null,
                     'salary_bank' => $data['salary_bank'] ?? null,
+                    'credit_bank' => $data['credit_bank'] ?? null,
+                    'movable_immovable_property' => $data['movable_immovable_property'] ?? null,
                     'amount' => $data['amount'],
                     'property_type' => $isMortgage ? ($data['property_type'] ?? null) : null,
                     'property_location' => $isMortgage ? ($data['property_location'] ?? null) : null,
@@ -112,6 +125,16 @@ class LeadService
                     ])->save();
                 }
 
+                // The consent snapshot above and the confirmation email must
+                // reflect only what the client actually submitted, so the
+                // client-history backfill is applied strictly after both are
+                // sourced from the pristine record.
+                $submittedLead = clone $lead;
+
+                if ($clientHistoryDefaults !== []) {
+                    $lead->forceFill($clientHistoryDefaults)->save();
+                }
+
                 $guarantors = $this->prepareGuarantors($data['guarantors'] ?? null);
 
                 if ($guarantors !== []) {
@@ -128,7 +151,7 @@ class LeadService
             throw $exception;
         }
 
-        $this->sendConfirmationEmail($lead);
+        $this->sendConfirmationEmail($submittedLead ?? $lead);
         $this->sendAssignedLeadNotification($lead);
 
         return $lead;

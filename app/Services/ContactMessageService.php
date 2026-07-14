@@ -8,6 +8,7 @@ use App\Models\ContactMessage;
 use App\Models\ContactMessageReply;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\Lead\ClientHistoryLookup;
 use App\Support\Notes\NoteHistory;
 use App\Support\Phone\PhoneNormalizer;
 use DomainException;
@@ -188,7 +189,7 @@ class ContactMessageService
         [$firstName, $middleName, $lastName] = $this->splitFullName($contactMessage->full_name);
         $normalizedPhone = PhoneNormalizer::normalize($contactMessage->phone);
 
-        $lead = Lead::query()->create([
+        $attributes = [
             'credit_type' => Lead::CREDIT_TYPE_CONSUMER_WITH_GUARANTOR,
             'first_name' => $firstName,
             'middle_name' => $middleName,
@@ -225,7 +226,7 @@ class ContactMessageService
             'archived_additional_user_id' => null,
             'attached_archived_at' => null,
             'marked_for_later_at' => null,
-            'source' => 'contact_message',
+            'source' => Lead::SOURCE_CONTACT_MESSAGE,
             'utm_source' => null,
             'utm_campaign' => null,
             'utm_medium' => null,
@@ -234,7 +235,15 @@ class ContactMessageService
             'privacy_consent_accepted_at' => null,
             'privacy_consent_document_name' => null,
             'privacy_consent_document_path' => null,
-        ]);
+        ];
+
+        // A returning client's personal data (EGN, employment, banks) is
+        // carried over from their earlier leads; the message text note above
+        // and the contact-message values always stay as submitted.
+        $lead = Lead::query()->create(array_merge(
+            $attributes,
+            ClientHistoryLookup::missingPersonalData($attributes, $normalizedPhone),
+        ));
 
         $contactMessage->forceFill([
             'generated_lead_id' => $lead->id,
