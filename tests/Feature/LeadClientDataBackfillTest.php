@@ -338,6 +338,90 @@ class LeadClientDataBackfillTest extends TestCase
         $this->assertNull($lead->movable_immovable_property);
     }
 
+    public function test_existing_repeat_lead_can_be_backfilled_retroactively(): void
+    {
+        $operator = $this->createOperator();
+
+        $this->createPreviousLead(['assigned_user_id' => $operator->id]);
+
+        $repeatLead = $this->createBlankRepeatLead(['assigned_user_id' => $operator->id]);
+
+        $filledFields = app(LeadService::class)->backfillClientDataFromHistory($repeatLead);
+
+        $repeatLead->refresh();
+
+        $this->assertArrayHasKey('egn', $filledFields);
+        $this->assertSame('8501010000', $repeatLead->egn);
+        $this->assertSame('Петров', $repeatLead->middle_name);
+        $this->assertSame('Строй ЕООД', $repeatLead->workplace);
+        $this->assertSame(1800, $repeatLead->salary);
+        $this->assertSame('ДСК', $repeatLead->credit_bank);
+        $this->assertSame(0, $repeatLead->guarantors()->count());
+        $this->assertNull($repeatLead->internal_notes);
+    }
+
+    public function test_retroactive_backfill_returns_nothing_when_lead_has_no_history(): void
+    {
+        $operator = $this->createOperator();
+
+        $onlyLead = $this->createBlankRepeatLead(['assigned_user_id' => $operator->id]);
+
+        $this->assertSame([], app(LeadService::class)->backfillClientDataFromHistory($onlyLead));
+        $this->assertNull($onlyLead->refresh()->egn);
+    }
+
+    public function test_backfill_command_fills_existing_lead_by_id(): void
+    {
+        $operator = $this->createOperator();
+
+        $this->createPreviousLead(['assigned_user_id' => $operator->id]);
+
+        $repeatLead = $this->createBlankRepeatLead(['assigned_user_id' => $operator->id]);
+
+        $this->artisan('leads:backfill-client-data', ['leads' => [$repeatLead->id]])
+            ->expectsOutputToContain("Заявка #{$repeatLead->id}: попълнени полета")
+            ->assertExitCode(0);
+
+        $this->assertSame('8501010000', $repeatLead->refresh()->egn);
+    }
+
+    public function test_backfill_command_with_all_option_processes_every_lead(): void
+    {
+        $operator = $this->createOperator();
+
+        $this->createPreviousLead(['assigned_user_id' => $operator->id]);
+
+        $repeatLead = $this->createBlankRepeatLead(['assigned_user_id' => $operator->id]);
+
+        $unrelatedLead = $this->createBlankRepeatLead([
+            'assigned_user_id' => $operator->id,
+            'first_name' => 'Георги',
+            'last_name' => 'Георгиев',
+            'phone' => '0888555444',
+        ]);
+
+        $this->artisan('leads:backfill-client-data', ['--all' => true])
+            ->expectsOutputToContain('Готово: попълнени данни по 1 заявки.')
+            ->assertExitCode(0);
+
+        $this->assertSame('8501010000', $repeatLead->refresh()->egn);
+        $this->assertNull($unrelatedLead->refresh()->egn);
+    }
+
+    public function test_backfill_command_fails_for_unknown_lead(): void
+    {
+        $this->artisan('leads:backfill-client-data', ['leads' => [999999]])
+            ->expectsOutputToContain('Заявка #999999 не е намерена.')
+            ->assertExitCode(1);
+    }
+
+    public function test_backfill_command_requires_ids_or_all_option(): void
+    {
+        $this->artisan('leads:backfill-client-data')
+            ->expectsOutputToContain('Посочете ID на заявка или използвайте --all.')
+            ->assertExitCode(1);
+    }
+
     public function test_personal_data_defaults_are_empty_for_blank_phone_or_names(): void
     {
         $this->assertSame([], ClientHistoryLookup::personalDataDefaults(null, 'Иван', 'Иванов'));
@@ -352,6 +436,22 @@ class LeadClientDataBackfillTest extends TestCase
             'role' => User::ROLE_OPERATOR,
             'email' => 'anna@creditzona.test',
         ]);
+    }
+
+    private function createBlankRepeatLead(array $overrides = []): Lead
+    {
+        return $this->createPreviousLead(array_merge([
+            'middle_name' => null,
+            'egn' => null,
+            'workplace' => null,
+            'job_title' => null,
+            'salary' => null,
+            'marital_status' => null,
+            'children_under_18' => null,
+            'salary_bank' => null,
+            'credit_bank' => null,
+            'movable_immovable_property' => null,
+        ], $overrides));
     }
 
     private function createPreviousLead(array $overrides = []): Lead

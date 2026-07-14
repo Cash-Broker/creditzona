@@ -36,6 +36,27 @@ class ClientHistoryLookup
     ];
 
     /**
+     * Admin-facing (Bulgarian) labels for BACKFILL_FIELDS, used when reporting
+     * which fields a backfill actually filled.
+     *
+     * @var array<string, string>
+     */
+    public const BACKFILL_FIELD_LABELS = [
+        'middle_name' => 'Презиме',
+        'egn' => 'ЕГН',
+        'email' => 'Имейл',
+        'city' => 'Адрес',
+        'workplace' => 'Работодател',
+        'job_title' => 'Длъжност',
+        'salary' => 'Месечен доход',
+        'marital_status' => 'Семейно положение',
+        'children_under_18' => 'Деца под 18',
+        'salary_bank' => 'Банка за заплатата',
+        'credit_bank' => 'Банка по кредита',
+        'movable_immovable_property' => 'Движимо/недвижимо имущество',
+    ];
+
+    /**
      * Find a client's PREVIOUS lead submissions, matched by normalized phone —
      * the de-facto client identity used across the app (see
      * Lead::scopeForNormalizedPhone, App\Support\Phone\LeadPhoneOwnerLookup and
@@ -94,8 +115,12 @@ class ClientHistoryLookup
      *
      * @return array<string, mixed>
      */
-    public static function personalDataDefaults(?string $phone, ?string $firstName, ?string $lastName): array
-    {
+    public static function personalDataDefaults(
+        ?string $phone,
+        ?string $firstName,
+        ?string $lastName,
+        ?int $excludeLeadId = null,
+    ): array {
         $normalizedPhone = PhoneNormalizer::normalize($phone);
         $normalizedFirstName = static::normalizeNameToken($firstName);
         $normalizedLastName = static::normalizeNameToken($lastName);
@@ -106,6 +131,10 @@ class ClientHistoryLookup
 
         $previousLeads = Lead::query()
             ->forNormalizedPhone($normalizedPhone)
+            ->when(
+                $excludeLeadId !== null,
+                fn ($query) => $query->whereKeyNot($excludeLeadId),
+            )
             ->latest('created_at')
             ->orderByDesc('id')
             ->get(['id', 'first_name', 'last_name', 'source', ...self::BACKFILL_FIELDS]);
@@ -165,12 +194,13 @@ class ClientHistoryLookup
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
      */
-    public static function missingPersonalData(array $attributes, ?string $phone): array
+    public static function missingPersonalData(array $attributes, ?string $phone, ?int $excludeLeadId = null): array
     {
         $defaults = static::personalDataDefaults(
             $phone,
             $attributes['first_name'] ?? null,
             $attributes['last_name'] ?? null,
+            $excludeLeadId,
         );
 
         return array_filter(

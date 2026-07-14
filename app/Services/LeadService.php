@@ -456,6 +456,36 @@ class LeadService
         });
     }
 
+    /**
+     * Retroactively fill an existing lead's blank personal fields from the
+     * client's other submissions — for repeat leads created before the
+     * automatic on-create backfill existed. Same rules as on create: names
+     * must match, submitted/non-blank values stay untouched, guarantors,
+     * notes/messages and documents are never carried over.
+     *
+     * @return array<string, mixed> The fields that were filled.
+     */
+    public function backfillClientDataFromHistory(Lead $lead): array
+    {
+        $attributes = $lead->only([
+            'first_name',
+            'last_name',
+            ...ClientHistoryLookup::BACKFILL_FIELDS,
+        ]);
+
+        $defaults = ClientHistoryLookup::missingPersonalData(
+            $attributes,
+            $lead->normalized_phone ?: $lead->phone,
+            $lead->getKey(),
+        );
+
+        if ($defaults !== []) {
+            $lead->forceFill($defaults)->save();
+        }
+
+        return $defaults;
+    }
+
     private function resolveAssignedUserId(array $data): ?int
     {
         if (isset($data['assigned_user_id'])) {
