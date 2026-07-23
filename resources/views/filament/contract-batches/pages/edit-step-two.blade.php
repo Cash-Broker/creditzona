@@ -8,8 +8,9 @@
     $isSimplifiedNoGuarantor = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR;
     $isLoanOnly = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_LOAN_ONLY;
     $isContract12m = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M;
-    $showLoan = $isFull || $isLoanOnly;
-    $showConsultation = $isFull || $isSimplified || $isSimplifiedNoGuarantor || $isContract12m;
+    $isBridgeCredit = $layout === \App\Models\ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT;
+    $showLoan = $isFull || $isLoanOnly || $isBridgeCredit;
+    $showConsultation = $isFull || $isSimplified || $isSimplifiedNoGuarantor || $isContract12m || $isBridgeCredit;
 @endphp
 
 <x-filament-panels::page>
@@ -55,6 +56,19 @@
                             @error('data.dates.company_promissory_note_due_date') <span class="cz-error">{{ $message }}</span> @enderror
                         </div>
                     </div>
+                    @if($isBridgeCredit)
+                        {{-- При мостов кредит сумата се въвежда ръчно и се различава от комисионната в консултантския договор. --}}
+                        <div class="cz-cb-row cz-cb-row-1">
+                            <div class="cz-field">
+                                <label class="cz-label">Сума на Запис на Заповед<span class="cz-req">*</span></label>
+                                <div class="cz-input-group">
+                                    <input type="number" wire:model="data.financial.company_promissory_note_amount_eur" class="cz-input cz-input-with-suffix" placeholder="Пример: 5000" min="0" step="0.01">
+                                    <span class="cz-input-suffix">€</span>
+                                </div>
+                                @error('data.financial.company_promissory_note_amount_eur') <span class="cz-error">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         @endif

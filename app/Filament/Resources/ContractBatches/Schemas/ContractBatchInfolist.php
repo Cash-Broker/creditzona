@@ -86,6 +86,11 @@ class ContractBatchInfolist
                             ->label('Възнаграждение в лева')
                             ->state(fn (ContractBatch $record): ?string => data_get($record->getDerivedInput(), 'financial.fee.bgn.formatted'))
                             ->placeholder('Няма'),
+                        TextEntry::make('company_promissory_note_amount_eur')
+                            ->label('Запис на заповед към фирмата')
+                            ->state(fn (ContractBatch $record): ?string => data_get($record->getDerivedInput(), 'financial.company_promissory_note_amount.eur.formatted'))
+                            ->placeholder('Няма')
+                            ->visible(fn (ContractBatch $record): bool => $record->document_layout === ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT),
                         TextEntry::make('loan_due_date')
                             ->label('Падеж по заема')
                             ->state(fn (ContractBatch $record): ?string => data_get($record->getDerivedInput(), 'dates.loan_due_date'))

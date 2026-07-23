@@ -73,6 +73,7 @@ class ContractBatchForm
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                         ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+                        ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
                     ]))
                     ->schema([
                         static::countField('financial.credit_count_in_institutions', 'В Финансови Институции', 'Пример: 3'),
@@ -85,6 +86,7 @@ class ContractBatchForm
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                                 ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+                                ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
                             ])),
                         static::euroAmountField('financial.commission_eur', 'Комисионна', 'Пример: 2500')
                             ->required(fn (Get $get): bool => static::isLayout($get, [
@@ -92,6 +94,7 @@ class ContractBatchForm
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
                                 ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                                 ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+                                ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
                             ])),
                         static::euroAmountField('financial.monthly_payments_eur', 'Месечни Вноски', 'Пример: 1000'),
                         static::euroAmountField('financial.private_loans_eur', 'Частни Заеми', 'Пример: 5000'),
@@ -116,9 +119,12 @@ class ContractBatchForm
 
                 ...static::stepOneHiddenMirror(),
 
-                // Full layout: 3 boxed cards in ONE row (consultation 4 cols, promissory 2 cols, loan 6 cols)
+                // Full / Мостов кредит: 3 boxed cards in ONE row (consultation 4 cols, promissory 2 cols, loan 6 cols)
                 Grid::make(12)
-                    ->visible(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_FULL))
+                    ->visible(fn (Get $get): bool => static::isLayout($get, [
+                        ContractBatch::DOCUMENT_LAYOUT_FULL,
+                        ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+                    ]))
                     ->schema([
                         static::consultationSection()->columnSpan(4),
                         static::promissorySection()->columnSpan(2),
@@ -157,6 +163,7 @@ class ContractBatchForm
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                         ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+                        ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
                     ]))
                     ->live(onBlur: true)
                     ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
@@ -185,7 +192,13 @@ class ContractBatchForm
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
                         ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
                         ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+                        ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
                     ])),
+                // При мостов кредит сумата се въвежда ръчно — различава се от комисионната в консултантския договор.
+                static::euroAmountField('financial.company_promissory_note_amount_eur', 'Сума на Запис на Заповед', 'Пример: 5000')
+                    ->visible(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT))
+                    ->required(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT))
+                    ->columnSpanFull(),
             ]);
     }
 

@@ -563,6 +563,90 @@ class ContractGenerationServiceTest extends TestCase
         $this->assertLessThan($positions['mediation_protocol'], $positions['mediation_agreement']);
     }
 
+    public function test_bridge_credit_layout_uses_manually_entered_promissory_note_amount(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'fee_eur' => null,
+                'commission_eur' => 2500,
+                'company_promissory_note_amount_eur' => 7000,
+            ]),
+            'dates' => [
+                'consultation_contract_date' => '2026-03-15',
+            ],
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame(ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT, $batch->document_layout);
+        $this->assertSame(
+            ContractBatch::getDocumentTypesForLayout(ContractBatch::DOCUMENT_LAYOUT_FULL),
+            $batch->selected_document_types,
+        );
+
+        // Комисионната остава в консултантския договор, а записът на заповед носи ръчната сума.
+        $this->assertSame('2 500,00', data_get($batch->getDerivedInput(), 'financial.fee.eur.formatted'));
+        $this->assertSame(
+            '7 000,00',
+            data_get($batch->getDerivedInput(), 'financial.company_promissory_note_amount.eur.formatted'),
+        );
+    }
+
+    public function test_bridge_credit_layout_requires_manual_promissory_note_amount(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Попълнете сума на записа на заповед към фирмата.');
+
+        app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'fee_eur' => null,
+                'commission_eur' => 2500,
+            ]),
+            'dates' => [
+                'consultation_contract_date' => '2026-03-15',
+            ],
+            'selected_document_types' => [],
+        ]), $operator);
+    }
+
+    public function test_non_bridge_layout_keeps_commission_as_promissory_note_amount(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $batch = app(ContractGenerationService::class)->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_FULL,
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'fee_eur' => null,
+                'commission_eur' => 2500,
+                // Стойност, останала от предишен избор на „Мостов кредит" — не трябва да влияе.
+                'company_promissory_note_amount_eur' => 7000,
+            ]),
+            'dates' => [
+                'consultation_contract_date' => '2026-03-15',
+            ],
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame(
+            '2 500,00',
+            data_get($batch->getDerivedInput(), 'financial.company_promissory_note_amount.eur.formatted'),
+        );
+    }
+
     public function test_combined_docx_footer_numbers_each_contract_independently(): void
     {
         $operator = User::factory()->create([

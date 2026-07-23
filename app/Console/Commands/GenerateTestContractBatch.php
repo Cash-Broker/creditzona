@@ -28,11 +28,11 @@ class GenerateTestContractBatch extends Command
         }
 
         $layout = (string) ($this->option('layout') ?? '');
-        $useContract12m = $layout === ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M;
+        $documentLayout = array_key_exists($layout, ContractBatch::getLayoutOptions()) ? $layout : null;
 
         $input = [
             'company_key' => ContractBatch::COMPANY_D_CONSULTING_EOOD,
-            'document_layout' => $useContract12m ? ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M : null,
+            'document_layout' => $documentLayout,
             'client' => [
                 'full_name' => 'Константин Константинов Павлов',
                 'egn' => '0043077221',
@@ -60,6 +60,7 @@ class GenerateTestContractBatch extends Command
                 'post_service_credit_count' => 1,
                 'post_service_monthly_repayment_burden_eur' => 450,
                 'fee_eur' => 1500,
+                'company_promissory_note_amount_eur' => 4000,
                 'co_applicant_promissory_note_amount_eur' => 12000,
                 'loan_amount_eur' => 10000,
                 'loan_return_amount_eur' => 12000,
@@ -85,7 +86,7 @@ class GenerateTestContractBatch extends Command
                 'company_promissory_note_due_date' => '2026-07-15',
                 'co_applicant_promissory_note_due_date' => '2028-04-15',
             ],
-            'selected_document_types' => $useContract12m ? [] : [
+            'selected_document_types' => $documentLayout !== null ? [] : [
                 ContractBatch::DOCUMENT_TYPE_APPLICATION_REQUEST,
                 ContractBatch::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
                 ContractBatch::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,

@@ -502,6 +502,7 @@ class ContractGenerationService
                 'post_service_credit_count' => $this->normalizeInteger(data_get($input, 'financial.post_service_credit_count')),
                 'post_service_monthly_repayment_burden_eur' => $this->normalizeAmount(data_get($input, 'financial.post_service_monthly_repayment_burden_eur')),
                 'fee_eur' => $this->normalizeAmount(data_get($input, 'financial.fee_eur')),
+                'company_promissory_note_amount_eur' => $this->normalizeAmount(data_get($input, 'financial.company_promissory_note_amount_eur')),
                 'co_applicant_promissory_note_amount_eur' => $this->normalizeAmount(data_get($input, 'financial.co_applicant_promissory_note_amount_eur')),
                 'loan_amount_eur' => $this->normalizeAmount(data_get($input, 'financial.loan_amount_eur'))
                     ?? $this->normalizeAmount($sourceLead?->amount),
@@ -934,9 +935,15 @@ class ContractGenerationService
             throw new RuntimeException('Попълнете възнаграждението в евро.');
         }
 
-        if (in_array(ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE, $submitted['selected_document_types'], true)
-            && $submitted['dates']['company_promissory_note_due_date'] === null) {
-            throw new RuntimeException('Попълнете падеж на записа на заповед към фирмата.');
+        if (in_array(ContractBatch::DOCUMENT_TYPE_COMPANY_PROMISSORY_NOTE, $submitted['selected_document_types'], true)) {
+            if ($submitted['dates']['company_promissory_note_due_date'] === null) {
+                throw new RuntimeException('Попълнете падеж на записа на заповед към фирмата.');
+            }
+
+            if ($this->isBridgeCreditLayout($submitted)
+                && $submitted['financial']['company_promissory_note_amount_eur'] === null) {
+                throw new RuntimeException('Попълнете сума на записа на заповед към фирмата.');
+            }
         }
 
         if (in_array(ContractBatch::DOCUMENT_TYPE_CO_APPLICANT_PROMISSORY_NOTE, $submitted['selected_document_types'], true)) {
@@ -1070,7 +1077,9 @@ class ContractGenerationService
                 'monthly_repayment_burden' => $this->currencyFormatter->describeEurWithBgnEquivalent($submitted['financial']['monthly_repayment_burden_eur']),
                 'monthly_net_income' => $this->currencyFormatter->describeEurWithBgnEquivalent($submitted['financial']['monthly_net_income_eur']),
                 'fee' => $this->currencyFormatter->describeEurWithBgnEquivalent($submitted['financial']['fee_eur']),
-                'company_promissory_note_amount' => $this->currencyFormatter->describeEurWithBgnEquivalent($submitted['financial']['fee_eur']),
+                'company_promissory_note_amount' => $this->currencyFormatter->describeEurWithBgnEquivalent(
+                    $this->resolveCompanyPromissoryNoteAmountEur($submitted),
+                ),
                 'co_applicant_promissory_note_amount' => $this->currencyFormatter->describeEurWithBgnEquivalent($submitted['financial']['co_applicant_promissory_note_amount_eur']),
                 'loan_amount' => $this->currencyFormatter->describeEurWithBgnEquivalent($submitted['financial']['loan_amount_eur']),
                 'loan_return_amount' => $this->currencyFormatter->describeEurWithBgnEquivalent($submitted['financial']['loan_return_amount_eur']),
@@ -1794,6 +1803,30 @@ CSS;
     private function requiresLoanFields(array $documentTypes): bool
     {
         return in_array(ContractBatch::DOCUMENT_TYPE_LOAN_AGREEMENT, $documentTypes, true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $submitted
+     */
+    private function isBridgeCreditLayout(array $submitted): bool
+    {
+        return ($submitted['document_layout'] ?? null) === ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT;
+    }
+
+    /**
+     * При мостов кредит сумата по записа на заповед към фирмата се въвежда ръчно,
+     * защото се различава от комисионната в консултантския договор. При всички
+     * останали видове записът продължава да се генерира от възнаграждението.
+     *
+     * @param  array<string, mixed>  $submitted
+     */
+    private function resolveCompanyPromissoryNoteAmountEur(array $submitted): ?float
+    {
+        if ($this->isBridgeCreditLayout($submitted)) {
+            return $submitted['financial']['company_promissory_note_amount_eur'];
+        }
+
+        return $submitted['financial']['fee_eur'];
     }
 
     private function buildDownloadFileName(

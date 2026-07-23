@@ -6,6 +6,7 @@
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
     ], true);
     $hideAvalist = ($layout ?? null) === \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR;
 @endphp

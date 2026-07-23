@@ -50,6 +50,8 @@ class ContractBatch extends Model
 
     public const DOCUMENT_LAYOUT_CONTRACT_12M = 'contract_12m';
 
+    public const DOCUMENT_LAYOUT_BRIDGE_CREDIT = 'bridge_credit';
+
     public const COMPANY_REKREDO_KONSULT_DPK = 'rekredo_konsult_dpk';
 
     public const COMPANY_D_CONSULTING_EOOD = 'd_consulting_eood';
@@ -153,6 +155,7 @@ class ContractBatch extends Model
             self::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR => 'Опростен договор без поръчител',
             self::DOCUMENT_LAYOUT_LOAN_ONLY => 'Договор за Заем + Заповед',
             self::DOCUMENT_LAYOUT_CONTRACT_12M => 'Договор 12м',
+            self::DOCUMENT_LAYOUT_BRIDGE_CREDIT => 'Мостов кредит',
         ];
     }
 
@@ -195,7 +198,8 @@ class ContractBatch extends Model
                 self::DOCUMENT_TYPE_CREDIT_HISTORY_DECLARATION,
                 self::DOCUMENT_TYPE_DECLARATION,
             ],
-            self::DOCUMENT_LAYOUT_FULL => [
+            self::DOCUMENT_LAYOUT_FULL,
+            self::DOCUMENT_LAYOUT_BRIDGE_CREDIT => [
                 self::DOCUMENT_TYPE_APPLICATION_REQUEST,
                 self::DOCUMENT_TYPE_MEDIATION_AGREEMENT,
                 self::DOCUMENT_TYPE_CONSULTATION_AGREEMENT,
