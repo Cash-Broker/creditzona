@@ -595,6 +595,66 @@ class ContractGenerationServiceTest extends TestCase
             '7 000,00',
             data_get($batch->getDerivedInput(), 'financial.company_promissory_note_amount.eur.formatted'),
         );
+
+        // Проверка и на реалното съдържание на документите, не само на изведените данни.
+        $joined = $this->extractCombinedDocxText($batch);
+
+        $this->assertStringContainsString('СУМАТА ОТ 7 000,00', $joined);
+        $this->assertStringNotContainsString('СУМАТА ОТ 2 500,00', $joined);
+        $this->assertStringContainsString('възнаграждение в размер на 2 500,00', $joined);
+    }
+
+    public function test_commission_edit_reaches_documents_on_regeneration(): void
+    {
+        $operator = User::factory()->create([
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'anna@creditzona.test',
+        ]);
+
+        $service = app(ContractGenerationService::class);
+
+        $batch = $service->createBatch($this->batchInput([
+            'document_layout' => ContractBatch::DOCUMENT_LAYOUT_FULL,
+            'financial' => array_merge($this->batchInput()['financial'], [
+                'fee_eur' => null,
+                'commission_eur' => 2500,
+            ]),
+            'dates' => [
+                'consultation_contract_date' => '2026-03-15',
+            ],
+            'selected_document_types' => [],
+        ]), $operator);
+
+        $this->assertSame('2 500,00', data_get($batch->getDerivedInput(), 'financial.fee.eur.formatted'));
+
+        // Операторът коригира комисионната в Стъпка 1 и регенерира от Стъпка 2 — старите
+        // подадени данни (със запечения fee_eur) се сливат с новата стойност, както прави
+        // EditDocumentsContractBatch::mutateFormDataBeforeSave().
+        $updated = $service->updateBatch($batch, array_replace_recursive($batch->getSubmittedInput(), [
+            'financial' => ['commission_eur' => 3000],
+        ]), $operator);
+
+        $this->assertSame('3 000,00', data_get($updated->getDerivedInput(), 'financial.fee.eur.formatted'));
+        $this->assertSame(
+            '3 000,00',
+            data_get($updated->getDerivedInput(), 'financial.company_promissory_note_amount.eur.formatted'),
+        );
+    }
+
+    private function extractCombinedDocxText(ContractBatch $batch): string
+    {
+        $combinedDocxPath = Storage::disk('legal')->path($batch->combined_docx_path);
+        $this->assertFileExists($combinedDocxPath);
+
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($combinedDocxPath) === true);
+        $documentXml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        $this->assertIsString($documentXml);
+        preg_match_all('/<w:t[^>]*>([^<]*)<\/w:t>/', $documentXml, $matches);
+
+        return implode(' ', $matches[1]);
     }
 
     public function test_bridge_credit_layout_requires_manual_promissory_note_amount(): void

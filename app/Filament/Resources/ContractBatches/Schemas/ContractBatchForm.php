@@ -195,7 +195,7 @@ class ContractBatchForm
                         ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
                     ])),
                 // При мостов кредит сумата се въвежда ръчно — различава се от комисионната в консултантския договор.
-                static::euroAmountField('financial.company_promissory_note_amount_eur', 'Сума на Запис на Заповед', 'Пример: 5000')
+                static::euroAmountField('financial.company_promissory_note_amount_eur', 'Сума на запис на заповед', 'Пример: 5000')
                     ->visible(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT))
                     ->required(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT))
                     ->columnSpanFull(),

@@ -88,7 +88,17 @@ class ContractBatchInfolist
                             ->placeholder('Няма'),
                         TextEntry::make('company_promissory_note_amount_eur')
                             ->label('Запис на заповед към фирмата')
-                            ->state(fn (ContractBatch $record): ?string => data_get($record->getDerivedInput(), 'financial.company_promissory_note_amount.eur.formatted'))
+                            ->state(function (ContractBatch $record): ?string {
+                                // Ръчно въведената сума, не изведената от последната генерация —
+                                // изведените данни може да са от предишен вид документи.
+                                $amount = data_get($record->getSubmittedInput(), 'financial.company_promissory_note_amount_eur');
+
+                                if ($amount === null) {
+                                    return null;
+                                }
+
+                                return number_format((float) $amount, 2, ',', ' ').' €';
+                            })
                             ->placeholder('Няма')
                             ->visible(fn (ContractBatch $record): bool => $record->document_layout === ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT),
                         TextEntry::make('loan_due_date')

@@ -596,8 +596,11 @@ class ContractGenerationService
             }
         }
 
-        // Fee → from "Комисионна" when not explicitly provided
-        if ($financial['fee_eur'] === null && $financial['commission_eur'] !== null) {
+        // Fee → from "Комисионна". The operator-entered Step 1 value must override the
+        // fee_eur baked into the stored payload by a previous generation; otherwise a
+        // corrected commission never reaches the consultation agreement or the promissory
+        // note on regeneration (same rationale as the net income override above).
+        if ($financial['commission_eur'] !== null) {
             $financial['fee_eur'] = $financial['commission_eur'];
         }
 

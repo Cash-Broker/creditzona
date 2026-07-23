@@ -60,7 +60,7 @@
                         {{-- При мостов кредит сумата се въвежда ръчно и се различава от комисионната в консултантския договор. --}}
                         <div class="cz-cb-row cz-cb-row-1">
                             <div class="cz-field">
-                                <label class="cz-label">Сума на Запис на Заповед<span class="cz-req">*</span></label>
+                                <label class="cz-label">Сума на запис на заповед<span class="cz-req">*</span></label>
                                 <div class="cz-input-group">
                                     <input type="number" wire:model="data.financial.company_promissory_note_amount_eur" class="cz-input cz-input-with-suffix" placeholder="Пример: 5000" min="0" step="0.01">
                                     <span class="cz-input-suffix">€</span>
@@ -85,7 +85,7 @@
                         @error('data.dates.loan_agreement_date') <span class="cz-error">{{ $message }}</span> @enderror
                     </div>
                     <div class="cz-field">
-                        <label class="cz-label">Размер на Заем</label>
+                        <label class="cz-label">Размер на Заем<span class="cz-req">*</span></label>
                         <div class="cz-input-group">
                             <input type="number" wire:model="data.financial.loan_amount_eur" class="cz-input cz-input-with-suffix" min="0" step="0.01">
                             <span class="cz-input-suffix">€</span>
@@ -93,7 +93,7 @@
                         @error('data.financial.loan_amount_eur') <span class="cz-error">{{ $message }}</span> @enderror
                     </div>
                     <div class="cz-field">
-                        <label class="cz-label">Сума за Връщане</label>
+                        <label class="cz-label">Сума за Връщане<span class="cz-req">*</span></label>
                         <div class="cz-input-group">
                             <input type="number" wire:model="data.financial.loan_return_amount_eur" class="cz-input cz-input-with-suffix" min="0" step="0.01">
                             <span class="cz-input-suffix">€</span>
