@@ -68,41 +68,30 @@ class ContractBatchForm
                 Section::make('Данни за Кредити')
                     ->extraAttributes(['class' => 'cz-contract-flat-section'])
                     ->columns(5)
-                    ->visible(fn (Get $get): bool => static::isLayout($get, [
-                        ContractBatch::DOCUMENT_LAYOUT_FULL,
-                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
-                        ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
-                        ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
-                        ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
-                    ]))
+                    ->visible(fn (Get $get): bool => static::requiresCreditData($get))
                     ->schema([
-                        static::countField('financial.credit_count_in_institutions', 'В Финансови Институции', 'Пример: 3'),
+                        // Сервизът изисква поне едно от двете полета за брой кредити,
+                        // за да изведе общия брой активни кредити.
+                        static::countField('financial.credit_count_in_institutions', 'В Финансови Институции', 'Пример: 3')
+                            ->required(fn (Get $get): bool => static::requiresCreditData($get) && blank($get('financial.credit_count_in_banks'))),
                         static::countField('financial.institution_count', 'Брой Институции', 'Пример: 2'),
-                        static::countField('financial.credit_count_in_banks', 'Кредити в Банки', 'Пример: 2'),
+                        static::countField('financial.credit_count_in_banks', 'Кредити в Банки', 'Пример: 2')
+                            ->required(fn (Get $get): bool => static::requiresCreditData($get) && blank($get('financial.credit_count_in_institutions'))),
                         static::countField('financial.bank_count', 'Брой Банки', 'Пример: 2'),
                         static::euroAmountField('financial.total_loan_amount_eur', 'Общ Размер', 'Пример: 30000')
-                            ->required(fn (Get $get): bool => static::isLayout($get, [
-                                ContractBatch::DOCUMENT_LAYOUT_FULL,
-                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
-                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
-                                ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
-                                ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
-                            ])),
+                            ->required(fn (Get $get): bool => static::requiresCreditData($get)),
                         static::euroAmountField('financial.commission_eur', 'Комисионна', 'Пример: 2500')
-                            ->required(fn (Get $get): bool => static::isLayout($get, [
-                                ContractBatch::DOCUMENT_LAYOUT_FULL,
-                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
-                                ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
-                                ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
-                                ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
-                            ])),
-                        static::euroAmountField('financial.monthly_payments_eur', 'Месечни Вноски', 'Пример: 1000'),
+                            ->required(fn (Get $get): bool => static::requiresCreditData($get)),
+                        static::euroAmountField('financial.monthly_payments_eur', 'Месечни Вноски', 'Пример: 1000')
+                            ->required(fn (Get $get): bool => static::requiresCreditData($get)),
                         static::euroAmountField('financial.private_loans_eur', 'Частни Заеми', 'Пример: 5000'),
                         static::euroAmountField('financial.net_income_eur', 'Доход (Нетно)', 'Пример: 3000')
-                            ->required(fn (Get $get): bool => static::isLayout($get, ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M)),
+                            ->required(fn (Get $get): bool => static::requiresNetIncome($get)),
                         static::euroAmountField('financial.court_required_eur', 'Съдебно Изискуеми', 'Пример: 3000'),
-                        static::countField('financial.post_service_credit_count', 'Кредити след съдействие', 'Пример: 1'),
-                        static::euroAmountField('financial.post_service_monthly_repayment_burden_eur', 'Вноска след съдействие', 'Пример: 500'),
+                        static::countField('financial.post_service_credit_count', 'Кредити след съдействие', 'Пример: 1')
+                            ->required(fn (Get $get): bool => static::requiresPostServiceData($get)),
+                        static::euroAmountField('financial.post_service_monthly_repayment_burden_eur', 'Вноска след съдействие', 'Пример: 500')
+                            ->required(fn (Get $get): bool => static::requiresPostServiceData($get)),
                     ]),
             ]);
     }
@@ -361,6 +350,49 @@ class ContractBatchForm
         }
 
         return $field;
+    }
+
+    /**
+     * Видове документи, при които ContractGenerationService::validateSubmittedInput()
+     * изисква данните за кредити (заявка-искане и/или протокол): брой кредити,
+     * общ размер, комисионна и месечни вноски. Всички видове освен "Договор за
+     * Заем + Заповед" включват поне протокол от консултация.
+     */
+    private static function requiresCreditData(Get $get): bool
+    {
+        return static::isLayout($get, [
+            ContractBatch::DOCUMENT_LAYOUT_FULL,
+            ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+            ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR,
+            ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+            ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+        ]);
+    }
+
+    /**
+     * Видове документи със заявка-искане (application_request) — сервизната
+     * валидация изисква среден месечен нетен доход за тях.
+     */
+    private static function requiresNetIncome(Get $get): bool
+    {
+        return static::isLayout($get, [
+            ContractBatch::DOCUMENT_LAYOUT_FULL,
+            ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+            ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+            ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+        ]);
+    }
+
+    /**
+     * Пълен и Мостов кредит нямат defaults за данните "след съдействие" в
+     * applyLayoutFieldMappings(), затова операторът ги попълва в Стъпка 1.
+     */
+    private static function requiresPostServiceData(Get $get): bool
+    {
+        return static::isLayout($get, [
+            ContractBatch::DOCUMENT_LAYOUT_FULL,
+            ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+        ]);
     }
 
     /**

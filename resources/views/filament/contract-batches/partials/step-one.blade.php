@@ -9,6 +9,17 @@
         \App\Models\ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
     ], true);
     $hideAvalist = ($layout ?? null) === \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED_NO_GUARANTOR;
+    // Огледално на required() правилата в ContractBatchForm::configureStepOne.
+    $requiresNetIncome = in_array(($layout ?? null), [
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_FULL,
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_SIMPLIFIED,
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_CONTRACT_12M,
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+    ], true);
+    $requiresPostService = in_array(($layout ?? null), [
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_FULL,
+        \App\Models\ContractBatch::DOCUMENT_LAYOUT_BRIDGE_CREDIT,
+    ], true);
 @endphp
 
 <div class="cz-cb">
@@ -53,11 +64,12 @@
             <h3 class="cz-section-title">Данни за Кредити</h3>
             <div class="cz-cb-row cz-cb-row-5">
                 <div class="cz-field">
-                    <label class="cz-label">В Финансови Институции</label>
+                    <label class="cz-label">В Финансови Институции<span class="cz-req" title="Задължително е поне едно от полетата „В Финансови Институции“ и „Кредити в Банки“">*</span></label>
                     <div class="cz-input-group">
                         <input type="number" wire:model="data.financial.credit_count_in_institutions" class="cz-input cz-input-with-suffix" placeholder="Пример: 3" min="0">
                         <span class="cz-input-suffix">броя</span>
                     </div>
+                    @error('data.financial.credit_count_in_institutions') <span class="cz-error">{{ $message }}</span> @enderror
                 </div>
                 <div class="cz-field">
                     <label class="cz-label">Брой Институции <span class="cz-help" title="Брой финансови институции, които клиентът ползва">?</span></label>
@@ -67,11 +79,12 @@
                     </div>
                 </div>
                 <div class="cz-field">
-                    <label class="cz-label">Кредити в Банки</label>
+                    <label class="cz-label">Кредити в Банки<span class="cz-req" title="Задължително е поне едно от полетата „В Финансови Институции“ и „Кредити в Банки“">*</span></label>
                     <div class="cz-input-group">
                         <input type="number" wire:model="data.financial.credit_count_in_banks" class="cz-input cz-input-with-suffix" placeholder="Пример: 2" min="0">
                         <span class="cz-input-suffix">броя</span>
                     </div>
+                    @error('data.financial.credit_count_in_banks') <span class="cz-error">{{ $message }}</span> @enderror
                 </div>
                 <div class="cz-field">
                     <label class="cz-label">Брой Банки <span class="cz-help" title="Брой банки, в които клиентът има кредити">?</span></label>
@@ -104,6 +117,7 @@
                         <input type="number" wire:model="data.financial.monthly_payments_eur" class="cz-input cz-input-with-suffix" placeholder="Пример: 1000" min="0" step="0.01">
                         <span class="cz-input-suffix">€</span>
                     </div>
+                    @error('data.financial.monthly_payments_eur') <span class="cz-error">{{ $message }}</span> @enderror
                 </div>
                 <div class="cz-field">
                     <label class="cz-label">Частни Заеми</label>
@@ -113,11 +127,12 @@
                     </div>
                 </div>
                 <div class="cz-field">
-                    <label class="cz-label">Доход (Нетно)<span class="cz-req">*</span></label>
+                    <label class="cz-label">Доход (Нетно)@if($requiresNetIncome)<span class="cz-req">*</span>@endif</label>
                     <div class="cz-input-group">
                         <input type="number" wire:model="data.financial.net_income_eur" class="cz-input cz-input-with-suffix" placeholder="Пример: 3000" min="0" step="0.01">
                         <span class="cz-input-suffix">€</span>
                     </div>
+                    @error('data.financial.net_income_eur') <span class="cz-error">{{ $message }}</span> @enderror
                 </div>
                 <div class="cz-field">
                     <label class="cz-label">Съдебно Изискуеми</label>
@@ -129,18 +144,20 @@
             </div>
             <div class="cz-cb-row cz-cb-row-5">
                 <div class="cz-field">
-                    <label class="cz-label">Кредити след съдействие</label>
+                    <label class="cz-label">Кредити след съдействие@if($requiresPostService)<span class="cz-req">*</span>@endif</label>
                     <div class="cz-input-group">
                         <input type="number" wire:model="data.financial.post_service_credit_count" class="cz-input cz-input-with-suffix" placeholder="Пример: 1" min="0">
                         <span class="cz-input-suffix">броя</span>
                     </div>
+                    @error('data.financial.post_service_credit_count') <span class="cz-error">{{ $message }}</span> @enderror
                 </div>
                 <div class="cz-field">
-                    <label class="cz-label">Вноска след съдействие</label>
+                    <label class="cz-label">Вноска след съдействие@if($requiresPostService)<span class="cz-req">*</span>@endif</label>
                     <div class="cz-input-group">
                         <input type="number" wire:model="data.financial.post_service_monthly_repayment_burden_eur" class="cz-input cz-input-with-suffix" placeholder="Пример: 500" min="0" step="0.01">
                         <span class="cz-input-suffix">€</span>
                     </div>
+                    @error('data.financial.post_service_monthly_repayment_burden_eur') <span class="cz-error">{{ $message }}</span> @enderror
                 </div>
             </div>
         </div>
